@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.10"]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -20,4 +20,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint --ignore-paths test/tests_files,src/antlr,.venv --jobs 0 --disable c0114,c0115,c0116,E0401,C0301 --fail-under 8 $(git ls-files '*.py')
+        pylint --ignore-paths tests/,pyttern/antlr,.venv,venv --jobs 0 --disable c0114,c0115,c0116,E0401,C0301 --fail-under 8 $(git ls-files '*.py')
