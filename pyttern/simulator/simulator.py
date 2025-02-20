@@ -4,7 +4,7 @@ from antlr4 import TerminalNode
 from loguru import logger
 
 from .environment import Environment
-from ..pytternfsm.match_set import MatchSet
+from ..pytternfsm.python.match_set import MatchSet
 from ..simulator.pyttern_fsm import Movement
 
 
@@ -86,6 +86,8 @@ class Simulator:
                 case Movement.MRS:
                     try:
                         parent = current_ast.parentCtx
+                        if parent is None:
+                            return None
                         siblings = list(parent.getChildren())
                         index = siblings.index(current_ast)
                         current_ast = siblings[index+1]

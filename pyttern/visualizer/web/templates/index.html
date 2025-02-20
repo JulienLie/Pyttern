@@ -34,7 +34,7 @@
         <div class="pyttern col form-floating border border-dark-subtle p-2">
             <form class="row mb-3" action="/submit-pyttern" method="post" enctype="multipart/form-data">
                 <div class="col-auto">
-                    <input type="file" class="form-control" accept=".py,.pyt,.pyh" name="pyttern-file" id="pyttern-file" required/>
+                    <input type="file" class="form-control" accept=".py,.pyt,.pyh,.jat" name="pyttern-file" id="pyttern-file" required/>
                 </div>
                 <div class="col-auto form-check">
                     <input type="checkbox" name="strict" class="form-check-input" id="strict"/>
@@ -45,9 +45,9 @@
                 </div>
             </form>
             <div class="row m-1 h-75">
-                <label for="pyttern" style="height: fit-content">Pyttern</label>
-                <p style="resize: none; white-space: pre-wrap" class="form-control h-100"
-                          id="pyttern" contenteditable="false">{% if pyttern_code %}{{pyttern_code}}{% endif %}</p>
+                <label for="pyttern" style="height: fit-content">Pattern</label>
+                <textarea style="resize: none; white-space: pre-wrap" class="form-control h-100" placeholder="Pattern"
+                          id="pyttern" contenteditable="false">{% if pyttern_code %}{{pyttern_code}}{% endif %}</textarea>
             </div>
             <form class="row p-4 w-25" action="/remove-pyttern" method="post">
                 <input type="submit" value="Clear" class="btn btn-danger" {%if not pyttern_code%} disabled {%endif%}/>
@@ -56,7 +56,7 @@
         <div class="code col form-floating border border-dark-subtle p-2">
             <form class="row mb-3" action="/submit-code" method="post" enctype="multipart/form-data">
                 <div class="col-auto">
-                    <input type="file" class="form-control" accept=".py" name="python-file" id="python-file" required/>
+                    <input type="file" class="form-control" accept=".py,.java" name="code-file" id="code-file" required/>
                 </div>
                 <div class="col-auto">
                     <input type="submit" value="Upload" class="btn btn-primary"/>
@@ -64,11 +64,11 @@
             </form>
             <div class="row m-1 h-75">
                 <label for="code" style="height: fit-content">Code</label>
-                <textarea style="resize: none" class="form-control h-100" placeholder="Pyttern"
-                          id="code" contenteditable="false">{% if python_code %}{{python_code}}{% endif %}</textarea>
+                <textarea style="resize: none" class="form-control h-100" placeholder="Code"
+                          id="code" contenteditable="false">{% if code_file %}{{code_file}}{% endif %}</textarea>
             </div>
-            <form class="row p-4 w-25" action="/remove-python" method="post">
-                <input type="submit" value="Clear" class="btn btn-danger" {%if not python_code%} disabled {%endif%}/>
+            <form class="row p-4 w-25" action="/remove-code" method="post">
+                <input type="submit" value="Clear" class="btn btn-danger" {%if not code_file%} disabled {%endif%}/>
             </form>
         </div>
     </div>
@@ -95,12 +95,12 @@
             <div class="container-fluid vstack h-100">
                 <div class="input-group hstack">
                     <label class="input-group-text">
-                        Follow <input type="checkbox" class="form-check-input" id="follow_python">
+                        Follow <input type="checkbox" class="form-check-input" id="follow_code">
                     </label>
-                    <button class="btn btn-primary ms-auto" onclick="reset_python_graph()">Reset</button>
-                    <button class="btn btn-secondary" onclick="download_python_graph()">Download</button>
+                    <button class="btn btn-primary ms-auto" onclick="reset_code_graph()">Reset</button>
+                    <button class="btn btn-secondary" onclick="download_code_graph()">Download</button>
                 </div>
-                <div id="python-cy" class="vh-100"></div>
+                <div id="code-cy" class="vh-100"></div>
             </div>
         </div>
     </div>
@@ -147,12 +147,12 @@
         if(pyttern_graph && pyttern_tree)
             generate_pyttern_graph(pyttern_graph, pyttern_tree)
 
-        python_graph = {{python_graph|safe}}
-        if(python_graph)
-            generate_python_graph(python_graph)
+            code_tree = {{code_tree|safe}}
+        if(code_tree)
+            generate_code_graph(code_tree)
 
 
-        if(!pyttern_graph || !python_graph)
+        if(!pyttern_graph || !code_tree)
             $(".ctrl").prop("disabled", true)
         else
             update_current_step([], [])

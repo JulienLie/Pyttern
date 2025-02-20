@@ -1,5 +1,5 @@
-let pyttern_fsm_cy=null;let pyttern_tree_cy=null;let python_tree_cy=null;let current_fsm=0
-let current_python=0
+let pyttern_fsm_cy=null;let pyttern_tree_cy=null;let code_tree_cy=null;let current_fsm=0
+let current_code=0
 let fsm_nodes=[]
 let step=0
 let max_step=0
@@ -47,19 +47,19 @@ elem.on('click',function(evt){console.log(transition)
 pop(transition)(evt)})}
 console.log("Graph generated!")}
 function select_pyttern_graph(value){console.log(value)}
-function generate_python_graph(pyttern_json){if(python_tree_cy==null){python_tree_cy=generate_cytoscape()
-python_tree_cy.mount($("#python-cy"))}
-recursive_generation(pyttern_json,python_tree_cy)
-python_tree_cy.layout({name:'dagre',padding:5,fit:true,nodeDimensionsIncludeLabels:true}).run()
+function generate_code_graph(pyttern_json){if(code_tree_cy==null){code_tree_cy=generate_cytoscape()
+code_tree_cy.mount($("#code-cy"))}
+recursive_generation(pyttern_json,code_tree_cy)
+code_tree_cy.layout({name:'dagre',padding:5,fit:true,nodeDimensionsIncludeLabels:true}).run()
 console.log("Graph generated!")}
-function reset_python_graph(){python_tree_cy.fit()}
+function reset_code_graph(){code_tree_cy.fit()}
 function reset_pyttern_graph(){pyttern_fsm_cy.fit()
 pyttern_tree_cy.fit()}
 function set_current_step(new_step){new_step=Math.max(0,Math.min(new_step,max_step))
 step=new_step
 return $.ajax({type:'POST',url:'/api/step',contentType:'application/json',data:JSON.stringify({step:new_step}),success:function(data){data=JSON.parse(data)
 current_fsm=data.state[0]
-current_python=data.state[1]
+current_code=data.state[1]
 let current_matchings=data.current_matchings
 let previousMatchings=data.previous_matchings
 update_current_step(current_matchings,previousMatchings)
@@ -89,7 +89,7 @@ for(let i=0;i<start_line.length;i++){if(i===start[1]){new_start_line+="<span sty
 new_start_line+=start_line[i]}
 lines[start[0]]=new_start_line
 code_area.innerHTML=lines.join("\n")}
-function update_python_code(start,end){const code_area=$('#python')
+function update_code(start,end){const code_area=$('#code')
 const code=code_area.val()}
 function enable_buttons(){if(step===0){$('#first').attr('disabled',true)
 $('#prev').attr('disabled',true)}
@@ -107,26 +107,26 @@ current_pyttern_node.style({'background-color':'blue'})}
 let current_pyttern_node=pyttern_fsm_cy.$id(current_fsm)
 current_pyttern_node.style({'background-color':'green'})
 if($("#follow_pyttern").is(":checked")){pyttern_fsm_cy.animation({center:{eles:current_pyttern_node},duration:200}).play()}}
-function update_python_nodes(current_matches,previous_matches){python_tree_cy.nodes().style({'background-color':'#BBB'})
-for(let node of previous_matches){let previous_pyttern_node=python_tree_cy.$id(node)
+function update_code_nodes(current_matches,previous_matches){code_tree_cy.nodes().style({'background-color':'#BBB'})
+for(let node of previous_matches){let previous_pyttern_node=code_tree_cy.$id(node)
 previous_pyttern_node.style({'background-color':'red'})}
-for(let node of current_matches){let current_pyttern_node=python_tree_cy.$id(node)
+for(let node of current_matches){let current_pyttern_node=code_tree_cy.$id(node)
 current_pyttern_node.style({'background-color':'blue'})}
-let current_python_node=python_tree_cy.$id(current_python)
-current_python_node.style({'background-color':'green'})
-if($("#follow_python").is(":checked")){python_tree_cy.animation({center:{eles:current_python_node},duration:200}).play()}}
+let current_code_node=code_tree_cy.$id(current_code)
+current_code_node.style({'background-color':'green'})
+if($("#follow_code").is(":checked")){code_tree_cy.animation({center:{eles:current_code_node},duration:200}).play()}}
 function update_current_step(current_matchings,previous_matchings){enable_buttons()
 console.log("Setting current fsm to "+step)
 const current_pyttern_matches=[]
-const current_python_matches=[]
+const current_code_matches=[]
 for(let state of current_matchings){current_pyttern_matches.push(state[0])
-current_python_matches.push(state[1])}
+current_code_matches.push(state[1])}
 const previous_pyttern_matches=[]
-const previous_python_matches=[]
+const previous_code_matches=[]
 for(let state of previous_matchings){previous_pyttern_matches.push(state[0])
-previous_python_matches.push(state[1])}
+previous_code_matches.push(state[1])}
 update_pyttern_nodes(current_pyttern_matches,previous_pyttern_matches)
-update_python_nodes(current_python_matches,previous_python_matches)
+update_code_nodes(current_code_matches,previous_code_matches)
 $("#step").attr("value",step)
 $("#range").attr("value",step)}
 function add_current_step(){step+=1
@@ -141,7 +141,7 @@ for(let state of matching_states){matching_states_area.append(`<option value=${s
 function start_simulator(){return $.ajax({type:'POST',url:'/api/start',contentType:'application/json',success:function(data){data=JSON.parse(data)
 max_step=data["n_steps"]
 current_fsm=data['state'][0]
-current_python=data['state'][1]
+current_code=data['state'][1]
 matching_state=data['match_states']
 set_matching_states(matching_state)
 $("#step").attr("max",max_step)
@@ -158,9 +158,9 @@ let png=cy.png({full:true})
 let a=document.createElement('a');a.href=png
 a.download='pyttern_graph.png'
 a.click()}
-function download_python_graph(){let png=python_tree_cy.png({full:true})
+function download_code_graph(){let png=code_tree_cy.png({full:true})
 let a=document.createElement('a');a.href=png
-a.download='python_graph.png'
+a.download='code_graph.png'
 a.click()}
 const RATIO=1/2;async function generateGIF(){const pytternImages=[];const pythonImages=[];await start_simulator();for(let i=0;i<max_step/2;i++){await set_current_step(i);const pytternImage=pyttern_fsm_cy.png({full:true,maxWidth:1000,maxHeight:1000});const pythonImage=python_tree_cy.png({full:true,maxWidth:1000,maxHeight:1000});pytternImages.push(pytternImage);pythonImages.push(pythonImage);}
 await createGif(pytternImages,pythonImages);pytternImages.length=0;pythonImages.length=0;}
