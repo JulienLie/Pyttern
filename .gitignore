@@ -1,6 +1,7 @@
 sessions/
 .idea/
 .venv/
+venv/
 **/__pycache__/
 bin/
 /pyttern/Pyttern.egg-info/
