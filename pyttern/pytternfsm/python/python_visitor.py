@@ -48,7 +48,6 @@ class Python_Visitor(Python3ParserVisitor):
             self_transition = (null_node, ExceptTransition(node), [Movement.MP])
             self.current_fsm_node.add_transition(*self_transition)
 
-            up_node = FSM()
             transition = (next_node, VarTransition(node), [Movement.MP] * depth + [Movement.MRS])
 
             self.depth = 0
@@ -306,8 +305,7 @@ class Python_Visitor(Python3ParserVisitor):
 
     def visitList_wildcard(self, ctx: Python3Parser.List_wildcardContext):
         next_node = FSM()
-        transition = self.get_up_transition(
-            next_node)
+        transition = self.get_up_transition(next_node)
         self.current_fsm_node.add_transition(*transition)
         self_transition = (next_node, ObjectTransition(), [Movement.MRS])
         next_node.add_transition(*self_transition)
@@ -330,6 +328,24 @@ class Python_Visitor(Python3ParserVisitor):
         return self.current_fsm_node
 
     def visitContains_wildcard(self, ctx: Python3Parser.Contains_wildcardContext):
-        logger.warning("Not yet implemented")
-        return self.visitChildren(ctx)
+        save_node = FSM()
+        save_transition = (save_node, VarTransition(ctx), [])
+        self.current_fsm_node.add_transition(*save_transition)
+        self.current_fsm_node = save_node
+        self.up_to.append((ctx, self.depth))
 
+        next_node = FSM()
+        transition = (next_node, ObjectTransition(), [Movement.MLC])
+        self.current_fsm_node.add_transition(*transition)
+
+        self_transition = (next_node, ObjectTransition(), [Movement.MRS])
+        next_node.add_transition(*self_transition)
+
+        back_transition = (self.current_fsm_node, ObjectTransition(), [])
+        next_node.add_transition(*back_transition)
+
+        self.current_fsm_node = next_node
+
+        ctx.getChild(0, (Python3Parser.Expr_wildcardContext, Python3Parser.Expr_stmtContext)).accept(self)
+
+        return next_node

@@ -1,20 +1,23 @@
 import argparse
 import glob
+
+from loguru import logger
 from tqdm import tqdm
 
 from .language_processors import get_processor
 
 
-def match_files(pattern_path, code_path, strict_match=False, match_details=False):
+def match_files(pattern_path, code_path, strict_match=False, match_details=False,  lang="python"):
     try:
-        pattern = generate_tree_from_file(pattern_path)
-        code = generate_tree_from_file(code_path)
+        language_processor = get_processor(lang)
+        pattern = language_processor.generate_tree_from_file(pattern_path)
+        code = language_processor.generate_tree_from_file(code_path)
     except Exception as e:
         assert False, e
 
-    fsm = Python_Visitor(strict_match).visit(pattern)
+    fsm = language_processor.create_fsm(pattern)
 
-    simu = Simulator(fsm, code)
+    simu = language_processor.create_simulator(fsm, code)
     simu.start()
     while len(simu.states) > 0:
         simu.step()
@@ -54,6 +57,7 @@ def match_wildcards(pattern_path, code_path, strict_match=False, match_details=F
 
 def run_application():
     from .visualizer.web import application
+    logger.enable("pyttern")
     application.app.run(debug=True)
 
 
@@ -100,5 +104,7 @@ def main():
         simu.step()
     print(simu.match_set.matches)
 
+logger.disable("pyttern")
 if __name__ == "__main__":
+    logger.enable("pyttern")
     main()

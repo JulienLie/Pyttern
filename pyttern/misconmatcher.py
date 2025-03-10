@@ -33,10 +33,15 @@ def retrieve_pytterns_and_explore(path, code, pyt_dict):
     """
     logger.debug(f"Retrieving pytterns from {path}")
     for pyttern in listdir(path):
-        for f in listdir(f"{path}/{pyttern}"):
-            if f[-8:] != "feedback":
-                logger.debug(f"Starting exploration on {path}/{pyttern}/{f}")
-                pyt_dict[pyttern] = match_misconception(f"{path}/{pyttern}", f, code)
+        try:
+            for f in listdir(f"{path}/{pyttern}"):
+                    if f[-8:] != "feedback":
+                        logger.debug(f"Starting exploration on {path}/{pyttern}/{f}")
+                        pyt_dict[pyttern] = match_misconception(f"{path}/{pyttern}", f, code)
+        except Exception as e:
+            logger.error(f"Error while exploring {path}/{pyttern}: {e}")
+            print(f"Error while exploring {path}/{pyttern}: {e}... Continue exploring", file=sys.stderr)
+            pyt_dict[pyttern] = False
 
 
 
@@ -52,7 +57,11 @@ def match_misconception(path, current, code):
     # Matches code with a pyttern
     if file_ext == "pyt":
         logger.debug(f"Matching {new_path} with {code}")
-        return match_files(new_path, code)
+        return match_files(new_path, code, "python")
+
+    if file_ext == "jat":
+        logger.debug(f"Matching {new_path} with {code}")
+        return match_files(new_path, code, "java")
     
     # Matches code with a regex
     elif file_ext == "re":

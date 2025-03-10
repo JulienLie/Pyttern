@@ -1,6 +1,4 @@
-import argparse
 import io
-
 from functools import cache
 
 from antlr4 import FileStream, CommonTokenStream, InputStream
@@ -15,7 +13,9 @@ from ..pytternfsm.python.python_visitor import Python_Visitor
 from ..pytternfsm.python.tree_pruner import TreePruner
 from ..simulator.simulator import Simulator
 
+
 class PythonProcessor(BaseProcessor):
+
     @cache
     def generate_tree_from_code(self, code):
         code = code.strip()
@@ -36,10 +36,10 @@ class PythonProcessor(BaseProcessor):
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
-        if len(error_listener.symbol) > 0:
+        """if len(error_listener.symbol) > 0:
             raise IOError(
                 f"Syntax error in {stream} at line {error_listener.line} "
-                f"({repr(error_listener.symbol)}) : {error.getvalue()}")
+                f"({repr(error_listener.symbol)}) : {error.getvalue()}")"""
 
         pruned_tree = TreePruner().visit(tree)
 
@@ -50,6 +50,7 @@ class PythonProcessor(BaseProcessor):
         file_input = FileStream(file, encoding="utf-8")
         return self.generate_tree_from_stream(file_input)
 
+    @cache
     def create_fsm(self, pattern_tree):
         return Python_Visitor().visit(pattern_tree)
 

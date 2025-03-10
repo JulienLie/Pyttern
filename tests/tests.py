@@ -325,3 +325,25 @@ class TestASTWildcards:
         end_time = time.time()
         logger.level("INFO")
         assert end_time - start_time < 60, f"Execution took {end_time - start_time} seconds"
+
+    def test_multiple_args(self):
+        pattern_path = get_test_file("multiple_args/multiple_args.pyt")
+        code_path = get_test_file("multiple_args/multiple_args_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("multiple_args/multiple_args_ko.py")
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+    def test_multiple_args(self):
+        pattern_path = get_test_file("multiple_args/multiple_args.pyt")
+        code_path = get_test_file("multiple_args/multiple_args_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("multiple_args/multiple_args_ko.py")
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det

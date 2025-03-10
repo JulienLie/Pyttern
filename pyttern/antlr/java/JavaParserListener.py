@@ -1,6 +1,6 @@
-# Generated from JavaParser.g4 by ANTLR 4.9.2
+# Generated from JavaParser.g4 by ANTLR 4.13.2
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .JavaParser import JavaParser
 else:
     from JavaParser import JavaParser
