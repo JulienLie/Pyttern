@@ -21,3 +21,6 @@ class BaseProcessor:
 
     def create_listener(self):
         raise NotImplementedError
+
+    def get_language_extensions(self):
+        raise NotImplementedError

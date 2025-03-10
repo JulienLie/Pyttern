@@ -1,19 +1,17 @@
-import argparse
 import io
-
-from functools import cache
 
 from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
 from ..PytternListener import ConsolePytternListener
-from ..antlr.java.JavaParser import JavaParser
 from ..antlr.java.JavaLexer import JavaLexer
+from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.java.java_visitor import Java_Visitor
 # from ..pytternfsm.java.tree_pruner import TreePruner
 from ..simulator.simulator import Simulator
+
 
 class JavaProcessor(BaseProcessor):
     def generate_tree_from_code(self, code):
@@ -57,3 +55,6 @@ class JavaProcessor(BaseProcessor):
     
     def create_listener(self):
         return ConsolePytternListener()
+
+    def get_language_extensions(self):
+        return ["java", "jav", "jat"]

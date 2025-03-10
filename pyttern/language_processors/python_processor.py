@@ -59,3 +59,6 @@ class PythonProcessor(BaseProcessor):
 
     def create_listener(self):
         return ConsolePytternListener()
+
+    def get_language_extensions(self):
+        return ["py", "pyt", "pyh"]

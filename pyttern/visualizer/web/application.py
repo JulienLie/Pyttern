@@ -3,17 +3,15 @@ from functools import wraps
 
 from antlr4 import ParseTreeVisitor
 from cachelib import FileSystemCache
-from flask import Flask, render_template, request, redirect, session, flash, get_flashed_messages
+from flask import Flask, render_template, request, redirect, session, flash, get_flashed_messages, send_from_directory
 from flask_session import Session
 from loguru import logger
 
 from ...PytternListener import PytternListener
-from ...pytternfsm.python.python_visitor import Python_Visitor
-from ...simulator.simulator import Simulator
-from ...language_processors import get_processor
-from ...language_processors.language_utils import determine_language
+from ...language_processors import get_processor, determine_language
+from ...pyttern_error_listener import PytternSyntaxException
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist', static_url_path='')
 app.secret_key = b'a78b11744f599a29207910d3b55eded2dd22cbf9c1dc6c007586b68ff649ac6f'
 
 SESSION_TYPE = 'cachelib'
@@ -83,11 +81,11 @@ def file_check():
     return _file_check
 
 
-def get_simulator(pyttern_code, code):
-    if "pattern_language" in session and session["pattern_language"] is not None and "code_language" in session and session["code_language"] is not None:
+def get_simulator(pattern_code, code):
+    logger.debug("Getting simulator")
+    if "pattern_language" in session and session["pattern_language"] is not None:
         current_language_processor = get_processor(session["pattern_language"])
-        pyttern_tree = current_language_processor.generate_tree_from_code(pyttern_code)
-        # strict = session.get('strict', False)
+        pyttern_tree = current_language_processor.generate_tree_from_code(pattern_code)
         pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
         code_tree = current_language_processor.generate_tree_from_code(code)
 
@@ -141,129 +139,94 @@ class JsonListener(PytternListener):
         self.data[-1]["match"] = True
 
 
+def try_processors(code):
+    languages = ["python", "java"]
+    for lang in languages:
+        try:
+            processor = get_processor(lang)
+            processor.generate_tree_from_code(code)
+            session["pattern_language"] = lang
+            return json.dumps({"status": "ok"})
+        except Exception as e:
+            logger.error(f"Error with {lang}: {e}")
+    return json.dumps({"status": "error", "message": "Cannot recognize the language"})
+
+
 """ Web endpoints """
-from flask_assets import Environment, Bundle
-
-assets = Environment(app)
-
-js = Bundle('code/visualizer.js', 'code/gifmaker.js', 'code/gifs/gif.js', 'code/gifs/gif.worker.js',
-            filters='jsmin', output='gen/packed.js')
-assets.register('js_all', js)
 
 @app.route("/")
 def index():
-    session["n_match"] = 0
-
-    pyttern_code = None
-    code_file = None
-    pyttern_fsm_graph = "null"
-    pyttern_tree_graph = "null"
-    code_tree_graph = "null"
-    
-    # session["pyttern_code"] = None
-    # session["code_file"] = None
-    if "pyttern_code" in session and session["pyttern_code"] is not None:
-        try:
-            pyttern_code = session["pyttern_code"]
-            if "pattern_language" in session and session["pattern_language"] is not None:
-                current_language_processor = get_processor(session["pattern_language"])
-                pyttern_tree = current_language_processor.generate_tree_from_code(pyttern_code)
-                pyttern_tree_graph = PtToJson().visit(pyttern_tree)
-                # strict = session.get('strict', False)
-                pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
-                print("PYTTERN FSM ::: ", pyttern_fsm)
-                pyttern_fsm_graph = fsm_to_json(pyttern_fsm)
-            else:
-                flash("Pattern language not set.", "error")
-        except IOError as e:
-            pyttern_code = None
-            session.pop('pyttern_code', None)
-            print(e)
-            
-    if "code_file" in session and session["code_file"] is not None:
-        code_file = session["code_file"]
-        if "code_language" in session and session["code_language"] is not None:
-            current_processor = get_processor(session["code_language"])
-            code_tree = current_processor.generate_tree_from_code(code_file)
-            code_tree_graph = PtToJson().visit(code_tree)
-        else:
-            flash("Code language not set.", "error")
-
-    return render_template(
-        'index.html', pyttern_code=pyttern_code, code_file=code_file, code_tree=code_tree_graph,
-        pyttern_graph=pyttern_fsm_graph, pyttern_tree=pyttern_tree_graph)
-
-
-@app.route("/submit-pyttern", methods=['POST'])
-def submit_pyttern():
-    global current_processor
-    code = request.files['pyttern-file']
-    
-    pattern_language = determine_language(code.filename)
-    if pattern_language is None:
-        return json.dumps({"status": "error", "message": "Unsupported pattern file extension"})
-    
-    # Ensure the pattern and code languages match
-    if 'code_language' in session and session['code_language'] is not None and session['code_language'] != pattern_language:
-        return json.dumps({"status": "error", "message": "Pattern file language does not match the code file language"})
-    
-    session['pattern_language'] = pattern_language
-    session['pyttern_code'] = code.stream.read().decode()
-    current_processor = get_processor(pattern_language)
-    
-    strict = request.form.get('strict', 'off') == 'on'
-    session['strict'] = strict
-    return redirect("/")
-
-
-@app.route("/remove-pyttern", methods=['POST'])
-def remove_pyttern():
-    session.pop('pyttern_code', None)
-    session.pop('pattern_language', None)
-    global current_processor
-    current_processor = None
-    return redirect("/")
-
-
-@app.route("/submit-code", methods=['POST'])
-def submit_code():
-    global current_processor
-    code = request.files['code-file']
-    
-    code_language = determine_language(code.filename)
-    if code_language is None:
-        return json.dumps({"status": "error", "message": "Unsupported code file extension"})
-
-    # Ensure the pattern and code languages match
-    if 'pattern_language' in session and session['pattern_language'] is not None and session['pattern_language'] != code_language:
-        return json.dumps({"status": "error", "message": "Code file language does not match the pattern file language"})
-    
-    session['code_language'] = code_language
-    session['code_file'] = code.stream.read().decode()
-    current_processor = get_processor(code_language)
-    return redirect("/")
-
-
-@app.route("/remove-code", methods=['POST'])
-def remove_python():
-    session.pop('code_file', None)
-    session.pop('code_language', None)
-    global current_processor
-    current_processor = None
-    return redirect("/")
+    return send_from_directory("dist/", "index.html")
 
 
 """API endpoints"""
 
+@app.route("/api/validate", methods=['POST'])
+def validate():
+    pattern_code = request.json["code"]
+    pattern_lang = request.json['lang']
+    if pattern_lang == "":
+        return try_processors(pattern_code)
+    logger.info(f"Current lang: {pattern_lang}")
+    try:
+        lang = determine_language(pattern_lang)
+        session['pattern_language'] = lang
+        current_language_processor = get_processor(lang)
+        current_language_processor.generate_tree_from_code(pattern_code)
+    except PytternSyntaxException as e:
+        return json.dumps({"status": "error",
+            "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}})
+    except Exception as e:
+        return json.dumps({"status": "error", "message": f"{e}"})
+    return json.dumps({"status": "ok"})
 
-@app.route("/api/start", methods=['POST'])
-@file_check()
-def start():
-    session["n_match"] = 0
 
-    pyttern_code = session["pyttern_code"]
-    code_file = session["code_file"]
-    simulator = get_simulator(pyttern_code, code_file)
+@app.route("/api/pattern", methods=['POST'])
+def pattern():
+    pattern_code = request.json["code"]
+    try:
+        lang = session["pattern_language"]
+        current_language_processor = get_processor(lang)
+        pattern_tree = current_language_processor.generate_tree_from_code(pattern_code)
+    except Exception as e:
+        return json.dumps({
+            "status": "error",
+            "message": str(e)
+        })
+    pattern_tree_graph = PtToJson().visit(pattern_tree)
+    pyttern_fsm = current_language_processor.create_fsm(pattern_tree)
+    pattern_fsm_graph = fsm_to_json(pyttern_fsm)
+    pattern_fsm_graph = [json.loads(node) for node in pattern_fsm_graph]
+    return json.dumps({
+        "status": "ok",
+        "graph": {
+            "GRAPH": pattern_fsm_graph,
+            "TREE": pattern_tree_graph,
+        }
+    })
+
+
+@app.route("/api/code", methods=['POST'])
+def code():
+    code = request.json["code"]
+    lang = session["pattern_language"]
+    current_language_processor = get_processor(lang)
+    tree = current_language_processor.generate_tree_from_code(code)
+    tree_graph = PtToJson().visit(tree)
+    return json.dumps({
+        "status": "ok",
+        "graph": {
+            "TREE": tree_graph
+        }
+    })
+
+@app.route("/api/match", methods=['POST'])
+def match():
+    data = request.json
+    code = data["code"]
+    pattern = data["pattern"]
+
+    simulator = get_simulator(pattern, code)
     json_listener = JsonListener()
     simulator.add_listener(json_listener)
     simulator.start()
@@ -276,12 +239,8 @@ def start():
     session["data"] = json_listener.data
     match_states = [i for i, data in enumerate(json_listener.data) if data["match"]]
     logger.debug(f"Matching states: {match_states}")
-    return json.dumps({
-        "status": "ok",
-        "n_steps": simulator.n_step - 1,
-        "state": first_state_info,
-        "match_states": match_states
-    })
+    return json.dumps(
+        {"status": "ok", "n_steps": simulator.n_step - 1, "state": first_state_info, "match_states": match_states})
 
 
 @app.route("/api/step", methods=['POST'])
