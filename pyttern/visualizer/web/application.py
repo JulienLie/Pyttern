@@ -10,6 +10,7 @@ from loguru import logger
 from ...PytternListener import PytternListener
 from ...language_processors import get_processor, determine_language
 from ...pyttern_error_listener import PytternSyntaxException
+from ...simulator.pda.PDA import PDAEncoder
 
 app = Flask(__name__, static_folder='dist', static_url_path='')
 app.secret_key = b'a78b11744f599a29207910d3b55eded2dd22cbf9c1dc6c007586b68ff649ac6f'
@@ -81,7 +82,7 @@ def file_check():
     return _file_check
 
 
-def get_simulator(pattern_code, code):
+def get_matcher(pattern_code, code):
     logger.debug("Getting simulator")
     if "pattern_language" in session and session["pattern_language"] is not None:
         current_language_processor = get_processor(session["pattern_language"])
@@ -89,7 +90,7 @@ def get_simulator(pattern_code, code):
         pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
         code_tree = current_language_processor.generate_tree_from_code(code)
 
-        return current_language_processor.create_simulator(pyttern_fsm, code_tree)
+        return current_language_processor.create_matcher(pyttern_fsm, code_tree)
     else:
         raise Exception("No language is set")
 
@@ -195,8 +196,7 @@ def pattern():
         })
     pattern_tree_graph = PtToJson().visit(pattern_tree)
     pyttern_fsm = current_language_processor.create_fsm(pattern_tree)
-    pattern_fsm_graph = fsm_to_json(pyttern_fsm)
-    pattern_fsm_graph = [json.loads(node) for node in pattern_fsm_graph]
+    pattern_fsm_graph = json.loads(json.dumps(pyttern_fsm, cls=PDAEncoder))
     return json.dumps({
         "status": "ok",
         "graph": {
@@ -222,25 +222,26 @@ def code():
 
 @app.route("/api/match", methods=['POST'])
 def match():
+    logger.info("Asking to start match")
     data = request.json
     code = data["code"]
     pattern = data["pattern"]
 
-    simulator = get_simulator(pattern, code)
+    matcher = get_matcher(pattern, code)
     json_listener = JsonListener()
-    simulator.add_listener(json_listener)
-    simulator.start()
-    first_state = simulator.states[-1]
-    fsm, ast, _, _ = first_state
+    matcher.add_listener(json_listener)
+    matcher.start()
+    first_state = matcher.configurations[-1]
+    fsm, ast, _, _, _ = first_state
     first_state_info = (str(fsm), hash(ast))
-    while len(simulator.states) > 0:
-        simulator.step()
-    logger.debug(f"Number of steps: {simulator.n_step}")
+    while len(matcher.configurations) > 0:
+        matcher.step()
+    logger.debug(f"Number of steps: {matcher.n_step}")
     session["data"] = json_listener.data
     match_states = [i for i, data in enumerate(json_listener.data) if data["match"]]
     logger.debug(f"Matching states: {match_states}")
     return json.dumps(
-        {"status": "ok", "n_steps": simulator.n_step - 1, "state": first_state_info, "match_states": match_states})
+        {"status": "ok", "n_steps": matcher.n_step, "state": first_state_info, "match_states": match_states})
 
 
 @app.route("/api/step", methods=['POST'])

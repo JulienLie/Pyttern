@@ -347,3 +347,4 @@ class TestASTWildcards:
         code_path = get_test_file("multiple_args/multiple_args_ko.py")
         res, det = match_files(pattern_path, code_path, match_details=True)
         assert res, det
+
