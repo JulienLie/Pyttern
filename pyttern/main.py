@@ -16,14 +16,13 @@ def match_files(pattern_path, code_path, strict_match=False, match_details=False
         assert False, e
 
     fsm = language_processor.create_fsm(pattern)
+    print(fsm.states)
 
-    simu = language_processor.create_simulator(fsm, code)
-    simu.start()
-    while len(simu.states) > 0:
-        simu.step()
+    simu = language_processor.create_matcher(fsm, code)
+    matches = simu.match(fsm, code, stop_at_first=match_details).matches
     if match_details:
-        return len(simu.match_set.matches) > 0, simu.match_set.matches
-    return len(simu.match_set.matches) > 0
+        return len(matches) > 0, matches
+    return len(matches) > 0
 
 
 def match_wildcards(pattern_path, code_path, strict_match=False, match_details=False):

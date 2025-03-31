@@ -16,7 +16,7 @@ class BaseProcessor:
     def create_fsm(self, pattern_tree):
         raise NotImplementedError
 
-    def create_simulator(self, fsm, code_tree):
+    def create_matcher(self, fsm, code_tree):
         raise NotImplementedError
 
     def create_listener(self):

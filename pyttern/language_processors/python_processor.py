@@ -23,6 +23,11 @@ class PythonProcessor(BaseProcessor):
         return self.generate_tree_from_stream(stream)
 
     @cache
+    def generate_tree_from_file(self, file):
+        file_input = FileStream(file, encoding="utf-8")
+        return self.generate_tree_from_stream(file_input)
+
+    @cache
     def generate_tree_from_stream(self, stream):
         logger.info("Generating tree")
         lexer = Python3Lexer(stream)
@@ -44,11 +49,6 @@ class PythonProcessor(BaseProcessor):
         pruned_tree = TreePruner().visit(tree)
 
         return pruned_tree
-
-    @cache
-    def generate_tree_from_file(self, file):
-        file_input = FileStream(file, encoding="utf-8")
-        return self.generate_tree_from_stream(file_input)
 
     @cache
     def create_fsm(self, pattern_tree):

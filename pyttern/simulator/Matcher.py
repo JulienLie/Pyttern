@@ -28,11 +28,13 @@ class Matcher:
         self._listeners.clear()
 
     @staticmethod
-    def match(pda: PDA, parse_tree: ParserRuleContext) -> MatchSet:
+    def match(pda: PDA, parse_tree: ParserRuleContext, stop_at_first=False) -> MatchSet:
         matcher = Matcher(pda, parse_tree)
         matcher.start()
         while len(matcher.configurations) > 0:
             matcher.step()
+            if stop_at_first and matcher.match_set.count() > 0:
+                break
         return matcher.match_set
 
     def start(self):
@@ -121,6 +123,8 @@ class Matcher:
 
     @staticmethod
     def _match_node(input, a):
+        if a == "":
+            return True
         if isinstance(input, TerminalNode):
             return str(input) == a
         return input.__class__.__name__ == a

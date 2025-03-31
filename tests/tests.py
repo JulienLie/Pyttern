@@ -20,8 +20,14 @@ def discover_files(directory, extension=None):
                 if extension is None or file.endswith(extension):
                     yield os.path.join(root, file)
 
+class TestPytternWildcards:
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        logger.enable("pyttern")
+        logger.remove()
+        logger.add(lambda x: print(x), level="INFO")
 
-class TestASTWildcards:
+class TestASTWildcards(TestPytternWildcards):
 
     @pytest.mark.timeout(10)
     def test_strict_ast_equal_match(self):
@@ -49,19 +55,6 @@ class TestASTWildcards:
                 else:
                     assert not val, f"{n_1} = {n_2}: {details}"
 
-    @pytest.mark.timeout(10)
-    def test_ast_simple_wildcard(self):
-        pattern_path = get_test_file("pytternTest.pyh")
-        code_path = get_test_file("q1_3.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        pattern_path = get_test_file("pytternNok.pyh")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
     def test_ast_simple_addition(self):
         pattern_path = get_test_file("piPattern.pyh")
         code_path = get_test_file("piCode.py")
@@ -69,13 +62,7 @@ class TestASTWildcards:
         res, det = match_files(pattern_path, code_path, match_details=True, strict_match=False)
         assert res, det
 
-    @pytest.mark.timeout(10)
-    def test_ast_body_wildcard(self):
-        pattern_path = get_test_file("pytternCompoundOk.pyh")
-        code_path = get_test_file("q1_254.py")
 
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
 
     @pytest.mark.timeout(10)
     def test_ast_labeled_wildcard(self):
@@ -114,16 +101,6 @@ class TestASTWildcards:
             match_details=True)
         assert not val, match
 
-    @pytest.mark.timeout(10)
-    def test_soft_ast_body_wildcard(self):
-        val, match = match_files(get_test_file("pytternCompoundSoft.pyh"), get_test_file("q1_254.py"),
-            strict_match=False, match_details=True)
-        assert val, match
-
-        val, match = match_files(get_test_file("pytternCompoundSoft.pyh"), get_test_file("q1_254.py"),
-            strict_match=True, match_details=True)
-        assert not val, match
-
     def test_strict_mode(self):
         val, match = match_files(get_test_file("strictModeTest.pyh"), get_test_file("q1_254.py"), strict_match=False,
             match_details=True)
@@ -134,7 +111,7 @@ class TestASTWildcards:
         assert not val, match
 
     def test_match_wildcards_unique(self):
-        pattern_path = get_test_file("pytternCompoundSoft.pyh")
+        pattern_path = get_test_file("body_simple.pyt")
         code_path = get_test_file("q1_254.py")
         matches = match_wildcards(pattern_path, code_path, strict_match=False)
         assert matches[code_path][pattern_path], matches
@@ -348,3 +325,71 @@ class TestASTWildcards:
         res, det = match_files(pattern_path, code_path, match_details=True)
         assert res, det
 
+
+class TestSimpleWildcard(TestPytternWildcards):
+    @pytest.mark.timeout(1)
+    def test_stmt(self):
+        pattern_path = get_test_file("simple_wildcards/stmt/simple_wildcard.pyt")
+        code_path = get_test_file("simple_wildcards/stmt/simple_wildcard_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("simple_wildcards/stmt/simple_wildcard_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+    @pytest.mark.timeout(1)
+    def test_arg(self):
+        pattern_path = get_test_file("simple_wildcards/arg/simple_wildcard.pyt")
+        code_path = get_test_file("simple_wildcards/arg/simple_wildcard_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("simple_wildcards/arg/simple_wildcard_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+    @pytest.mark.timeout(1)
+    def test_expr(self):
+        pattern_path = get_test_file("simple_wildcards/expr/simple_wildcard.pyt")
+        code_path = get_test_file("simple_wildcards/expr/simple_wildcard_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("simple_wildcards/expr/simple_wildcard_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+    @pytest.mark.timeout(1)
+    def test_func_name(self):
+        pattern_path = get_test_file("simple_wildcards/func_name/simple_wildcard.pyt")
+        code_path = get_test_file("simple_wildcards/func_name/simple_wildcard_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+
+class TestBodyWildcard(TestPytternWildcards):
+    @pytest.mark.timeout(1)
+    @pytest.mark.parametrize("pattern_path", discover_files(get_test_file("body/simple"), ".pyt"))
+    def test_simple(self, pattern_path):
+        pattern_path = get_test_file(pattern_path)
+        code_path = get_test_file("body/simple/body_simple_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("body/simple/body_simple_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+class TestParse:
+    def getAllFiles(self):
+        return [f for f in pkg_resources.contents(tests_files).splitlines() if f.endswith(".py") or f.endswith(".pyt")]
