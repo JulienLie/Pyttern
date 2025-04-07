@@ -106,6 +106,8 @@ class Python_Visitor(Python3ParserVisitor):
 
     def visitTerminal(self, node):
         if str(node) == "<EOF>":
+            self_transition = (self.current_fsm_node, ObjectTransition(), [Movement.MRS])
+            self.current_fsm_node.add_transition(*self_transition)
             return
 
         node_text = str(node).strip()
