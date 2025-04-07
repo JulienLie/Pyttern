@@ -19,6 +19,7 @@ class PythonProcessor(BaseProcessor):
     @cache
     def generate_tree_from_code(self, code):
         code = code.strip()
+        code += "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
