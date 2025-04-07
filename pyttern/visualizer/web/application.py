@@ -123,17 +123,19 @@ class JsonListener(PytternListener):
     def __init__(self):
         self.data = []
 
-    def step(self, _, fsm, ast, variables, matches):
+    def step(self, _, fsm, ast, stack, variables, matches):
         state_info = (str(fsm), hash(ast))
         current_matchings = [(str(fsm), hash(ast)) for fsm, ast in matches]
         logger.debug(variables)
         var_strs = [f"{var}: {PtToJson().visit(variables[var])}" for var in variables]
         logger.debug(var_strs)
+        logger.debug(stack)
         self.data.append({
             "state": state_info,
             "matches": current_matchings,
             "match": False,
-            "variables": var_strs
+            "variables": var_strs,
+            "stack": stack,
         })
 
     def on_match(self, _):
@@ -258,6 +260,9 @@ def step():
     current_matchings = current_data["matches"]
     previous_matchings = last_data["matches"] if last_data is not None else []
 
+    current_stack = current_data["stack"]
+    previous_stack = last_data["stack"] if last_data is not None else ""
+
     if current_data["match"]:
         flash("New match found", "message")
 
@@ -268,5 +273,7 @@ def step():
         "previous_matchings": previous_matchings,
         "messages": get_flashed_messages(),
         "match": current_data["match"],
-        "variables": current_data["variables"]
+        "variables": current_data["variables"],
+        "current_stack": current_stack,
+        "previous_stack": previous_stack,
     })

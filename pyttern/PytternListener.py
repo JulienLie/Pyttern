@@ -1,11 +1,13 @@
+from abc import ABC
+
 from loguru import logger
 
 
-class PytternListener():
+class PytternListener(ABC):
     def on_match(self, simulator):
         pass
 
-    def step(self, simulator, fsm, ast, variables, matches):
+    def step(self, simulator, fsm, ast, stack, variables, matches):
         pass
 
     def on_transition(self, simulator, current_fsm, current_ast, next_node, next_ast, classes, movements, matches):

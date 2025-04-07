@@ -390,6 +390,24 @@ class TestBodyWildcard(TestPytternWildcards):
         res, det = match_files(pattern_path, code_path, match_details=True)
         assert not res, det
 
-class TestParse:
-    def getAllFiles(self):
-        return [f for f in pkg_resources.contents(tests_files).splitlines() if f.endswith(".py") or f.endswith(".pyt")]
+    def test_nested(self):
+        pattern_path = get_test_file("body/nested/body_nested_1.pyt")
+        code_path = get_test_file("body/nested/body_nested_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("body/nested/body_nested_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+class TestMultipleStmtWildcard(TestPytternWildcards):
+    @pytest.mark.timeout(1)
+    @pytest.mark.parametrize("pattern_path", discover_files(get_test_file("multiple_stmt"), ".pyt"))
+    def test_simple(self, pattern_path):
+        pattern_path = get_test_file(pattern_path)
+        code_path = get_test_file("multiple_stmt/multiple_stmt_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det

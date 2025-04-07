@@ -83,9 +83,16 @@ class Python_to_PDA(Python3ParserVisitor):
         # Explore body
         return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
+    def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
+        return self.current_state
+
     def visitTerminal(self, node):
-        logger.debug(f"Visiting terminal {node}")
-        node_text = str(node).strip()
+        if isinstance(node, TerminalNode):
+            logger.debug(f"Visiting terminal {node}")
+            node_text = str(node).strip()
+        else:
+            logger.debug(f"Visiting {node.__class__.__name__} as terminal")
+            node_text = node.__class__.__name__
 
         if self._is_last_node(node):
             last_state = self.pda.new_state()

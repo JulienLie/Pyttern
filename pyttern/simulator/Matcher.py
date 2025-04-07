@@ -53,7 +53,7 @@ class Matcher:
         logger.debug(f"Checking config: {current_config}")
         current_state, current_node, stack, var, matches = current_config
         for listener in self._listeners:
-            listener.step(self, current_state, current_node, var, matches)
+            listener.step(self, current_state, current_node, stack, var, matches)
 
         if current_state in self.pda.final_states:
             logger.info("Match found")
