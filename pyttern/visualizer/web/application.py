@@ -3,7 +3,7 @@ from functools import wraps
 
 from antlr4 import ParseTreeVisitor
 from cachelib import FileSystemCache
-from flask import Flask, render_template, request, redirect, session, flash, get_flashed_messages, send_from_directory
+from flask import Flask, request, session, flash, get_flashed_messages, send_from_directory
 from flask_session import Session
 from loguru import logger
 
@@ -125,6 +125,13 @@ class JsonListener(PytternListener):
 
     def step(self, _, fsm, ast, stack, variables, matches):
         state_info = (str(fsm), hash(ast))
+        pos = ()
+        if hasattr(ast, "start") and hasattr(ast, "stop"):
+            pos = (ast.start.start, ast.stop.stop)
+        if hasattr(ast, "symbol"):
+            pos = (ast.symbol.start, ast.symbol.stop)
+
+            #logger.debug(f"{ast.start.start} -> {ast.stop.stop}")
         current_matchings = [(str(fsm), hash(ast)) for fsm, ast in matches]
         logger.debug(variables)
         var_strs = [f"{var}: {PtToJson().visit(variables[var])}" for var in variables]
@@ -136,6 +143,7 @@ class JsonListener(PytternListener):
             "match": False,
             "variables": var_strs,
             "stack": stack,
+            "code_pos": pos
         })
 
     def on_match(self, _):
@@ -198,6 +206,15 @@ def pattern():
         })
     pattern_tree_graph = PtToJson().visit(pattern_tree)
     pyttern_fsm = current_language_processor.create_fsm(pattern_tree)
+
+    # PY_LANGUAGE = Language(tspyttern.language())
+    # parser = Parser(PY_LANGUAGE)
+    # tree = parser.parse(bytes(pattern_code, "utf-8"))
+    #
+    # tranformer = Pyttern_to_PDA()
+    # tranformer.visit(tree.root_node)
+    # pyttern_fsm = tranformer.pda
+
     pattern_fsm_graph = json.loads(json.dumps(pyttern_fsm, cls=PDAEncoder))
     return json.dumps({
         "status": "ok",
@@ -263,6 +280,8 @@ def step():
     current_stack = current_data["stack"]
     previous_stack = last_data["stack"] if last_data is not None else ""
 
+    code_pos = current_data["code_pos"]
+
     if current_data["match"]:
         flash("New match found", "message")
 
@@ -276,4 +295,5 @@ def step():
         "variables": current_data["variables"],
         "current_stack": current_stack,
         "previous_stack": previous_stack,
+        "code_pos": code_pos
     })

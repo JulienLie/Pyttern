@@ -30,11 +30,17 @@ class TreePruner(Python3ParserVisitor):
     def visitTest(self, ctx: Python3Parser.TestContext):
         return self.prune_single_child(ctx)
 
+    def visitExpr_stmt(self, ctx:Python3Parser.Expr_stmtContext):
+        return self.prune_single_child(ctx)
+
     def visitTfpdef(self, ctx:Python3Parser.TfpdefContext):
         return self.prune_single_child(ctx)
 
     def visitExpr(self, ctx:Python3Parser.ExprContext):
         return self.prune_single_child(ctx)
+
+    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
+        return ctx
 
     def visitTerminal(self, node):
         sym = node.getSymbol()

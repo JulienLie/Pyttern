@@ -213,8 +213,6 @@ IDIV_ASSIGN : '//=';
 
 // Rules for wildcards
 WILDCARD : '?';
-SYNTAX_STRICT_START : '?![' ;
-//SYNTAX_STRICT_END : '!]' ;
 
 
 SKIP_

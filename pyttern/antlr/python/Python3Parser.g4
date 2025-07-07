@@ -66,7 +66,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
   | '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
   | '**' vfpdef ','?
 );
-vfpdef: name | expr_wildcard;
+vfpdef: name | expr_wildcard | list_wildcard;
 
 stmt: simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
@@ -212,7 +212,7 @@ atom: '(' (yield_expr|testlist_comp)? ')'
    | atom_wildcard
    | name | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False' ;
 name : NAME | '_' | 'match' ;
-testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* ','? );
+testlist_comp: (list_wildcard|test|star_expr) ( comp_for | (',' (list_wildcard|test|star_expr))* ','? );
 trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (name | atom_wildcard);
 subscriptlist: subscript_ (',' subscript_)* ','?;
 subscript_: test | test? ':' test? sliceop?;
@@ -262,12 +262,12 @@ wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 stmt_wildcard: (double_wildcard | simple_wildcard | var_wildcard | contains_wildcard);
 expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
-simple_wildcard: '?' wildcard_type? wildcard_number?;
-double_wildcard: '?' wildcard_type? '*';
-var_wildcard: '?' wildcard_type? name;
-contains_wildcard: '?' '<' (expr_wildcard | expr_stmt) '>' wildcard_type?;
-compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard | strict_mode;
-simple_compound_wildcard: '?' wildcard_type? ':' wildcard_number? block;
-multiple_compound_wildcard: ('?' wildcard_type? ':' '*' block) | ('?' wildcard_type? '*' ':' block);
-strict_mode: '?' STRICT '[' (simple_stmts | NEWLINE stmt+) ']' NEWLINE;
-list_wildcard: '?' '*';
+simple_wildcard: WILDCARD wildcard_type? wildcard_number?;
+double_wildcard: WILDCARD wildcard_type? '*';
+var_wildcard: WILDCARD wildcard_type? NAME;
+contains_wildcard: WILDCARD '<' (expr_wildcard | expr_stmt) '>' wildcard_type?;
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;// | strict_mode;
+simple_compound_wildcard: WILDCARD wildcard_type? ':' wildcard_number? block;
+multiple_compound_wildcard: WILDCARD wildcard_type? (':' '*' | '*' ':') block;
+// strict_mode: WILDCARD STRICT '[' (simple_stmts | NEWLINE stmt+) ']' NEWLINE; Deprecated
+list_wildcard: WILDCARD '*';

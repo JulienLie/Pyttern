@@ -1178,15 +1178,6 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#strict_mode.
-    def enterStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#strict_mode.
-    def exitStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
-        pass
-
-
     # Enter a parse tree produced by Python3Parser#list_wildcard.
     def enterList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
         pass

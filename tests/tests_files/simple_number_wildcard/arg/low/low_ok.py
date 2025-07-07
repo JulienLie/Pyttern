@@ -1,0 +1,7 @@
+def multiplications(n, b, c):
+    count = 0
+    for i in range (1, n+1):
+        for j in range (1, b+1, 2):
+            if n==i*j :
+                count+=1
+    return (count)

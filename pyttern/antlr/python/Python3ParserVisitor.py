@@ -659,11 +659,6 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#strict_mode.
-    def visitStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by Python3Parser#list_wildcard.
     def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
         return self.visitChildren(ctx)

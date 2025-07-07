@@ -1,12 +1,3 @@
-"""
-The PDA can be defied as a 6-tuple (Q, Σ, Γ, δ, q0, F) where:
-    - Q is a finite set of states
-    - Σ is a finite set of input symbols
-    - Γ is a finite set of stack symbols
-    - δ is the transition function
-    - q0 is the initial state
-    - F is the set of final states
-"""
 import json
 
 from .navigation_direction import NavigationDirection
@@ -27,15 +18,25 @@ class PDAEncoder(json.JSONEncoder):
             return str(o.name)
         return super().default(o)
 
-
 class PDA:
-    def __init__(self):
-        self.states: set[int] = {0}
-        self.input_symbols: set[str] = set()
-        self.stack_symbols: set[str] = set()
-        self.transitions: dict[int, list[Transition]] = {0:[]}
-        self.initial_state: int = 0
-        self.final_states: set[int] = set()
+    """
+    The PDA can be defied as a 6-tuple (Q, Σ, Γ, δ, q0, F) where:
+        - Q is a finite set of states
+        - Σ is a finite set of input symbols
+        - δ is the transition function
+        - q0 is the initial state
+        - F is the set of final states
+    """
+
+    def __init__(self, states=None, input_symbols=None,
+                 transitions: dict[int, list[Transition]] = None,
+                 initial_state: int = 0, final_states: set[int] = None):
+
+        self.states:        set[int]                    = states if states is not None else {0}
+        self.input_symbols: set[str]                    = input_symbols if input_symbols is not None else set()
+        self.transitions:   dict[int, list[Transition]] = transitions if transitions is not None else {0: []}
+        self.initial_state: int                         = initial_state
+        self.final_states:  set[int]                    = final_states if final_states is not None else set()
 
     def new_state(self) -> int:
         new_state = len(self.states)

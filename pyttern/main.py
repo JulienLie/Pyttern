@@ -7,7 +7,7 @@ from tqdm import tqdm
 from .language_processors import get_processor
 
 
-def match_files(pattern_path, code_path, strict_match=False, match_details=False,  lang="python"):
+def match_files(pattern_path, code_path, match_details=False, lang="python", stop_at_first=False):
     try:
         language_processor = get_processor(lang)
         pattern = language_processor.generate_tree_from_file(pattern_path)
@@ -19,13 +19,13 @@ def match_files(pattern_path, code_path, strict_match=False, match_details=False
     print(fsm.states)
 
     simu = language_processor.create_matcher(fsm, code)
-    matches = simu.match(fsm, code, stop_at_first=match_details).matches
+    matches = simu.match(fsm, code, stop_at_first=stop_at_first).matches
     if match_details:
         return len(matches) > 0, matches
     return len(matches) > 0
 
 
-def match_wildcards(pattern_path, code_path, strict_match=False, match_details=False):
+def match_wildcards(pattern_path, code_path, match_details=False):
     """
     Match all python files with all pattern files.
     The path_pattern_with_wildcards and path_python_with_wildcard
@@ -47,7 +47,7 @@ def match_wildcards(pattern_path, code_path, strict_match=False, match_details=F
 
     for python_filepath in pythons_filespath:
         for pattern_filepath in patterns_filespath:
-            result = match_files(pattern_filepath, python_filepath, strict_match, match_details)
+            result = match_files(pattern_filepath, python_filepath, match_details)
             if python_filepath not in ret:
                 ret[python_filepath] = {}
             ret[python_filepath][pattern_filepath] = result

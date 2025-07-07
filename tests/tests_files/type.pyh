@@ -1,4 +1,5 @@
 def ? (?*):
     ?[Assign]
-    ?[While, For]:*
-        ?[Assign]*
+    ?loop():
+        ?[Assign]{3}
+        ?[AugAssign]{0}
