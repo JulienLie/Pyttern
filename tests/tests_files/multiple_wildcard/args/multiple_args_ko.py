@@ -1,2 +1,2 @@
-def foo(bar):
-    return bar
+def foo():
+    return

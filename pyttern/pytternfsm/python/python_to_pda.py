@@ -31,11 +31,15 @@ class Python_to_PDA(Python3ParserVisitor):
         if len(children) == 0:
             return self.visitTerminal(node)
 
-        while len(children) > 1 and self.lookahead(children[-1], Python3Parser.Double_wildcardContext):
+        down, up = self._define_boundaries(node)
+
+        while len(children) > 1 and (
+                self.lookahead(children[-1], Python3Parser.Double_wildcardContext)
+                or self.lookahead(children[-1], Python3Parser.List_wildcardContext)
+        ):
             children.pop()
             logger.debug("Remove double wildcard")
 
-        down, up = self._define_boundaries(node)
 
         next_state = self.pda.new_state()
         transition = Transition(self.current_state, f"{node.__class__.__name__}/{down},{up}", '',
@@ -219,10 +223,14 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.current_state
 
     def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
-        parent = ctx.parentCtx
+        """parent = ctx.parentCtx
         if len(parent.children) == 1:
             pass             # Handle 0 element
         self._add_up_transition()
+        return self.current_state"""
+        # Adding self transition to search for the next element
+        self_transition = Transition(self.current_state, '', '', [NavigationDirection.RIGHT_SIBLING], self.current_state, '')
+        self.pda.add_transition(self_transition)
         return self.current_state
 
     def visitTerminal(self, node):

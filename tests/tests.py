@@ -1,6 +1,5 @@
 import importlib.resources as pkg_resources
 import os
-import time
 from unittest import skipIf
 
 import pytest
@@ -168,7 +167,30 @@ class TestMultipleWildcard(TestPytternWildcards):
     @pytest.mark.timeout(1)
     def test_multiple_args(self):
         pattern_path = get_test_file("multiple_wildcard/args/multiple_args.pyt")
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_ok.py")
+        code_path = get_test_file("multiple_wildcard/args/multiple_args_one_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("multiple_wildcard/args/multiple_args_two_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("multiple_wildcard/args/multiple_args_ko.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert not res, det
+
+    @pytest.mark.timeout(1)
+    def test_multiple_args_complex(self):
+        pattern_path = get_test_file("multiple_wildcard/args/multiple_args_complex.pyt")
+        code_path = get_test_file("multiple_wildcard/args/multiple_args_one_ok.py")
+
+        res, det = match_files(pattern_path, code_path, match_details=True)
+        assert res, det
+
+        code_path = get_test_file("multiple_wildcard/args/multiple_args_two_ok.py")
 
         res, det = match_files(pattern_path, code_path, match_details=True)
         assert res, det
