@@ -1124,6 +1124,15 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by Python3Parser#number_wildcard.
+    def enterNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#number_wildcard.
+    def exitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        pass
+
+
     # Enter a parse tree produced by Python3Parser#double_wildcard.
     def enterDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
         pass

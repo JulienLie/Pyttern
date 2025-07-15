@@ -1,5 +1,0 @@
-def ? (?*):
-    ?[Assign]
-    ?loop():
-        ?[Assign]{3}
-        ?[AugAssign]{0}

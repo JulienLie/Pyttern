@@ -66,17 +66,25 @@ class Python_to_PDA(Python3ParserVisitor):
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
         if isinstance(ctx, (Python3Parser.File_inputContext, Python3Parser.BlockContext)):
-            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 0 and inf")
+            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
+            down = 1
+            up = math.inf
+        elif isinstance(ctx, Python3Parser.If_stmtContext):
+            logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, Python3Parser.Double_wildcardContext) is not None:
+                if self.lookahead(child, (Python3Parser.Double_wildcardContext, Python3Parser.List_wildcardContext)) is not None:
                     logger.debug(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
-                simple_node = self.lookahead(child, Python3Parser.Simple_wildcardContext,
-                                             lambda c: "wildcard" in c.__class__.__name__)
+
+                only_wildcard = lambda c: "wildcard" in c.__class__.__name__
+                everything = lambda _: True
+                predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
+
+                simple_node = self.lookahead(child, Python3Parser.Number_wildcardContext, predicate)
                 if simple_node is not None:
                     numbers_node = simple_node.getChild(0, Python3Parser.Wildcard_numberContext)
                     if numbers_node is not None:
@@ -109,6 +117,10 @@ class Python_to_PDA(Python3ParserVisitor):
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
 
+        lookahead_number_wildcard = self.lookahead(ctx, Python3Parser.Number_wildcardContext)
+        if lookahead_number_wildcard:
+            return self.visitNumber_wildcard(lookahead_number_wildcard)
+
         return self.visitChildren(ctx)
 
     def visitExpr_wildcard(self, ctx:Python3Parser.Expr_wildcardContext):
@@ -124,18 +136,10 @@ class Python_to_PDA(Python3ParserVisitor):
         return ctx.getChild(0).accept(self)
 
     def visitSimple_wildcard(self, ctx:Python3Parser.Simple_wildcardContext):
-        numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
-        if numbers_node is not None:
-            return self._visitSimple_wildcard_with_numbers(numbers_node)
-
         return self._add_up_transition()
 
-    def _visitSimple_wildcard_with_numbers(self, numbers_node: Python3Parser.Wildcard_numberContext):
-        """
-        Handle simple wildcard with numbers.
-        :param numbers_node: The node containing the numbers.
-        :return: The current state after processing the wildcard.
-        """
+    def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
@@ -153,7 +157,6 @@ class Python_to_PDA(Python3ParserVisitor):
         # We don't have optional nodes -> we fall back to basic behavior
         if high <= low or high == math.inf:
             return self._add_up_transition()
-
 
         dummy_state = self.pda.new_state()
         dummy_transition = Transition(self.current_state, "", '', [], dummy_state, '')

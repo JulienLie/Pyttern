@@ -59,14 +59,14 @@ parameters: '(' (tfpdef ('=' test)? (',' tfpdef ('=' test)?)* (',' (
       | '**' tfpdef ','? )? )?
       | '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','? )? )?
       | '**' tfpdef ','?)? ')';
-tfpdef: name (':' test)? | expr_wildcard | list_wildcard;
+tfpdef: name (':' test)? | expr_wildcard | number_wildcard | list_wildcard;
 varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
         '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
       | '**' vfpdef (',')?)?)?
   | '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
   | '**' vfpdef ','?
 );
-vfpdef: name | expr_wildcard | list_wildcard;
+vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
 stmt: simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
@@ -186,6 +186,7 @@ star_expr: '*' expr;
 
 expr:
     expr_wildcard
+    | number_wildcard
     | atom_expr
     | expr '**' expr
     | ('+'|'-'|'~')+ expr
@@ -226,7 +227,9 @@ dictorsetmaker: ( ((test ':' test | '**' expr)
 
 classdef: 'class' (name | simple_wildcard | var_wildcard) ('(' arglist? ')')? ':' block;
 
-arglist: argument (',' argument)* ','?;
+// We should not put the wildcard too deep else, the number of children will be miscaculated
+arglist: (list_wildcard | number_wildcard | argument)
+            (',' (list_wildcard | number_wildcard | argument))* ','?;
 
 // The reason that keywords are test nodes instead of NAME is that using NAME
 // results in an ambiguity. ast.c makes sure it's a NAME.
@@ -237,8 +240,7 @@ arglist: argument (',' argument)* ','?;
 // Illegal combinations and orderings are blocked in ast.c:
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
-argument: ( list_wildcard |
-            expr_wildcard |
+argument: ( var_wildcard |
             test comp_for? |
             test '=' test |
             '**' test |
@@ -259,15 +261,15 @@ strings: STRING+ ;
 // syntax of wildcards
 wildcard_type: '[' name (',' name)* ']';
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
-stmt_wildcard: (double_wildcard | simple_wildcard | var_wildcard | contains_wildcard);
+stmt_wildcard: (double_wildcard | simple_wildcard | number_wildcard | var_wildcard | contains_wildcard);
 expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
-simple_wildcard: WILDCARD wildcard_type? wildcard_number?;
+simple_wildcard: WILDCARD wildcard_type?;
+number_wildcard: WILDCARD wildcard_type? wildcard_number;
 double_wildcard: WILDCARD wildcard_type? '*';
 var_wildcard: WILDCARD wildcard_type? NAME;
 contains_wildcard: WILDCARD '<' (expr_wildcard | expr_stmt) '>' wildcard_type?;
-compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;// | strict_mode;
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
 simple_compound_wildcard: WILDCARD wildcard_type? ':' wildcard_number? block;
 multiple_compound_wildcard: WILDCARD wildcard_type? (':' '*' | '*' ':') block;
-// strict_mode: WILDCARD STRICT '[' (simple_stmts | NEWLINE stmt+) ']' NEWLINE; Deprecated
 list_wildcard: WILDCARD '*';
