@@ -31,13 +31,16 @@ def retrieve_pytterns_and_explore(path, code, pyt_dict):
     """
     Browses the pyttern folder, matches the misconceptions and the code, stores the results in a dictionary and returns this dictionary.
     """
-    logger.debug(f"Retrieving pytterns from {path}")
+    logger.info(f"Retrieving pytterns from {path}")
     for pyttern in listdir(path):
         try:
+            res = True
             for f in listdir(f"{path}/{pyttern}"):
-                    if f[-8:] != "feedback":
-                        logger.debug(f"Starting exploration on {path}/{pyttern}/{f}")
-                        pyt_dict[pyttern] = match_misconception(f"{path}/{pyttern}", f, code)
+                if f[-8:] != "feedback":
+                    logger.debug(f"Starting exploration on {path}/{pyttern}/{f}")
+                    res &= match_misconception(f"{path}/{pyttern}", f, code)
+            pyt_dict[pyttern] = res
+            logger.info(f"Trying to match {pyttern} in the file {code} => {res}")
         except Exception as e:
             logger.error(f"Error while exploring {path}/{pyttern}: {e}")
             print(f"Error while exploring {path}/{pyttern}: {e}... Continue exploring", file=sys.stderr)
@@ -56,11 +59,11 @@ def match_misconception(path, current, code):
     
     # Matches code with a pyttern
     if file_ext == "pyt":
-        logger.debug(f"Matching {new_path} with {code}")
+        logger.debug(f"Matching pyttern {new_path} with {code}")
         return match_files(new_path, code, "python")
 
     if file_ext == "jat":
-        logger.debug(f"Matching {new_path} with {code}")
+        logger.debug(f"Matching jattern {new_path} with {code}")
         return match_files(new_path, code, "java")
     
     # Matches code with a regex
@@ -70,6 +73,7 @@ def match_misconception(path, current, code):
 
     # Apply "and" operator to items in the "and" folder
     elif current == "and":
+        logger.debug(f"Applying 'and' operator on {new_path}")
         for f in listdir(new_path):
             if not match_misconception(new_path, f, code):
                 return False
@@ -77,6 +81,7 @@ def match_misconception(path, current, code):
     
     # Apply "or" operator to items in the "or" folder
     elif current == "or":
+        logger.debug(f"Applying 'or' operator on {new_path}")
         for f in listdir(new_path):
             if match_misconception(new_path, f, code):
                 return True
@@ -84,6 +89,7 @@ def match_misconception(path, current, code):
     
     # Apply "not" operator to the unique file or folder in the "not" folder
     elif current == "not":
+        logger.debug(f"Applying 'not' operator on {new_path}")
         f = listdir(new_path)[0]
         if len(listdir(new_path)) > 1:
             print(f"Error: 'not' folder should contain only one file or folder. {f} taken as default", file=sys.stderr)
