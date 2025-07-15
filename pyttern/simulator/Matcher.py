@@ -31,15 +31,16 @@ class Matcher:
     @staticmethod
     def match(pda: PDA, parse_tree: ParserRuleContext, stop_at_first=False) -> MatchSet:
         matcher = Matcher(pda, parse_tree)
+        logger.info("Starting match")
         matcher.start()
         while len(matcher.configurations) > 0:
             matcher.step()
             if stop_at_first and matcher.match_set.count() > 0:
                 break
+        logger.info(f"Match finished with {matcher.match_set.count()} matches")
         return matcher.match_set
 
     def start(self):
-        logger.info("Starting match")
         first_config = (self.pda.initial_state, self.parse_tree, "", {}, [])
         self.configurations.append(first_config)
         for listener in self._listeners:
