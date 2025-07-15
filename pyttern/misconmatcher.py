@@ -39,7 +39,8 @@ def retrieve_pytterns_and_explore(path, code, pyt_dict):
             for f in listdir(f"{path}/{pyttern}"):
                 if f[-8:] != "feedback":
                     logger.debug(f"Starting exploration on {path}/{pyttern}/{f}")
-                    res &= match_misconception(f"{path}/{pyttern}", f, code)
+                    val, _ = match_files(f"{path}/{pyttern}/{f}", code, match_details=True)
+                    res &= val
             pyt_dict[pyttern] = res
             if res:
                 logger.info(f"Misconception {pyttern} matched with the code {code}")

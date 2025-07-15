@@ -8,12 +8,9 @@ from .language_processors import get_processor
 
 
 def match_files(pattern_path, code_path, match_details=False, lang="python", stop_at_first=False):
-    try:
-        language_processor = get_processor(lang)
-        pattern = language_processor.generate_tree_from_file(pattern_path)
-        code = language_processor.generate_tree_from_file(code_path)
-    except Exception as e:
-        assert False, e
+    language_processor = get_processor(lang)
+    pattern = language_processor.generate_tree_from_file(pattern_path)
+    code = language_processor.generate_tree_from_file(code_path)
 
     fsm = language_processor.create_fsm(pattern)
     print(fsm.states)
