@@ -65,11 +65,11 @@ def match_misconception(path, current, code):
     # Matches code with a pyttern
     if file_ext == "pyt":
         logger.debug(f"Matching pyttern {new_path} with {code}")
-        return match_files(new_path, code, "python")
+        return match_files(new_path, code, lang="python", stop_at_first=True)
 
     if file_ext == "jat":
         logger.debug(f"Matching jattern {new_path} with {code}")
-        return match_files(new_path, code, "java")
+        return match_files(new_path, code, lang="java", stop_at_first=True)
     
     # Matches code with a regex
     elif file_ext == "re":
