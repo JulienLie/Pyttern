@@ -13,8 +13,6 @@ def match_files(pattern_path, code_path, match_details=False, lang="python", sto
     code = language_processor.generate_tree_from_file(code_path)
 
     fsm = language_processor.create_fsm(pattern)
-    print(fsm.states)
-
     simu = language_processor.create_matcher(fsm, code)
     matches = simu.match(fsm, code, stop_at_first=stop_at_first).matches
     if match_details:
