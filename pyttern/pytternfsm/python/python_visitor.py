@@ -1,6 +1,7 @@
 from antlr4 import TerminalNode
 from loguru import logger
 
+from macro.Macro import loaded_macros
 from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ...pytternfsm.python import python_type_transition as ptt
 from ...pytternfsm.python.python_type_transition import get_specific_child

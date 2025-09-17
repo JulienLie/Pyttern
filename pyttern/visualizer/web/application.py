@@ -8,8 +8,11 @@ from flask_session import Session
 from loguru import logger
 
 from ...PytternListener import PytternListener
-from ...language_processors import get_processor, determine_language
+from ...language_processors import Languages, get_processor, determine_language
+from ...macro.Macro import loaded_macros
+from ...macro.macro_parser import parse_macro_from_string
 from ...pyttern_error_listener import PytternSyntaxException
+from ...simulator.Matcher import Matcher
 from ...simulator.pda.PDA import PDAEncoder
 
 app = Flask(__name__, static_folder='dist', static_url_path='')
@@ -90,7 +93,7 @@ def get_matcher(pattern_code, code):
         pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
         code_tree = current_language_processor.generate_tree_from_code(code)
 
-        return current_language_processor.create_matcher(pyttern_fsm, code_tree)
+        return Matcher(pyttern_fsm, code_tree)
     else:
         raise Exception("No language is set")
 
@@ -166,6 +169,7 @@ def try_processors(code):
 """ Web endpoints """
 
 @app.route("/")
+@app.route("/macros")
 def index():
     return send_from_directory("dist/", "index.html")
 
@@ -296,4 +300,47 @@ def step():
         "current_stack": current_stack,
         "previous_stack": previous_stack,
         "code_pos": code_pos
+    })
+
+@app.route("/api/parse_macro", methods=['POST'])
+def parse_macro():
+    macro_code = request.json["code"]
+    lang = Languages.PYTHON
+    try:
+        macros = parse_macro_from_string(macro_code, lang)
+        logger.debug(f"Parsed macros: {macros}")
+    except Exception as e:
+        logger.error(f"Error parsing macro: {e}")
+        return json.dumps({"status": "error", "message": str(e)})
+    macro = macros[0] if macros else None
+    if macro is None:
+        return json.dumps({"status": "error", "message": "No macro found"})
+    macro_json = {
+        "name": macro.name,
+        "code": macro_code,
+        "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
+            pda in macro.transformations.items()}
+    }
+    logger.debug(f"Macro JSON: {macro_json}")
+    return json.dumps({"status": "ok", "macro": macro_json})
+
+
+@app.route("/api/loaded_macro", methods=['GET'])
+def loaded_macro():
+    """
+    Returns the loaded macros in the session.
+    """
+    macros = []
+    for macro in loaded_macros.values():
+        macro_json = {
+            "name": macro.name,
+            "code": macro.code,
+            "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
+                pda in macro.transformations.items()}
+        }
+        macros.append(macro_json)
+
+    return json.dumps({
+        "status": "ok",
+        "macros": macros
     })

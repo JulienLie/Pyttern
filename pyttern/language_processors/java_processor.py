@@ -9,8 +9,6 @@ from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.java.java_visitor import Java_Visitor
-# from ..pytternfsm.java.tree_pruner import TreePruner
-from ..simulator.simulator import Simulator
 
 
 class JavaProcessor(BaseProcessor):
@@ -49,9 +47,6 @@ class JavaProcessor(BaseProcessor):
     def create_fsm(self, pattern_tree):
         # return JavaParserVisitor(pattern_tree)
         return Java_Visitor().visit(pattern_tree)
-
-    def create_simulator(self, fsm, code_tree):
-        return Simulator(fsm, code_tree)
     
     def create_listener(self):
         return ConsolePytternListener()

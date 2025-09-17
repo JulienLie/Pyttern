@@ -1,10 +1,11 @@
 from .python_processor import PythonProcessor
 from .java_processor import JavaProcessor
+from .languages import Languages
 
 def get_processor(lang):
-    if lang == 'python':
+    if lang == 'python' or lang == Languages.PYTHON:
         return PythonProcessor()
-    elif lang == 'java':
+    elif lang == 'java' or lang == Languages.JAVA:
         return JavaProcessor()
     else:
         raise ValueError(f"Unsupported language: {lang}")

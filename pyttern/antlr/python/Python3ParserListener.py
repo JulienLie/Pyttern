@@ -1196,5 +1196,41 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by Python3Parser#macro.
+    def enterMacro(self, ctx:Python3Parser.MacroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#macro.
+    def exitMacro(self, ctx:Python3Parser.MacroContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#macro_arg.
+    def enterMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#macro_arg.
+    def exitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#simple_macro.
+    def enterSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#simple_macro.
+    def exitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#compound_macro.
+    def enterCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#compound_macro.
+    def exitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+        pass
+
+
 
 del Python3Parser

@@ -68,7 +68,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: simple_stmts | compound_stmt;
+stmt: macro | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -227,6 +227,7 @@ dictorsetmaker: ( ((test ':' test | '**' expr)
 
 classdef: 'class' (name | simple_wildcard | var_wildcard) ('(' arglist? ')')? ':' block;
 
+// We should not put the wildcard too deep else, the number of children will be miscaculated
 arglist: (list_wildcard | number_wildcard | argument)
             (',' (list_wildcard | number_wildcard | argument))* ','?;
 
@@ -268,8 +269,13 @@ number_wildcard: WILDCARD wildcard_type? wildcard_number;
 double_wildcard: WILDCARD wildcard_type? '*';
 var_wildcard: WILDCARD wildcard_type? NAME;
 contains_wildcard: WILDCARD '<' (expr_wildcard | expr_stmt) '>' wildcard_type?;
-compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;// | strict_mode;
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
 simple_compound_wildcard: WILDCARD wildcard_type? ':' wildcard_number? block;
 multiple_compound_wildcard: WILDCARD wildcard_type? (':' '*' | '*' ':') block;
-// strict_mode: WILDCARD STRICT '[' (simple_stmts | NEWLINE stmt+) ']' NEWLINE; Deprecated
 list_wildcard: WILDCARD '*';
+
+// syntax of macros
+macro: compound_macro | (simple_macro NEWLINE);
+macro_arg: atom_wildcard ('=' test)?;
+simple_macro: MACRO_NAME '(' (macro_arg (',' macro_arg)*)? ')';
+compound_macro: simple_macro ':' block;

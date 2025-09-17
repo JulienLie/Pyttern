@@ -1,11 +1,145 @@
 import argparse
 import glob
+import os
+import time
 
 from loguru import logger
 from tqdm import tqdm
 
-from .language_processors import get_processor
+from .language_processors import Languages, get_processor
+from .macro.macro_parser import parse_macro_from_file
+from .simulator.Matcher import Matcher
 
+
+def parse_subfolders(folder_path, op="and"):
+    """
+    Parse all subfolders in the given folder path and return a dictionary with the patterns.
+    :param folder_path: Path to the folder containing the patterns.
+    :param op:
+    :return: Dictionary with the patterns.
+    """
+    res = []
+    for subfolder in os.listdir(folder_path):
+        subfolder_path = os.path.join(folder_path, subfolder)
+        if os.path.isdir(subfolder_path) and subfolder in ["and", "or", "not"]:
+            res.append(parse_subfolders(subfolder_path, subfolder))
+        elif subfolder.endswith('.pyt'):
+            pattern_file_path = os.path.join(folder_path, subfolder)
+            processor = get_processor("python")
+            tree = processor.generate_tree_from_file(pattern_file_path)
+            fsm = processor.create_fsm(tree)
+            res.append(fsm)
+        elif subfolder.endswith('.jat'):
+            pattern_file_path = os.path.join(folder_path, subfolder)
+            processor = get_processor("java")
+            tree = processor.generate_tree_from_file(pattern_file_path)
+            fsm = processor.create_fsm(tree)
+            res.append(fsm)
+        else:
+            logger.warning(f"Unknown file type in {subfolder_path}: {subfolder}")
+    return {op: res}
+
+
+def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=False):
+    """
+    Match a pattern tree with a code tree.
+    :param pattern_tree: The pattern tree to match.
+    :param code_tree: The code tree to match against.
+    :param match_details: If True, the function will return the match details.
+    :param stop_at_first: If True, stop at the first match found.
+    :return: A boolean indicating if the match was successful or a list of matches if match_details is True.
+    """
+    if isinstance(pattern_tree, dict):
+        # Handle logical operations like 'and', 'or', 'not'
+        op = list(pattern_tree.keys())[0]
+        subpatterns = pattern_tree[op]
+        if op == "and":
+            for subpattern in subpatterns:
+                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+                if not result:
+                    return False
+            return True
+        elif op == "or":
+            for subpattern in subpatterns:
+                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+                if result:
+                    return True
+            return False
+        elif op == "not":
+            for subpattern in subpatterns:
+                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+                if result:
+                    return False
+            return True
+        else:
+            return False  # Unknown operation
+    else:
+        res = Matcher.match(pattern_tree, code_tree, stop_at_first=stop_at_first)
+        return True if res.count() > 0 else False
+
+def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
+    """
+    Match all files in the pattern folder with all files in the code folder.
+    The pattern_path and code_path can contain wildcards.
+    The function returns a dictionary with the results of the matches.
+    :param pattern_path: Path to the pattern files with wildcards.
+    :param code_path: Path to the python files with wildcards.
+    :param match_details: If True, the function will return the match details.
+    :param lang: Language of the code (default is "python").
+    :param stop_at_first: If True, stop at the first match found.
+    :return: Dictionary with the results of the matches.
+    """
+
+    # Compile all patterns to speed up matching
+    logger.info("Compiling patterns...")
+    start_pattern = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    patterns = {}
+    for pyttern_folder in os.listdir(pattern_path):
+        pyttern_folder_path = os.path.join(pattern_path, pyttern_folder)
+        if os.path.isdir(pyttern_folder_path):
+            patterns[pyttern_folder] = parse_subfolders(pyttern_folder_path)
+    end_pattern = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    logger.info(f"Patterns compiled in {end_pattern - start_pattern} ns")
+
+    # Compile all code files to speed up matching
+    logger.info("Compiling code files...")
+    start_code = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    code_trees = []
+    for root, dirs, files in os.walk(code_path):
+        for file in files:
+            if file.endswith('.py'):
+                processor = get_processor("python")
+            elif file.endswith('.java'):
+                processor = get_processor("java")
+            else:
+                logger.warning(f"Unknown file type in {root}: {file}")
+                continue
+            code_file_path = os.path.join(root, file)
+            try:
+                code_tree = processor.generate_tree_from_file(code_file_path)
+                code_trees.append((code_file_path, code_tree))
+            except Exception as e:
+                logger.error(f"Error processing file {code_file_path}: {e}")
+                continue
+
+    end_code = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    logger.info(f"Code files compiled in {end_code - start_code} ns")
+
+    logger.info("Starting matching...")
+    start_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    ret = {}
+    for code_file_path, code_tree in code_trees:
+        for pyttern in patterns:
+            pattern_tree = patterns[pyttern]
+            ret[code_file_path] = match_pyttern(pattern_tree, code_tree, match_details=match_details, stop_at_first=stop_at_first)
+    stop_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    logger.info(f"Matching completed in {stop_match - start_match} ns.")
+
+
+    end_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    logger.info(f"Matching completed in {end_match - start_match} ns.")
+
+    return ret
 
 def match_files(pattern_path, code_path, match_details=False, lang="python", stop_at_first=False):
     language_processor = get_processor(lang)
@@ -13,11 +147,10 @@ def match_files(pattern_path, code_path, match_details=False, lang="python", sto
     code = language_processor.generate_tree_from_file(code_path)
 
     fsm = language_processor.create_fsm(pattern)
-    simu = language_processor.create_matcher(fsm, code)
-    matches = simu.match(fsm, code, stop_at_first=stop_at_first).matches
+    matches = Matcher.match(fsm, code, stop_at_first=stop_at_first)
     if match_details:
-        return len(matches) > 0, matches
-    return len(matches) > 0
+        return matches.count() > 0, matches
+    return matches.count() > 0
 
 
 def match_wildcards(pattern_path, code_path, match_details=False):
@@ -27,7 +160,6 @@ def match_wildcards(pattern_path, code_path, match_details=False):
     can contain wildcards. The function returns a dictionary with the results of the matches.
     :param pattern_path: Path to the pattern files with wildcards.
     :param code_path: Path to the python files with wildcards.
-    :param strict_match: If True, the match will be strict, otherwise it will be soft.
     :param match_details: If True, the function will return the match details.
     :return: Dictionary with the results of the matches.
     """
@@ -52,6 +184,7 @@ def match_wildcards(pattern_path, code_path, match_details=False):
 def run_application():
     from .visualizer.web import application
     logger.enable("pyttern")
+    parse_macro_from_file("/home/julien/Documents/phd/Pyttern/tests/tests_files/macros/incr.myt", Languages.PYTHON)
     application.app.run(debug=True)
 
 

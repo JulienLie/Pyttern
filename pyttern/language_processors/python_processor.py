@@ -11,8 +11,6 @@ from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.python.python_to_pda import Python_to_PDA
 from ..pytternfsm.python.tree_pruner import TreePruner
-from ..simulator.Matcher import Matcher
-
 
 class PythonProcessor(BaseProcessor):
 
@@ -54,9 +52,6 @@ class PythonProcessor(BaseProcessor):
     @cache
     def create_fsm(self, pattern_tree):
         return Python_to_PDA().visit(pattern_tree)
-
-    def create_matcher(self, fsm, code_tree):
-        return Matcher(fsm, code_tree)
 
     def create_listener(self):
         return ConsolePytternListener()
