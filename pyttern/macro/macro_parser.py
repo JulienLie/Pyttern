@@ -110,7 +110,7 @@ def parse_macro_from_string(code: str, language: Languages, override: bool=False
 
         pruned_tree = handle_new_transformation(tree)
         logger.debug(f"Pruned tree for macro {macro_name}: {pruned_tree.toStringTree()}")
-        macro_pda = processor.create_fsm(pruned_tree)
+        macro_pda = processor.create_pda(pruned_tree)
         current_macro.add_transformation(macro_name, macro_pda)
 
     if current_macro is not None:

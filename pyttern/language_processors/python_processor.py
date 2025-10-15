@@ -9,9 +9,8 @@ from ..PytternListener import ConsolePytternListener
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener
-from ..pytternfsm.python.python_visitor import Python_Visitor
+from ..pytternfsm.python.python_to_pda import Python_to_PDA
 from ..pytternfsm.python.tree_pruner import TreePruner
-from ..simulator.simulator import Simulator
 
 
 class PythonProcessor(BaseProcessor):
@@ -52,11 +51,8 @@ class PythonProcessor(BaseProcessor):
         return self.generate_tree_from_stream(file_input)
 
     @cache
-    def create_fsm(self, pattern_tree):
-        return Python_Visitor().visit(pattern_tree)
-
-    def create_simulator(self, fsm, code_tree):
-        return Simulator(fsm, code_tree)
+    def create_pda(self, pattern_tree):
+        return Python_to_PDA().visit(pattern_tree)
 
     def create_listener(self):
         return ConsolePytternListener()

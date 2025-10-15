@@ -13,7 +13,7 @@ class BaseProcessor:
     def generate_tree_from_file(self, file):
         raise NotImplementedError
 
-    def create_fsm(self, pattern_tree):
+    def create_pda(self, pattern_tree):
         raise NotImplementedError
 
     def create_matcher(self, fsm, code_tree):

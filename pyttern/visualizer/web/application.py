@@ -100,7 +100,7 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
 
     current_language_processor = get_processor(lang)
     pyttern_tree = current_language_processor.generate_tree_from_code(pattern_code)
-    pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
+    pyttern_fsm = current_language_processor.create_pda(pyttern_tree)
     code_tree = current_language_processor.generate_tree_from_code(code)
 
     return Matcher(pyttern_fsm, code_tree)
@@ -274,7 +274,7 @@ def pattern():
             "message": str(e)
         })
     pattern_tree_graph = PtToJson().visit(pattern_tree)
-    pyttern_fsm = current_language_processor.create_fsm(pattern_tree)
+    pyttern_fsm = current_language_processor.create_pda(pattern_tree)
 
     pattern_fsm_graph = json.loads(json.dumps(pyttern_fsm, cls=PDAEncoder))
     return json.dumps({

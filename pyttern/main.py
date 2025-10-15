@@ -27,13 +27,13 @@ def parse_subfolders(folder_path, op="and"):
             pattern_file_path = os.path.join(folder_path, subfolder)
             processor = get_processor("python")
             tree = processor.generate_tree_from_file(pattern_file_path)
-            fsm = processor.create_fsm(tree)
+            fsm = processor.create_pda(tree)
             res.append(fsm)
         elif subfolder.endswith('.jat'):
             pattern_file_path = os.path.join(folder_path, subfolder)
             processor = get_processor("java")
             tree = processor.generate_tree_from_file(pattern_file_path)
-            fsm = processor.create_fsm(tree)
+            fsm = processor.create_pda(tree)
             res.append(fsm)
         else:
             logger.warning(f"Unknown file type in {subfolder_path}: {subfolder}")
@@ -146,7 +146,7 @@ def match_files(pattern_path, code_path, match_details=False, lang="python", sto
     pattern = language_processor.generate_tree_from_file(pattern_path)
     code = language_processor.generate_tree_from_file(code_path)
 
-    fsm = language_processor.create_fsm(pattern)
+    fsm = language_processor.create_pda(pattern)
     matches = Matcher.match(fsm, code, stop_at_first=stop_at_first)
     if match_details:
         return matches.count() > 0, matches
@@ -218,7 +218,7 @@ def main():
         print(e)
         return
 
-    fsm = processor.create_fsm(pattern_tree)
+    fsm = processor.create_pda(pattern_tree)
 
     simu = Matcher(fsm, code_tree)
 
