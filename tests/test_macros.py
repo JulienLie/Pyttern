@@ -1,10 +1,10 @@
 import importlib.resources as pkg_resources
 
+from loguru import logger
+
 from pyttern import match_files
 from pyttern.language_processors import Languages
 from pyttern.macro.macro_parser import parse_macro_from_file
-from loguru import logger
-
 from . import tests_files
 
 
@@ -18,10 +18,10 @@ def test_macro_parser():
 
     ret = parse_macro_from_file(macro_file, Languages.PYTHON)
 
-    assert False, ret
+    #assert False, ret
 
 def test_incr_macro():
-    #logger.enable("pyttern")
+    logger.enable("pyttern")
 
     macro_file = get_test_file("macros/incr.myt")
 

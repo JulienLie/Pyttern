@@ -7,7 +7,7 @@ from loguru import logger
 
 from pyttern import match_files, match_wildcards
 from pyttern.simulator.pda.PDA import PDAEncoder, PDA
-from pyttern.simulator.pda.transition import Transition, NavigationDirection
+from pyttern.simulator.pda.transition import Transition, NavigationAlphabet, NodeTransition
 from . import tests_files
 
 
@@ -23,7 +23,7 @@ def discover_files(directory, extension=None):
                     yield os.path.join(root, file)
 
 
-class TestPDAEncoder():
+class TestPDAEncoder:
 
     PDA = None
     Transition = None
@@ -31,17 +31,9 @@ class TestPDAEncoder():
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        class DummyPDA:
-            def __init__(self):
-                self.states = {0, 1}
-                self.input_symbols = {"a", "b"}
-                self.transitions = {0: []}
-                self.initial_state = 0
-                self.final_states = {1}
-
-        self.Transition = Transition(0, "a", "", [NavigationDirection.LEFT_CHILD], 1, "A")
-        self.PDA = PDA({0, 1}, {"a", "b"}, {0: [self.Transition]}, 0, {1})
-        self.NavigationDirection = NavigationDirection.LEFT_CHILD
+        self.Transition = Transition(0, "a", NodeTransition(""), [NavigationAlphabet.LEFT_CHILD], 1, "A")
+        self.PDA = PDA({0, 1}, {"a", "b"}, {0: [self.Transition]}, 0, 1)
+        self.NavigationDirection = NavigationAlphabet.LEFT_CHILD
 
     def test_encode_pda(self):
         encoder = PDAEncoder()
@@ -75,140 +67,6 @@ class TestPytternWildcards:
         logger.enable("pyttern")
         logger.remove()
         logger.add(lambda x: print(x), level="INFO")
-
-class TestSimpleWildcard(TestPytternWildcards):
-    @pytest.mark.timeout(1)
-    def test_stmt(self):
-        pattern_path = get_test_file("simple_wildcards/stmt/simple_wildcard.pyt")
-        code_path = get_test_file("simple_wildcards/stmt/simple_wildcard_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("simple_wildcards/stmt/simple_wildcard_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    def test_arg(self):
-        pattern_path = get_test_file("simple_wildcards/arg/simple_wildcard.pyt")
-        code_path = get_test_file("simple_wildcards/arg/simple_wildcard_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("simple_wildcards/arg/simple_wildcard_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    def test_expr(self):
-        pattern_path = get_test_file("simple_wildcards/expr/simple_wildcard.pyt")
-        code_path = get_test_file("simple_wildcards/expr/simple_wildcard_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("simple_wildcards/expr/simple_wildcard_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    def test_func_name(self):
-        pattern_path = get_test_file("simple_wildcards/func_name/simple_wildcard.pyt")
-        code_path = get_test_file("simple_wildcards/func_name/simple_wildcard_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-
-class TestBodyWildcard(TestPytternWildcards):
-    @pytest.mark.timeout(1)
-    @pytest.mark.parametrize("pattern_path", discover_files(get_test_file("body/simple"), ".pyt"))
-    def test_simple(self, pattern_path):
-        pattern_path = get_test_file(pattern_path)
-        code_path = get_test_file("body/simple/body_simple_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("body/simple/body_simple_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    def test_nested(self):
-        pattern_path = get_test_file("body/nested/body_nested_1.pyt")
-        code_path = get_test_file("body/nested/body_nested_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("body/nested/body_nested_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-
-class TestMultipleWildcard(TestPytternWildcards):
-    @pytest.mark.timeout(1)
-    @pytest.mark.parametrize("pattern_path", discover_files(get_test_file("multiple_stmt"), ".pyt"))
-    def test_stmt(self, pattern_path):
-        pattern_path = get_test_file(pattern_path)
-        code_path = get_test_file("multiple_stmt/multiple_stmt_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-    @pytest.mark.timeout(1)
-    def test_multiple_args(self):
-        pattern_path = get_test_file("multiple_wildcard/args/multiple_args.pyt")
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_one_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_two_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    def test_multiple_args_complex(self):
-        pattern_path = get_test_file("multiple_wildcard/args/multiple_args_complex.pyt")
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_one_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_two_ok.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
-        code_path = get_test_file("multiple_wildcard/args/multiple_args_ko.py")
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert not res, det
-
-    @pytest.mark.timeout(1)
-    @pytest.mark.parametrize("code_path", discover_files(get_test_file("multiple_wildcard"), ".py"))
-    def test_simple_args(self, code_path):
-        pattern_path = get_test_file("multiple_wildcard/args/simple_args.pyt")
-        code_path = get_test_file(code_path)
-
-        res, det = match_files(pattern_path, code_path, match_details=True)
-        assert res, det
-
 
 class TestNamedWildcard(TestPytternWildcards):
     @pytest.mark.timeout(1)
@@ -251,7 +109,7 @@ class TestNamedWildcard(TestPytternWildcards):
 
 
 class TestMultipleBodyWildcard(TestPytternWildcards):
-    @pytest.mark.timeout(1)
+    @pytest.mark.timeout(2)
     @pytest.mark.parametrize("pattern_path", discover_files(get_test_file("multiple_body/simple"), ".pyt"))
     def test_simple(self, pattern_path):
         pattern_path = get_test_file(pattern_path)

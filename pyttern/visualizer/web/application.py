@@ -3,12 +3,13 @@ from functools import wraps
 
 from antlr4 import ParseTreeVisitor
 from cachelib import FileSystemCache
-from flask import Flask, request, session, flash, get_flashed_messages, send_from_directory
+from flasgger import Swagger
+from flask import Flask, request, session, flash, get_flashed_messages, send_from_directory, Response
 from flask_session import Session
 from loguru import logger
 
 from ...PytternListener import PytternListener
-from ...language_processors import Languages, get_processor, determine_language
+from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
 from ...macro.Macro import loaded_macros
 from ...macro.macro_parser import parse_macro_from_string
 from ...pyttern_error_listener import PytternSyntaxException
@@ -24,7 +25,13 @@ SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="./sessions")
 app.config.from_object(__name__)
 Session(app)
 
-current_language_processor = None
+# Global Swagger template with shared definitions
+app.config['SWAGGER'] = {
+    'title': 'Pyttern Visualizer API',
+    'openapi': '3.0.2'
+}
+
+swagger = Swagger(app, template_file='swagger_template.yml')
 
 """ Helper classes and methods """
 
@@ -85,42 +92,18 @@ def file_check():
     return _file_check
 
 
-def get_matcher(pattern_code, code):
-    logger.debug("Getting simulator")
-    if "pattern_language" in session and session["pattern_language"] is not None:
-        current_language_processor = get_processor(session["pattern_language"])
-        pyttern_tree = current_language_processor.generate_tree_from_code(pattern_code)
-        pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
-        code_tree = current_language_processor.generate_tree_from_code(code)
+def get_matcher(pattern_code, code, lang=None) -> Matcher:
+    if lang is None:
+        lang = determine_language(code)
+    if lang is None:
+        raise Exception("Cannot determine the language")
 
-        return Matcher(pyttern_fsm, code_tree)
-    else:
-        raise Exception("No language is set")
+    current_language_processor = get_processor(lang)
+    pyttern_tree = current_language_processor.generate_tree_from_code(pattern_code)
+    pyttern_fsm = current_language_processor.create_fsm(pyttern_tree)
+    code_tree = current_language_processor.generate_tree_from_code(code)
 
-
-def fsm_to_json(fsm):
-    print("FSM :::", fsm)
-    nodes = []
-    to_check = [fsm]
-    visited = set()
-    while len(to_check) > 0:
-        node = to_check.pop()
-        if node in visited:
-            continue
-        visited.add(node)
-        transitions = []
-        for next_node, func, mov in node.get_transitions():
-            name = str(func)
-            transitions.append({"next": str(next_node), "func": name, "mov": str(mov)})
-            to_check.append(next_node)
-        infos = node.__dict__.copy()
-        infos['transitions'] = transitions
-        infos['id'] = str(node)
-        logger.debug(infos)
-        json_obj = json.dumps(infos)
-        nodes.append(json_obj)
-    return nodes
-
+    return Matcher(pyttern_fsm, code_tree)
 
 class JsonListener(PytternListener):
     def __init__(self):
@@ -137,7 +120,7 @@ class JsonListener(PytternListener):
             #logger.debug(f"{ast.start.start} -> {ast.stop.stop}")
         current_matchings = [(str(fsm), hash(ast)) for fsm, ast in matches]
         logger.debug(variables)
-        var_strs = [f"{var}: {PtToJson().visit(variables[var])}" for var in variables]
+        var_strs = [f"{var}: {PtToJson().visit(variables[var])}" for var in variables if variables[var] is not None]
         logger.debug(var_strs)
         logger.debug(stack)
         self.data.append({
@@ -178,6 +161,41 @@ def index():
 
 @app.route("/api/validate", methods=['POST'])
 def validate():
+    """
+    Try to compile the code/pattern in the given language or try to determine the language.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: The code/pattern to validate
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+            required:
+              - code
+    responses:
+      '200':
+        description: Validation result
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ok, error]
+                message:
+                  type: string
+                  description: Error message if status is error
+
+    """
+    logger.debug(request.json)
     pattern_code = request.json["code"]
     pattern_lang = request.json['lang']
     if pattern_lang == "":
@@ -198,9 +216,56 @@ def validate():
 
 @app.route("/api/pattern", methods=['POST'])
 def pattern():
-    pattern_code = request.json["code"]
+    """
+    Parse the pattern and return its tree and PDA representation.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: The code/pattern to validate
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+            required:
+              - code
+    responses:
+        '200':
+          description: Pattern parsing result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  message:
+                    type: string
+                    description: Error message if status is error
+                  graph:
+                    type: object
+                    properties:
+                      GRAPH:
+                        type: object
+                        $ref: '#/components/schemas/PDA'
+                      TREE:
+                        type: object
+                        $ref: '#/components/schemas/ParseTree'
+
+    """
+    data = request.json
+    pattern_code = data["code"]
+    if "lang" in data:
+        lang = data["lang"]
+    else:
+        lang = determine_language_from_code(pattern_code)
     try:
-        lang = session["pattern_language"]
         current_language_processor = get_processor(lang)
         pattern_tree = current_language_processor.generate_tree_from_code(pattern_code)
     except Exception as e:
@@ -210,14 +275,6 @@ def pattern():
         })
     pattern_tree_graph = PtToJson().visit(pattern_tree)
     pyttern_fsm = current_language_processor.create_fsm(pattern_tree)
-
-    # PY_LANGUAGE = Language(tspyttern.language())
-    # parser = Parser(PY_LANGUAGE)
-    # tree = parser.parse(bytes(pattern_code, "utf-8"))
-    #
-    # tranformer = Pyttern_to_PDA()
-    # tranformer.visit(tree.root_node)
-    # pyttern_fsm = tranformer.pda
 
     pattern_fsm_graph = json.loads(json.dumps(pyttern_fsm, cls=PDAEncoder))
     return json.dumps({
@@ -231,8 +288,50 @@ def pattern():
 
 @app.route("/api/code", methods=['POST'])
 def code():
-    code = request.json["code"]
-    lang = session["pattern_language"]
+    """
+    Parse the code and return its tree representation.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: The code to parse
+                lang:
+                  type: string
+                  description: The language of the code (python/java). If empty, try to determine the language.
+              required:
+                - code
+    responses:
+        '200':
+          description: Code parsing result
+          content:
+            application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      enum: [ok, error]
+                    message:
+                      type: string
+                      description: Error message if status is error
+                    graph:
+                      type: object
+                      properties:
+                          TREE:
+                            $ref: '#/components/schemas/ParseTree'
+    """
+    data = request.json
+    code = data["code"]
+    if "lang" in data:
+        lang = data["lang"]
+    else:
+        lang = determine_language_from_code(code)
     current_language_processor = get_processor(lang)
     tree = current_language_processor.generate_tree_from_code(code)
     tree_graph = PtToJson().visit(tree)
@@ -245,12 +344,66 @@ def code():
 
 @app.route("/api/match", methods=['POST'])
 def match():
+    """
+    Match the pattern on the code and return the matching steps.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: The code to match the pattern against
+              pattern:
+                type: string
+                description: The pattern to match
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+            required:
+              - code
+              - pattern
+    responses:
+        '200':
+            description: Match result
+            content:
+                application/json:
+                schema:
+                    type: object
+                    properties:
+                        status:
+                            type: string
+                            enum: [ok, error]
+                        message:
+                            type: string
+                            description: Error message if status is error
+                        n_steps:
+                            type: integer
+                            description: Number of steps taken during the match
+                        state:
+                            type: array
+                            items:
+                            type: string
+                            description: Information about the initial state (FSM state, AST hash)
+                        match_states:
+                            type: array
+                            items:
+                            type: integer
+                            description: List of step indices where a match was found
+    """
     logger.info("Asking to start match")
     data = request.json
     code = data["code"]
     pattern = data["pattern"]
+    if "lang" in data:
+        lang = data["lang"]
+    else:
+        lang = determine_language_from_code(code)
 
-    matcher = get_matcher(pattern, code)
+    matcher = get_matcher(pattern, code, lang)
     json_listener = JsonListener()
     matcher.add_listener(json_listener)
     matcher.start()
@@ -267,8 +420,157 @@ def match():
         {"status": "ok", "n_steps": matcher.n_step, "state": first_state_info, "match_states": match_states})
 
 
+@app.route("/api/batch_match", methods=['POST'])
+def batch_match():
+    """
+    match a list of files with a compound pattern
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              codes:
+                type: object
+                description: The list of code files to match the pattern against
+                additionalProperties:
+                  type: string
+                  description: The code content
+                example:
+                    file1.py: "def foo(): pass"
+                    file2.py: "def bar(): pass"
+              patterns:
+                type: object
+                description: The list of pattern files to match
+                $ref: '#/components/schemas/PatternTree'
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+            required:
+                - codes
+                - pattern
+    responses:
+      '200':
+        description: Match result
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: boolean
+                description: Whether the pattern matches the corresponding code file
+              example:
+                file1.py: true
+                file2.py: false
+    """
+    logger.info("Asking to start match")
+    data = request.json
+    codes = data["codes"]
+    patterns = data["patterns"]
+
+    # TODO: Change main file to handle compound patterns with json rather than files
+    return Response("Not implemented yet", status=501)
+
+@app.route("/api/batch_validate", methods=['POST'])
+def batch_validate():
+    """
+    Validate a list of pattern or code files in the given language or try to determine the language.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              codes:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  file1.py: "def foo(): pass"
+                  file2.py: "def ?(): ?"
+                description: The list of code/pattern files to validate
+                lang:
+                  type: string
+                  description: The language of the code/pattern (python/java). If empty, try to determine the language.
+                required:
+                  - codes
+                  - lang
+    responses:
+      '200':
+        description: Validation result
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  message:
+                    type: string
+                    description: Error message if status is error
+    """
+    pattern_codes = request.json["codes"]
+    pattern_lang = request.json['lang']
+    if pattern_lang == "":
+        return try_processors(pattern_codes[0].code)
+    logger.info(f"Current lang: {pattern_lang}")
+    res = {}
+    try:
+        lang = determine_language(pattern_lang)
+        current_language_processor = get_processor(lang)
+        for pattern_code in pattern_codes:
+            try:
+                current_language_processor.generate_tree_from_code(pattern_codes[pattern_code])
+                res[pattern_code] = {
+                    "status": "ok",
+                    "message": None
+                }
+            except PytternSyntaxException as e:
+                res[pattern_code] = {
+                    "status": "error",
+                    "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
+                }
+    except Exception as e:
+        return Response(f"Error: {e}", status=500)
+    return json.dumps(res)
+
 @app.route("/api/step", methods=['POST'])
 def step():
+    """
+    Get the information about the current step of the matching process.
+    ---
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              step:
+                type: integer
+                description: The current step index
+            required:
+              - step
+    responses:
+      '400':
+        description: Missing match data
+      '200':
+        description: Step information
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/Step'
+    """
+    if "data" not in session or session["data"] is None:
+        return Response("Missing match data", status=400)
     current_step = int(request.json["step"])
     logger.info(f"Getting step {current_step}")
     current_data = session["data"][current_step]
@@ -302,8 +604,39 @@ def step():
         "code_pos": code_pos
     })
 
-@app.route("/api/parse_macro", methods=['POST'])
+@app.route("/api/macro", methods=['POST'])
 def parse_macro():
+    """
+    [WIP] Parse a macro and return its PDA representation.
+    ---
+    responses:
+      '200':
+        description: Macro parsing result
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ok, error]
+                message:
+                  type: string
+                  description: Error message if status is error
+                macro:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The name of the macro
+                    code:
+                      type: string
+                      description: The code of the macro
+                    transformations:
+                      type: object
+                      additionalProperties:
+                        $ref: '#/components/schemas/PDA'
+    """
     macro_code = request.json["code"]
     lang = Languages.PYTHON
     try:
@@ -325,10 +658,14 @@ def parse_macro():
     return json.dumps({"status": "ok", "macro": macro_json})
 
 
-@app.route("/api/loaded_macro", methods=['GET'])
+@app.route("/api/macro", methods=['GET'])
 def loaded_macro():
     """
-    Returns the loaded macros in the session.
+    [WIP] Returns the loaded macros in the session.
+    ---
+    responses:
+        '200':
+            description: Loaded macros
     """
     macros = []
     for macro in loaded_macros.values():

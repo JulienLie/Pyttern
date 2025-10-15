@@ -14,3 +14,9 @@ class MatchSet:
 
     def count(self):
         return len(self.matches)
+
+    def __str__(self):
+        return f"MatchSet with {self.count()} matches: {self.matches}"
+
+    def __repr__(self):
+        return self.__str__()

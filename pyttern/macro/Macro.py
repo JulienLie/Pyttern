@@ -1,9 +1,11 @@
-from antlr4 import TerminalNode, ParseTreeVisitor
+from dataclasses import dataclass, field
+
+from antlr4.tree.Tree import Tree
 
 from ..simulator.pda import PDA
 
-loaded_macros = {}
 
+@dataclass
 class Macro:
     """
     Represents a macro with a name, arguments, and transformations.
@@ -14,7 +16,13 @@ class Macro:
         transformations (dict): A dictionary of transformations associated with the macro.
     """
 
-    def __init__(self, name: str, code: str, args: dict[str, str], args_order: list[str]):
+    name: str
+    args: dict[str, Tree]
+    args_order: list[str]
+    code: str
+    transformations: dict[str, PDA] = field(default_factory=dict)
+
+    def __init__(self, name: str, code: str, args: dict[str, Tree], args_order: list[str]):
         """
         Initializes a Macro object.
 
@@ -38,37 +46,4 @@ class Macro:
         self.transformations[name] = transformation
 
 
-class TerminalMacroNode(TerminalNode):
-    def __init__(self):
-        super().__init__()
-        self.parentCtx = None
-
-    def __setattr__(self, key, value):
-        super().__setattr__(key, value)
-
-    def getChild(self, _: int):
-        return None
-
-    def getSymbol(self):
-        return ""
-
-    def getParent(self):
-        return self.parentCtx
-
-    def getPayload(self):
-        return ""
-
-    def getSourceInterval(self):
-        return -1, -1
-
-    def getChildCount(self):
-        return 0
-
-    def accept(self, visitor: ParseTreeVisitor):
-        return visitor.visitTerminal(self)
-
-    def getText(self):
-        return ""
-
-    def __str__(self):
-        return ""
+loaded_macros: dict[str, Macro] = {}

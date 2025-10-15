@@ -7,8 +7,8 @@ from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ...macro.Macro import loaded_macros
 from ...simulator.pda.PDA import PDA
-from ...simulator.pda.navigation_direction import NavigationDirection
-from ...simulator.pda.transition import Transition
+from ...simulator.pda.PDA_alphabets import NavigationAlphabet
+from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
 
 
 def rightmost_terminal(root):
@@ -38,7 +38,7 @@ class Python_to_PDA(Python3ParserVisitor):
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
-        self.pda.final_states.add(self.current_state)
+        self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
         return self.pda
 
@@ -60,9 +60,8 @@ class Python_to_PDA(Python3ParserVisitor):
 
 
         next_state = self.pda.new_state()
-        transition = Transition(self.current_state, f"{node.__class__.__name__}/{down},{up}", '',
-                                [NavigationDirection.LEFT_CHILD],
-                                next_state, 'I')
+        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
+                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
         self.pda.add_transition(transition)
         self.current_state = next_state
 
@@ -131,7 +130,8 @@ class Python_to_PDA(Python3ParserVisitor):
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
-        self_transition = Transition(self.current_state, "", '', [NavigationDirection.RIGHT_SIBLING], self.current_state, '')
+        self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                      self.current_state, '')
         self.pda.add_transition(self_transition)
 
         lookahead_multiple_body = self.lookahead(ctx, Python3Parser.Multiple_compound_wildcardContext)
@@ -175,7 +175,8 @@ class Python_to_PDA(Python3ParserVisitor):
         for _ in range(1, low):
             # Add transitions for low - 1
             next_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', '', [NavigationDirection.RIGHT_SIBLING], next_state, '')
+            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                           next_state, '')
             self.pda.add_transition(transition)
             self.current_state = next_state
 
@@ -184,7 +185,7 @@ class Python_to_PDA(Python3ParserVisitor):
             return self._add_up_transition(ctx)
 
         dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", '', [], dummy_state, '')
+        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, '')
         self.pda.add_transition(dummy_transition)
 
         for i in range(low, high):
@@ -192,11 +193,12 @@ class Python_to_PDA(Python3ParserVisitor):
             next_state = self.pda.new_state()
 
             # There is a sibling
-            transition = Transition(self.current_state, '', '', [NavigationDirection.RIGHT_SIBLING], next_state, '')
+            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                           next_state, '')
             self.pda.add_transition(transition)
 
             # No more siblings
-            up_transition = Transition(next_state, '', '', [], dummy_state, '')
+            up_transition = Transition(next_state, '', NodeTransition(''), [], dummy_state, '')
             self.pda.add_transition(up_transition)
             self.current_state = next_state
 
@@ -217,13 +219,15 @@ class Python_to_PDA(Python3ParserVisitor):
     def visitSimple_compound_wildcard(self, ctx:Python3Parser.Simple_compound_wildcardContext):
         # Go to children
         child_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", '', [NavigationDirection.LEFT_CHILD], child_state, 'I')
+        child_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
+                                                                             child_state, 'I')
         self.pda.add_transition(child_transition)
         self.current_state = child_state
         self.depth += 1
 
         # Find body node
-        self_transition = Transition(child_state, "", '', [NavigationDirection.RIGHT_SIBLING], child_state, '')
+        self_transition = Transition(child_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                     child_state, '')
         self.pda.add_transition(self_transition)
 
         # Explore body
@@ -246,7 +250,8 @@ class Python_to_PDA(Python3ParserVisitor):
 
     def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
         # Adding self-transition to search for the next element
-        self_transition = Transition(self.current_state, '', '', [NavigationDirection.RIGHT_SIBLING], self.current_state, '')
+        self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                               self.current_state, '')
         self.pda.add_transition(self_transition)
         return self.current_state
 
@@ -254,13 +259,15 @@ class Python_to_PDA(Python3ParserVisitor):
         if isinstance(node, TerminalNode):
             logger.debug(f"Visiting terminal {node}")
             node_text = str(node).strip()
+            node_transition = NodeTransition(node_text)
         else:
             logger.debug(f"Visiting {node.__class__.__name__} as terminal")
             node_text = f"{node.__class__.__name__}/0,0"
+            node_transition = NodeTransition(node.__class__.__name__, 0, 0)
 
         logger.debug(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
 
-        return self._add_up_transition(node, node_text)
+        return self._add_up_transition(node, node_transition)
 
     def visitParameters(self, ctx:Python3Parser.ParametersContext):
         return self._handle_empty_list(ctx)
@@ -277,64 +284,50 @@ class Python_to_PDA(Python3ParserVisitor):
         #     uuid_label = str(uuid.uuid4())[:8]
         #     self.__var_names[label] = f"{label}_{uuid_label}"
         # label = self.__var_names[label]
-        self._add_up_transition(ctx, f"?{label}")
+        self.pda.named_wildcards.add(label)
+        self._add_up_transition(ctx, NamedTransition(f"{label}"))
         return self.current_state
 
     def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
         # Transition to push B on the stack
-        to_push = 'B'
+        dummy_state = self.__add_body_transition()
 
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", '', [], dummy_state, to_push)
-        self.pda.add_transition(dummy_transition)
-        self.current_state = dummy_state
-
-        self.move_to_B.append(self.depth)
-
-        # Transition to go to the body of the compound wildcard
-        next_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", '', [], next_state, '')
-        self.pda.add_transition(child_transition)
-
-        # Find body node
-        self_transition = Transition(next_state, "", '', [NavigationDirection.RIGHT_SIBLING], next_state, '')
-        self.pda.add_transition(self_transition)
-
-        back_transition = Transition(next_state, "", '', [NavigationDirection.LEFT_CHILD], self.current_state, 'I')
-        self.pda.add_transition(back_transition)
-        self.current_state = next_state
         # Explore
-
         ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
-        skip_transition = Transition(dummy_state, "", '', [], ret, '')
+        skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
         self.pda.add_transition(skip_transition)
 
         return ret
 
     def visitContains_wildcard(self, ctx:Python3Parser.Contains_wildcardContext):
+        self.__add_body_transition()
+
+        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
+        prune_tree = TreePruner().visit(ctx)
+        return prune_tree.getChild(2).accept(self)
+
+    def __add_body_transition(self):
         dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", '', [], dummy_state, 'B')
+        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
         self.pda.add_transition(dummy_transition)
         self.current_state = dummy_state
 
         self.move_to_B.append(self.depth)
 
         next_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", '', [], next_state, '')
+        child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
         self.pda.add_transition(child_transition)
 
-        self_transition = Transition(next_state, "", '', [NavigationDirection.RIGHT_SIBLING], next_state, '')
+        self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                    next_state, '')
         self.pda.add_transition(self_transition)
-
-        back_transition = Transition(next_state, "", '', [NavigationDirection.LEFT_CHILD], self.current_state, 'I')
+        back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
+                                                                    self.current_state, 'I')
         self.pda.add_transition(back_transition)
         self.current_state = next_state
 
-        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        prune_tree = TreePruner().visit(ctx)
-        #ctx.children = prune_tree.children
-        return prune_tree.getChild(2).accept(self)
+        return dummy_state
 
     def visitMacro(self, ctx: Python3Parser.MacroContext):
         return ctx.getChild(0).accept(self)
@@ -357,8 +350,9 @@ class Python_to_PDA(Python3ParserVisitor):
 
         for transformation in macro.transformations:
             logger.debug(f"Adding transformation {transformation} for macro {macro_name}")
-            args = ','.join(args_names)
-            transition = Transition(self.current_state, f"{macro_name}:{transformation}({args})", '', [], next_state, '')
+            #args = ','.join(args_names)
+            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args_names),
+                                    [], next_state, '')
             self.pda.add_transition(transition)
 
         self.current_state = next_state
@@ -374,15 +368,19 @@ class Python_to_PDA(Python3ParserVisitor):
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
 
-    def _add_up_transition(self, node, label=''):
-        if self._is_last_node(node):
+
+    def _add_up_transition(self, node, label:TransitionCondition=None):
+        if label is None:
+            label = NodeTransition('')
+
+        if self._is_last_node():
             logger.debug(f"Node {node} is the last node in the tree, adding transition to the end")
-            self_transition = Transition(self.current_state, '', '', [NavigationDirection.RIGHT_SIBLING],
+            self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                          self.current_state, '')
             self.pda.add_transition(self_transition)
 
             last_state = self.pda.new_state()
-            transition = Transition(self.current_state, label, '', [], last_state, '')
+            transition = Transition(self.current_state, '', label, [], last_state, '')
             self.pda.add_transition(transition)
             self.current_state = last_state
             return last_state
@@ -393,31 +391,32 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return self._add_up_default_transition(label)
 
-    def _add_up_default_transition(self, label):
+    def _add_up_default_transition(self, label:TransitionCondition):
         next_state = self.pda.new_state()
         to_pop = 'I' * self.depth
-        to_up = [NavigationDirection.PARENT] * self.depth
+        to_up = [NavigationAlphabet.PARENT] * self.depth
         self.depth = 0
-        transition = Transition(self.current_state, label, to_pop, to_up + [NavigationDirection.RIGHT_SIBLING],
-                                next_state, '')
+        transition = Transition(self.current_state, to_pop, label, to_up +
+                                [NavigationAlphabet.RIGHT_SIBLING], next_state, '')
         self.pda.add_transition(transition)
         self.current_state = next_state
         return next_state
 
-    def _add_up_to_B_transition(self, label):
+    def _add_up_to_B_transition(self, label:TransitionCondition):
         depth = self.move_to_B.pop()
         self.depth = depth
 
         match_state = self.pda.new_state()
-        match_transition = Transition(self.current_state, label, '', [], match_state, '')
+        match_transition = Transition(self.current_state, '', label, [], match_state, '')
         self.pda.add_transition(match_transition)
         self.current_state = match_state
 
-        up_transition = Transition(self.current_state, '', 'I', [NavigationDirection.PARENT], self.current_state, '')
+        up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
+                                                              self.current_state, '')
         self.pda.add_transition(up_transition)
 
         next_state = self.pda.new_state()
-        next_transition = Transition(self.current_state, '', 'B', [], next_state, '')
+        next_transition = Transition(self.current_state, 'B', NodeTransition(''), [], next_state, '')
         self.pda.add_transition(next_transition)
         self.current_state = next_state
 
@@ -425,9 +424,7 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return match_state
 
-    def _is_last_node(self, node):
-
-
+    def _is_last_node(self):
         return self.__is_last_branch
 
     @staticmethod

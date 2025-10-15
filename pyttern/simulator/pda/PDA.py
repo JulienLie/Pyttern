@@ -1,7 +1,8 @@
 import json
+from dataclasses import dataclass, field
 
-from .navigation_direction import NavigationDirection
-from .transition import Transition
+from .PDA_alphabets import NavigationAlphabet
+from .transition import Transition, TransitionCondition
 
 
 class PDAEncoder(json.JSONEncoder):
@@ -14,29 +15,28 @@ class PDAEncoder(json.JSONEncoder):
             return json_object
         if isinstance(o, Transition):
             return o.__dict__
-        if isinstance(o, NavigationDirection):
+        if isinstance(o, NavigationAlphabet):
             return str(o.name)
+        if isinstance(o, TransitionCondition):
+            return o.to_json()
         return super().default(o)
 
+@dataclass
 class PDA:
     """
-    The PDA can be defied as a 6-tuple (Q, Σ, Γ, δ, q0, F) where:
+    The PDA can be defied as a 5-tuple (Q, T, Γ, δ, q0, qf) where:
         - Q is a finite set of states
-        - Σ is a finite set of input symbols
-        - δ is the transition function
+        - T is the set of named wildcards
+        - δ is the transition set
         - q0 is the initial state
-        - F is the set of final states
+        - qf is the final states
     """
 
-    def __init__(self, states=None, input_symbols=None,
-                 transitions: dict[int, list[Transition]] = None,
-                 initial_state: int = 0, final_states: set[int] = None):
-
-        self.states:        set[int]                    = states if states is not None else {0}
-        self.input_symbols: set[str]                    = input_symbols if input_symbols is not None else set()
-        self.transitions:   dict[int, list[Transition]] = transitions if transitions is not None else {0: []}
-        self.initial_state: int                         = initial_state
-        self.final_states:  set[int]                    = final_states if final_states is not None else set()
+    states: set[int] = field(default_factory=lambda: {0})
+    named_wildcards: set[str] = field(default_factory=set)
+    transitions: dict[int, list[Transition]] = field(default_factory=lambda: {0: []})
+    initial_state: int = 0
+    final_states: int = 0
 
     def new_state(self) -> int:
         new_state = len(self.states)

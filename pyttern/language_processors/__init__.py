@@ -22,3 +22,17 @@ def determine_language(filename):
     elif extension in JavaProcessor().get_language_extensions():
         return "java"
     return None
+
+def determine_language_from_code(code):
+    """
+    Determines the language based on the code content.+
+    Returns 'python' or 'java' atm or None for unsupported file types.
+    """
+    for language in Languages:
+        try:
+            processor = get_processor(language)
+            processor.generate_tree_from_code(code)
+            return language
+        except Exception:
+            continue
+    return None

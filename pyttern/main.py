@@ -220,14 +220,14 @@ def main():
 
     fsm = processor.create_fsm(pattern_tree)
 
-    simu = processor.create_simulator(fsm, code_tree)
+    simu = Matcher(fsm, code_tree)
 
     listener = processor.create_listener()
 
     simu.add_listener(listener)
     simu.start()
 
-    while len(simu.states) > 0:
+    while len(simu.configurations) > 0:
         simu.step()
     print(simu.match_set.matches)
 

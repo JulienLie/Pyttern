@@ -1,19 +1,61 @@
-import dataclasses
-import math
-import re
-
 from antlr4.ParserRuleContext import ParserRuleContext
-from antlr4.tree.Tree import TerminalNode
+from antlr4.tree.Tree import TerminalNode, Tree
 from loguru import logger
 
 from .pda.PDA import PDA
-from .pda.navigation_direction import NavigationDirection
+from .pda.PDA_alphabets import NavigationAlphabet
+from .pda.transition import NodeTransition, NamedTransition, CallTransition
 from ..macro.Macro import loaded_macros
 from ..pytternfsm.python.match_set import MatchSet, Match
 
 
+def join_dicts(m_a: dict, m_b: dict) -> dict:
+    """
+    Joins two dictionaries m_a and m_b such as:
+    (m_a ⊕ m_b)(t) = m_b(t) if m_b(t) is none None else m_a(t)
+    :param m_a: first dictionary with "default" values
+    :param m_b: second dictionary with "override" values
+    :return: the joined dictionary
+    """
+    result = m_a.copy()
+    for key, value in m_b.items():
+        if value is not None:
+            result[key] = value
+    return result
+
+
+def mapping(params: list, args: list) -> dict:
+    """
+    Create the mapping m_(i->j) from the macro parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
+    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
+    :param params: parameters of the PDA called (P_j)
+    :param args: Variables of the PDA calling (P_i)
+    :return: the mapping m_(i->j)
+    """
+
+    if len(params) != len(args):
+        raise ValueError("Parameters and arguments must have the same length")
+    return {u: t for u, t in zip(params, args)}
+
+def composition(mapping, bindings):
+    """
+    The composition of a mapping m_(i->j) with a bindings m_j is defined as:
+    m_(i->j)[m_j] such as:
+    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
+    m_j = {t_p -> v_p | 1 <= p <= k}
+    m_(i->j)[m_j] = {u_p -> v_p | 1 <= p <= k}
+    :param mapping: a mapping m_(i->j)
+    :param bindings: The current mapping m_j
+    :return: The composition m_(i->j)[m_j]
+    """
+    result = {}
+    for u, t in mapping.items():
+        if t in bindings:
+            result[u] = bindings[t]
+    return result
+
 class Matcher:
-    def __init__(self, pda, parse_tree):
+    def __init__(self, pda: PDA, parse_tree: Tree):
         self.pda = pda
         self.parse_tree = parse_tree
         self.match_set = MatchSet()
@@ -52,9 +94,10 @@ class Matcher:
         logger.debug(f"Match finished with {matcher.match_set.count()} matches")
         return matcher.match_set
 
-    def start(self, bindings=None):
-        if bindings is None:
-            bindings = {}
+    def start(self, initial_bindings=None):
+        bindings = {t: None for t in self.pda.named_wildcards}
+        if initial_bindings is not None:
+            bindings.update(initial_bindings)
         first_config = (self.pda.initial_state, self.parse_tree, "", bindings, [])
         self.configurations.append(first_config)
         for listener in self._listeners:
@@ -71,7 +114,7 @@ class Matcher:
         for listener in self._listeners:
             listener.step(self, current_state, current_node, stack, var, matches)
 
-        if current_state in self.pda.final_states:
+        if current_state == self.pda.final_states:
             logger.info("Match found")
             match = Match(self.n_step, var.copy())
             self.match_set.record(match)
@@ -81,24 +124,35 @@ class Matcher:
 
 
         for transition in self.pda.get_transitions(current_state):
-            _, a, A, t, q_prime, alpha = dataclasses.astuple(transition)
-            if not stack.endswith(A):
-                logger.debug(f"Wrong stack elements: expecting {A} but was {stack[-len(A):]}")
+            # Transition components
+            alpha = transition.alpha
+            A = transition.A
+            t = transition.t
+            q_prime = transition.q_prime
+            beta = transition.beta
+
+            if not stack.endswith(alpha):
+                logger.debug(f"Wrong stack elements: expecting {alpha} but was {stack[-len(alpha):]}")
                 continue
-            new_stack = stack.removesuffix(A)
+            new_stack = stack.removesuffix(alpha)
 
             class_name = current_node.__class__.__name__
 
             new_var = var.copy()
 
-            # Check if the current node matches the macro format
-            match = re.match(r"([A-Z].*):(.+)\((\w*(?:,\w+)*)?\)", a)
+            # Default terminal node
+            if isinstance(A, NodeTransition):
+                if not self._match_node(current_node, A):
+                    if isinstance(current_node, TerminalNode):
+                        logger.debug(f"Wrong input: expecting {A.name} but was {str(current_node)}")
+                    else:
+                        logger.debug(f"Wrong input: expecting {A.name} but was {class_name}")
+                    continue
 
             # Handle Variables
-            if len(a) > 0 and a[0] == "?":
-                logger.debug("Handling variable")
-                name = a[1:]
-                if name not in new_var:
+            elif isinstance(A, NamedTransition):
+                name = A.name
+                if new_var[name] is None:
                     logger.debug(f"New variable: {name}")
                     new_var[name] = current_node
                 elif not self._match_tree(new_var[name], current_node):
@@ -106,10 +160,10 @@ class Matcher:
                     continue
 
             # Handle Macros
-            elif match:
-                macro_name = match.group(1)
-                trnsf_name = match.group(2)
-                args = match.group(3).split(",") if match.group(3) else []
+            elif isinstance(A, CallTransition):
+                macro_name = A.macro_name
+                trnsf_name = A.transformation_name
+                args = A.args
 
                 logger.debug(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
 
@@ -117,13 +171,10 @@ class Matcher:
                 if macro_match is None or macro_match.count() == 0:
                     continue
 
-            # Default terminal node
-            elif not self._match_node(current_node, a):
-                if isinstance(current_node, TerminalNode):
-                    logger.debug(f"Wrong input: expecting {a} but was {str(current_node)}")
-                else:
-                    logger.debug(f"Wrong input: expecting {a} but was {class_name}")
-                continue
+            else:
+                logger.error(f"Unknown transition type: {A}")
+                raise ValueError(f"Unknown transition type: {A} ({type(A)})")
+
 
             next_node = self._get_next_node(current_node, t)
             if next_node is None:
@@ -132,8 +183,8 @@ class Matcher:
 
             logger.debug(f"Taking {transition}")
 
-            new_stack += alpha
-            new_matches = matches + [(current_state, current_node)]
+            new_stack += beta
+            new_matches = matches + [(transition, current_node.__class__.__name__)]
 
             new_config = (q_prime, next_node, new_stack, new_var.copy(), new_matches)
             self.configurations.append(new_config)
@@ -157,38 +208,24 @@ class Matcher:
             logger.warning(f"Macro or transformation not found: {macro_name}:{trnsf_name}")
             return MatchSet()
 
-        macro_params = {}
-        logger.debug(f"Using macro {macro_name}:{trnsf_name} with args {macro.args}")
+        macro_pda = macro.transformations[trnsf_name]
 
-        for i, arg in enumerate(args):
-            if arg in bindings:
-                macro_params[macro.args_order[i]] = bindings[arg]
-
-        for param in macro.args:
-            if param in macro_params:
-                continue
-            if macro.args[param] is not None:
-                macro_params[param] = macro.args[param]
-            else:
-                logger.error(f"Macro argument {param} not found in bindings and has no default value")
+        m_j_to_i = mapping(macro.args_order, args)
+        comp = composition(m_j_to_i, bindings)
+        m_j_epsilon = {u: None for u in macro_pda.named_wildcards}
+        macro_params = join_dicts(m_j_epsilon, comp)
 
         logger.debug(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
 
-        #macro_pda = get_processor(Languages.PYTHON).create_fsm(macro.transformations[trnsf_name])
-        macro_pda = macro.transformations[trnsf_name]
         match_set = Matcher.match(macro_pda, current_node, stop_at_first=True, bindings=macro_params)
         if match_set.count() == 0:
             logger.debug(f"Macro {macro_name}:{trnsf_name} did not match")
             return None
 
         sub_bindings = match_set.matches[0].bindings
-        for i, arg in enumerate(macro.args_order):
-            if arg not in sub_bindings:
-                logger.error(f"Macro argument {arg} not found in sub_bindings")
-                return None
-            binding_name = args[i]
-            if binding_name not in bindings:
-                bindings[binding_name] = sub_bindings[arg]
+        m_i_to_j = mapping(args, macro.args_order)
+        comp = composition(m_i_to_j, sub_bindings)
+        bindings.update(comp)
 
         return match_set
 
@@ -197,7 +234,7 @@ class Matcher:
         current_node = node
         for direction in directions:
             match direction:
-                case NavigationDirection.RIGHT_SIBLING:
+                case NavigationAlphabet.RIGHT_SIBLING:
                     try:
                         parent = current_node.parentCtx
                         if parent is None:
@@ -207,7 +244,7 @@ class Matcher:
                         current_node = siblings[index + 1]
                     except IndexError:
                         return None
-                case NavigationDirection.LEFT_CHILD:
+                case NavigationAlphabet.LEFT_CHILD:
                     try:
                         children = list(current_node.getChildren())
                         current_node = children[0]
@@ -215,19 +252,16 @@ class Matcher:
                         return None
                     except IndexError:
                         return None
-                case NavigationDirection.PARENT:
+                case NavigationAlphabet.PARENT:
                     if current_node == self.parse_tree:
                         return None
                     current_node = current_node.parentCtx
         return current_node
 
     @staticmethod
-    def _match_node(input, a):
-        to_match = a.split("/") if len(a) > 1 else [a]
-        name = to_match[0]
-        down, up = to_match[1].split(",") if len(to_match) > 1 else (0, math.inf)
-        down = float(down)
-        up = float(up)
+    def _match_node(input, A: NodeTransition):
+        name = A.name
+        down, up = A.down, A.up
         if name == "":
             return True
         if isinstance(input, TerminalNode):
