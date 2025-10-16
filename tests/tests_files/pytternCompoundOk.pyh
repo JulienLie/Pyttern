@@ -1,6 +1,0 @@
-def ?(n):
-    ?*
-    ?:
-        for ? in ?:
-            ?*
-    return ?

@@ -1,0 +1,1 @@
+.app-layout{display:flex;min-height:100vh}.sidebar{width:200px;background:#333;color:#fff;padding:1rem}.sidebar ul{list-style:none;padding:0}.sidebar li{margin:1rem 0}.sidebar a{color:#fff;text-decoration:none}.sidebar a.active{font-weight:700}.main-content{flex:1;padding:2rem}

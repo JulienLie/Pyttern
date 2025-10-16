@@ -1,5 +1,0 @@
-def ?(?*):
-    ?acc = 0
-    ?:
-        ?acc += ?
-    return ?<?acc>

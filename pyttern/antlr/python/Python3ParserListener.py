@@ -1124,6 +1124,15 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by Python3Parser#number_wildcard.
+    def enterNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#number_wildcard.
+    def exitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        pass
+
+
     # Enter a parse tree produced by Python3Parser#double_wildcard.
     def enterDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
         pass
@@ -1178,21 +1187,48 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#strict_mode.
-    def enterStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#strict_mode.
-    def exitStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
-        pass
-
-
     # Enter a parse tree produced by Python3Parser#list_wildcard.
     def enterList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
         pass
 
     # Exit a parse tree produced by Python3Parser#list_wildcard.
     def exitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#macro.
+    def enterMacro(self, ctx:Python3Parser.MacroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#macro.
+    def exitMacro(self, ctx:Python3Parser.MacroContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#macro_arg.
+    def enterMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#macro_arg.
+    def exitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#simple_macro.
+    def enterSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#simple_macro.
+    def exitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#compound_macro.
+    def enterCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#compound_macro.
+    def exitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
         pass
 
 

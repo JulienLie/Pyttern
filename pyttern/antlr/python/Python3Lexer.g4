@@ -213,8 +213,12 @@ IDIV_ASSIGN : '//=';
 
 // Rules for wildcards
 WILDCARD : '?';
-SYNTAX_STRICT_START : '?![' ;
-//SYNTAX_STRICT_END : '!]' ;
+DEFINE: 'DEFINE';
+
+MACRO_NAME
+    : WILDCARD [A-Z] ID_CONTINUE*
+    ;
+
 
 
 SKIP_

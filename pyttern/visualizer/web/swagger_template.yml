@@ -1,0 +1,333 @@
+openapi: 3.0.2
+info:
+  title: "Pyttern API"
+  version: "1.0"
+components:
+  schemas:
+
+    NodeTransition:
+      type: object
+      properties:
+        name:
+          type: string
+        down:
+          type: integer
+          minimum: 0
+        up:
+          type: integer
+          minimum: 0
+      required:
+        - name
+
+    NamedTransition:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    CallTransition:
+      type: object
+      properties:
+        macro_name:
+          type: string
+        transformation_name:
+          type: string
+        args:
+          type: array
+          items:
+            type: string
+      required:
+        - macro_name
+        - transformation_name
+        - args
+
+    Transition:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          q:
+            type: number
+          alpha:
+            type: string
+          A:
+            oneOf:
+              - $ref: "#/components/schemas/NodeTransition"
+              - $ref: "#/components/schemas/NamedTransition"
+              - $ref: "#/components/schemas/CallTransition"
+          t:
+            type: array
+            items:
+              type: string
+          q_prime:
+            type: number
+          beta:
+            type: string
+        required:
+          - q
+          - alpha
+          - A
+          - t
+          - q_prime
+          - beta
+
+    PDA:
+      type: object
+      properties:
+        states:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        named_wildcards:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        transitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transition"
+          uniqueItems: true
+        initial_state:
+          type: integer
+        final_state:
+          type: integer
+      required:
+        - states
+        - named_wildcards
+        - transitions
+        - initial_state
+        - final_state
+
+    ParseTree:
+      type: object
+      properties:
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParseTree"
+        id:
+          type: integer
+        start:
+          type: array
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+        end:
+          type: array
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+      required:
+        - name
+        - children
+        - id
+
+
+    PatternTree:
+      type: object
+      properties:
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AndPattern"
+              - $ref: "#/components/schemas/OrPattern"
+              - $ref: "#/components/schemas/NotPattern"
+              - $ref: "#/components/schemas/Pattern"
+            nullable: false
+          minItems: 1
+          nullable: false
+      required:
+        - name
+        - children
+      example:
+        name: "Example Pattern"
+        children:
+            - id: 1
+              name: "and"
+              children:
+              - id: 2
+                name: "pattern1.pyt"
+                pattern: "a = ?"
+              - id: 3
+                name: "or"
+                children:
+                - id: 4
+                  name: "pattern2.pyt"
+                  pattern: "b = ?"
+                - id: 5
+                  name: "not"
+                  children:
+                  - id: 6
+                    name: "pattern3"
+                    pattern: "c = ?"
+            - id: 7
+              name: "pattern4.pyt"
+              pattern: "def ?():\n\t?"
+
+    AndPattern:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum: ["and"]
+        children:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AndPattern"
+              - $ref: "#/components/schemas/OrPattern"
+              - $ref: "#/components/schemas/NotPattern"
+              - $ref: "#/components/schemas/Pattern"
+            nullable: false
+          minItems: 1
+          nullable: false
+      required:
+        - id
+        - name
+        - children
+
+    OrPattern:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum: ["or"]
+        children:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AndPattern"
+              - $ref: "#/components/schemas/OrPattern"
+              - $ref: "#/components/schemas/NotPattern"
+              - $ref: "#/components/schemas/Pattern"
+            nullable: false
+          minItems: 1
+          nullable: false
+      required:
+        - id
+        - name
+        - children
+
+    NotPattern:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum: ["not"]
+        children:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AndPattern"
+              - $ref: "#/components/schemas/OrPattern"
+              - $ref: "#/components/schemas/NotPattern"
+              - $ref: "#/components/schemas/Pattern"
+            nullable: false
+          minItems: 1
+          maxItems: 1
+          minLength: 1
+          maxLength: 1
+          nullable: false
+      required:
+        - id
+        - name
+        - children
+
+    Pattern:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        pattern:
+          type: string
+      required:
+        - id
+        - name
+        - pattern
+
+    state:
+      type: object
+      properties:
+        state:
+          type: array
+          items:
+            type: string
+        matches:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        match:
+          type: boolean
+        variables:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/ParseTree"
+        stack:
+          type: string
+        code_pos:
+          type: array
+          items:
+            type: integer
+
+
+    Step:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["ok", "error"]
+        state:
+          $ref: "#/components/schemas/state"
+        current_matchings:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        previous_matchings:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        message:
+          type: string
+        match:
+          type: boolean
+        variable:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/ParseTree"
+        current_stack:
+          type: string
+        previous_stack:
+          type: string
+        code_pos:
+          type: array
+          items:
+            type: integer

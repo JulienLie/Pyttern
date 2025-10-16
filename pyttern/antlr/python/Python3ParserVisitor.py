@@ -629,6 +629,11 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by Python3Parser#number_wildcard.
+    def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by Python3Parser#double_wildcard.
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
         return self.visitChildren(ctx)
@@ -659,13 +664,28 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#strict_mode.
-    def visitStrict_mode(self, ctx:Python3Parser.Strict_modeContext):
+    # Visit a parse tree produced by Python3Parser#list_wildcard.
+    def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#list_wildcard.
-    def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
+    # Visit a parse tree produced by Python3Parser#macro.
+    def visitMacro(self, ctx:Python3Parser.MacroContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#macro_arg.
+    def visitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#simple_macro.
+    def visitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#compound_macro.
+    def visitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
         return self.visitChildren(ctx)
 
 

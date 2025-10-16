@@ -59,18 +59,18 @@ parameters: '(' (tfpdef ('=' test)? (',' tfpdef ('=' test)?)* (',' (
       | '**' tfpdef ','? )? )?
       | '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','? )? )?
       | '**' tfpdef ','?)? ')';
-tfpdef: name (':' test)? | expr_wildcard | list_wildcard;
+tfpdef: name (':' test)? | expr_wildcard | number_wildcard | list_wildcard;
 varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
         '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
       | '**' vfpdef (',')?)?)?
   | '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
   | '**' vfpdef ','?
 );
-vfpdef: name | expr_wildcard;
+vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: stmt_wildcard | simple_stmts | compound_stmt;
+stmt: macro | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
-simple_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
+simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
 expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
                      ('=' (yield_expr|testlist_star_expr))*);
@@ -186,6 +186,7 @@ star_expr: '*' expr;
 
 expr:
     expr_wildcard
+    | number_wildcard
     | atom_expr
     | expr '**' expr
     | ('+'|'-'|'~')+ expr
@@ -212,7 +213,7 @@ atom: '(' (yield_expr|testlist_comp)? ')'
    | atom_wildcard
    | name | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False' ;
 name : NAME | '_' | 'match' ;
-testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* ','? );
+testlist_comp: (list_wildcard|test|star_expr) ( comp_for | (',' (list_wildcard|test|star_expr))* ','? );
 trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (name | atom_wildcard);
 subscriptlist: subscript_ (',' subscript_)* ','?;
 subscript_: test | test? ':' test? sliceop?;
@@ -226,7 +227,9 @@ dictorsetmaker: ( ((test ':' test | '**' expr)
 
 classdef: 'class' (name | simple_wildcard | var_wildcard) ('(' arglist? ')')? ':' block;
 
-arglist: argument (',' argument)* ','?;
+// We should not put the wildcard too deep else, the number of children will be miscaculated
+arglist: (list_wildcard | number_wildcard | argument)
+            (',' (list_wildcard | number_wildcard | argument))* ','?;
 
 // The reason that keywords are test nodes instead of NAME is that using NAME
 // results in an ambiguity. ast.c makes sure it's a NAME.
@@ -237,8 +240,7 @@ arglist: argument (',' argument)* ','?;
 // Illegal combinations and orderings are blocked in ast.c:
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
-argument: ( list_wildcard |
-            expr_wildcard |
+argument: ( var_wildcard |
             test comp_for? |
             test '=' test |
             '**' test |
@@ -257,17 +259,22 @@ yield_arg: 'from' test | testlist;
 strings: STRING+ ;
 
 // syntax of wildcards
-wildcard_type: '[' name (',' name)* ']';
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
-stmt_wildcard: (double_wildcard | simple_wildcard | var_wildcard | contains_wildcard) NEWLINE;
+stmt_wildcard: (double_wildcard | simple_wildcard | number_wildcard | var_wildcard | contains_wildcard);
 expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
-simple_wildcard: '?' wildcard_type? wildcard_number?;
-double_wildcard: '?' wildcard_type? '*';
-var_wildcard: '?' wildcard_type? name;
-contains_wildcard: '?' '<' (expr_wildcard | expr_stmt) '>' wildcard_type?;
-compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard | strict_mode;
-simple_compound_wildcard: '?' wildcard_type? ':' wildcard_number? block;
-multiple_compound_wildcard: ('?' wildcard_type? ':' '*' block) | ('?' wildcard_type? '*' ':' block);
-strict_mode: '?' STRICT '[' (simple_stmts | NEWLINE stmt+) ']' NEWLINE;
-list_wildcard: '?' '*';
+simple_wildcard: WILDCARD;
+number_wildcard: WILDCARD wildcard_number;
+double_wildcard: WILDCARD '*';
+var_wildcard: WILDCARD NAME;
+contains_wildcard: WILDCARD '<' (expr_wildcard | expr_stmt) '>';
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
+simple_compound_wildcard: WILDCARD ':' wildcard_number? block;
+multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
+list_wildcard: WILDCARD '*';
+
+// syntax of macros
+macro: compound_macro | (simple_macro NEWLINE);
+macro_arg: (atom_wildcard | atom) ('=' test)?;
+simple_macro: MACRO_NAME '(' (macro_arg (',' macro_arg)*)? ')';
+compound_macro: simple_macro ':' block;

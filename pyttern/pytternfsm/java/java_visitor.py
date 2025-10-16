@@ -1,10 +1,16 @@
+# Deprecated class. Use an old class and is not compatible with the new version of pyttern.
+# It is kept for future works.
+
+"""
 from antlr4 import TerminalNode
 from loguru import logger
+from typing_extensions import deprecated
 
 from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...simulator.pyttern_fsm import FSM, Movement
 from ...simulator.transitions import ClassTransition, StringTransition
 
+@deprecated
 class Java_Visitor(JavaParserVisitor):
     def __init__(self, strict=False):
         super().__init__()
@@ -93,3 +99,4 @@ class Java_Visitor(JavaParserVisitor):
                 child.accept(self)
 
         return next_node
+"""

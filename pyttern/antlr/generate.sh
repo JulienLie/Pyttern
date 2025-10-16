@@ -1,4 +1,10 @@
 for d in ./*/ ; do
+  basename=$(basename "$d")
+  if [[ $basename == _* ]]; then
+    echo "Skipping directory $basename"
+    continue
+  fi
+  echo "Processing directory: $basename"
   cd "$d"
   python3 transformGrammar.py
   echo "Generating lexer and parser"

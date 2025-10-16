@@ -1,7 +1,0 @@
-def ?(n):
-    ?:*
-        for ? in range(?*):
-            ?strict[
-            if ?:
-                count += ?
-            ]
