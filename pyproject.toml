@@ -22,6 +22,7 @@ flasgger="0.9.7b2"
 pytest="^8.2.2"
 pylint="^3.2.2"
 pytest-subtests="^0.14.2"
+flake8 = "^7.3.0"
 
 [build-system]
 requires = ["poetry-core"]
