@@ -1111,4 +1111,4 @@ docs = ["Sphinx"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "28befa785e4ce1d6f9919f2e55697613bf3f58e4c16ed5370309b0a38a777dc1"
+content-hash = "fb116fcacaaf7225a3bf48fbee75a0978f1ea9c88fea63c5e531cae4af3e3f06"
