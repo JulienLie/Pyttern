@@ -6,8 +6,7 @@ import time
 from loguru import logger
 from tqdm import tqdm
 
-from .language_processors import Languages, get_processor
-from .macro.macro_parser import parse_macro_from_file
+from .language_processors import get_processor
 from .simulator.Matcher import Matcher
 
 
@@ -184,7 +183,6 @@ def match_wildcards(pattern_path, code_path, match_details=False):
 def run_application():
     from .visualizer.web import application
     logger.enable("pyttern")
-    parse_macro_from_file("/home/julien/Documents/phd/Pyttern/tests/tests_files/macros/incr.myt", Languages.PYTHON)
     application.app.run(debug=True)
 
 

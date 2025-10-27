@@ -609,6 +609,13 @@ def parse_macro():
     """
     [WIP] Parse a macro and return its PDA representation.
     ---
+    requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
     responses:
       '200':
         description: Macro parsing result
