@@ -516,6 +516,7 @@ def batch_validate():
                     type: string
                     description: Error message if status is error
     """
+    logger.debug(request.json)
     pattern_codes = request.json["codes"]
     pattern_lang = request.json['lang']
     if pattern_lang == "":
@@ -524,16 +525,20 @@ def batch_validate():
     res = {}
     try:
         lang = determine_language(pattern_lang)
+        lang = "python"
         current_language_processor = get_processor(lang)
         for pattern_code in pattern_codes:
+            filename = pattern_code["filename"]
+            logger.debug(f"Validating pattern code: {filename}")
+            code = pattern_code["code"]
             try:
-                current_language_processor.generate_tree_from_code(pattern_codes[pattern_code])
-                res[pattern_code] = {
+                current_language_processor.generate_tree_from_code(code)
+                res[filename] = {
                     "status": "ok",
                     "message": None
                 }
             except PytternSyntaxException as e:
-                res[pattern_code] = {
+                res[filename] = {
                     "status": "error",
                     "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
                 }

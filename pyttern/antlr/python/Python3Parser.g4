@@ -46,6 +46,7 @@ options {
 single_input: NEWLINE | simple_stmts | compound_stmt NEWLINE;
 file_input: (NEWLINE | stmt)* EOF;
 eval_input: testlist NEWLINE* EOF;
+macro_input: (macro_stmts)+ EOF;
 
 decorator: '@' dotted_name ( '(' arglist? ')' )? NEWLINE;
 decorators: decorator+;
@@ -68,7 +69,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: macro | simple_stmts | compound_stmt;
+stmt: macro_call | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -273,8 +274,15 @@ simple_compound_wildcard: WILDCARD ':' wildcard_number? block;
 multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 list_wildcard: WILDCARD '*';
 
-// syntax of macros
+// syntax of macro
+macro_call: WILDCARD NAME '(' macro_args? ')' NEWLINE;
+
+macro_stmts: macro_def transformation+;
+macro_def: BALISE DEFINE NEWLINE macro;
 macro: compound_macro | (simple_macro NEWLINE);
+macro_args: macro_arg (',' macro_arg)*;
 macro_arg: (atom_wildcard | atom) ('=' test)?;
-simple_macro: MACRO_NAME '(' (macro_arg (',' macro_arg)*)? ')';
+simple_macro: WILDCARD ('&'|'|') NAME '(' macro_args? ')';
 compound_macro: simple_macro ':' block;
+
+transformation: BALISE NAME NEWLINE stmt;

@@ -23,18 +23,12 @@ We extended the python syntax to create pattern files. Our new syntax includes t
 | Wildcard | Description                                                               |
 |----------|---------------------------------------------------------------------------|
 | ?        | Match 1 element                                                           |
+| ?{n, m}  | Match between ``n`` and ``m`` elements                                    |
 | ?*       | Match 0 or more elements                                                  |
 | ?name    | Match 1 element and bind it to ``name``                                   |
 | ?:       | Match 1 element with a body                                               |
 | ?:*      | Match the body of the wildcard in any indentation                         |
 | ?<...>   | Match if the inside of the wildcard is contained inside the matching node |
-
-In addition to these wildcards, we added some optional elements to allow more options:
-
-| Option       | Description                            |
-|--------------|----------------------------------------|
-| ?[Type, ...] | Match 1 element of type ``Type``       |
-| ?{n, m}      | Match between ``n`` and ``m`` elements |
 
 
 
@@ -42,11 +36,11 @@ In addition to these wildcards, we added some optional elements to allow more op
 
 ```python
 
-import Matcher
+from pyttern import match_files
 
 code = "code_file.py"
 pattern = "pattern_file.py"
-match = Matcher.match_files(pattern, code, strict_match=False, match_details=False)
+match = match_files(pattern, code, match_details=False, lang="python", stop_at_first=True)
 if match:
     print("We found a match")
 else:
@@ -55,12 +49,12 @@ else:
 The `match_files` function takes 4 arguments:
 1. `pattern_file: string` The path to the file describing the pattern
 2. `code_file: string` The path to the python code file
-3. `strict_match: boolean` (optional) When strict_match is set to True, a strict match is performed. 
-A strict match requires an exact match between the code file and the pattern file, including code structure and syntax. 
-If strict_match is set to False, a "soft" match is performed, which allows for flexibility in code sections using wildcards.
-4. `match_details: boolean` (optional) If match_details is set to True, the function returns a tuple (result, details), 
+3. `match_details: boolean` (optional) If match_details is set to True, the function returns a tuple (result, details), 
 where result is a boolean value indicating whether the code matches the pattern. 
 If result is True, details contains the match details. If result is False, details contains the error that prevented the match.
+4. `lang: string` (optional) The programming language of the code file. Currently, only "python" is supported.
+5. `stop_at_first: boolean` (optional) If stop_at_first is set to True, the function stops at the first match found. 
+If set to False, the function continues to search for more matches.
 
 ## Examples
 ### Wildcard: ``?``
@@ -79,6 +73,25 @@ def foo():
     x = 0
     return "bar"
 ```
+
+### Wildcard: ``?{n, m}``
+
+The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
+
+#### Pyttern
+```python
+def foo():
+    x = [?{1, 5}]
+    return x
+```
+
+#### Code
+```python
+def foo():
+    x = [1, 2, 3] # Can have between 1 and 5 elements
+    return x
+```
+
 ### Wildcard: ``?*``
 The `?*` wildcard matches zero or more elements in the code. For example, the pattern `?*` will match any sequence of elements.
 
@@ -206,7 +219,34 @@ def sum(lst):
     return acc
 ```
 
-## Strict match / Soft match
+## File structure
+To implement a system that allows to create logic with different patterns, we implemented a specific file structure.
+The file structure is composed as follows:
+```
+pattern_name
+└── and
+    ├── pattern1.pyt
+    ├── pattern2.pyt
+    └── or
+        ├── not
+        │   └── pattern3.pyt
+        └── pattern4.pyt
+```
+The resulting is a boolean logic tree. The `and` folder contains patterns that must all match. 
+The `or` folder contains patterns that can match. 
+The `not` folder contains patterns that must not match.
+This allows the creation of more complex patterns with different files.
+
+## Visualization
+To visualize the matching algorithm, we implemented a web visualization tool. If you installed Pyttern, you can run it
+using the following command:
+```bash
+pytternweb
+```
+You can then import your pyttern on the left part of the site and your code on the right side. You can control the
+matching algorithm using the buttons on the bottom of the site.
+
+## [DEPRECATED] ~~Strict match / Soft match~~
 ### Main difference
 In a soft match, there is flexibility in code structure and the possibility of including extra code, 
 as long as the main matching criteria are met. In contrast, in a strict match, precise adherence to the defined 
@@ -256,85 +296,3 @@ the pattern won't match because the strict match requirement `?![ ... ]` doesn't
 In summary, the wildcard `?![]` allows for a combination of soft and strict matching. 
 It provides flexibility by allowing soft matches for variables and loop structures while enforcing strict matches for 
 specific code sections. This helps in creating adaptable code patterns that can match similar code snippets with some variations.
-
-# Flexibility
-To add some flexibility to our pattern we implemented different features.
-
-## Wildcards Options
-We added some options to put on the wildcards:
-1. `?[Type1, Type2, ...]` allows to specify the type of the element to match.
-2. `?{n, m}` allows to specify the number of elements to match. It can be used with or without the type option.
-This option can be used in five different ways:
-    1. `?{n, m}`: Match between `n` and `m` elements
-    2. `?{n, }`: Match at least `n` elements
-    3. `?{, m}`: Match at most `m` elements
-    4. `?{n}`: Match exactly `n` elements
-[//]: # (5. `?{0}`: Create a `not` wildcard. For example: `?:{0}` will ensure that the current element does not have a body.)
-
-### Wildcard Option: ``?[Type, ...]``
-The `?[Type, ...]` option allows you to specify the type of the element to match. For example, the pattern `?[For]` will match any integer value.
-
-#### Pyttern
-```python
-def foo():
-    ?[For]:
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    for i in range(10):
-        x = 0
-    return x
-```
-
-### Wildcard Option: ``?{n, m}``
-The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
-
-#### Pyttern
-```python
-def foo():
-    ?:{3} # I want to match exactly 3 level of indentation
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    if True:
-        if True:
-            if True:
-                x = 0
-    return x
-```
-
-
-## File structure
-To implement a system that allows to create logic with different patterns, we implemented a specific file structure.
-The file structure is composed as follows:
-```
-pattern_name
-└── and
-    ├── pattern1.pyt
-    ├── pattern2.pyt
-    └── or
-        ├── not
-        │   └── pattern3.pyt
-        └── pattern4.pyt
-```
-The resulting is a boolean logic tree. The `and` folder contains patterns that must all match. 
-The `or` folder contains patterns that can match. 
-The `not` folder contains patterns that must not match.
-This allows the creation of more complex patterns with different files.
-
-## Visualization
-To visualize the matching algorithm, we implemented a web visualization tool. If you installed Pyttern, you can run it
-using the following command:
-```bash
-pytternweb
-```
-You can then import your pyttern on the left part of the site and your code on the right side. You can control the
-matching algorithm using the buttons on the bottom of the site.

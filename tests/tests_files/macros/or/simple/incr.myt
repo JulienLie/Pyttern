@@ -1,0 +1,11 @@
+?# define
+?|Incr(?x)
+
+?# AugAssign
+?x += 1
+
+?# Add_v
+?x = ?x + 1
+
+?# Add_x
+?x = 1 + ?x

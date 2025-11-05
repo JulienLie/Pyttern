@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Literal
 
 from antlr4.tree.Tree import Tree
 
@@ -20,21 +21,11 @@ class Macro:
     args: dict[str, Tree]
     args_order: list[str]
     code: str
+    type: Literal["AND", "OR"] = "OR"
     transformations: dict[str, PDA] = field(default_factory=dict)
 
-    def __init__(self, name: str, code: str, args: dict[str, Tree], args_order: list[str]):
-        """
-        Initializes a Macro object.
-
-        :param name: The name of the macro.
-        :param args: A dictionary of argument names and their default values.
-        """
-        self.name = name
-        self.args = args
-        self.args_order = args_order
-        self.code = code
-        self.transformations = {}
-        loaded_macros[name] = self
+    def __post_init__(self):
+        loaded_macros[self.name] = self
 
     def add_transformation(self, name: str, transformation: PDA):
         """

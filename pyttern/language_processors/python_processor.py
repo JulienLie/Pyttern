@@ -36,10 +36,6 @@ class PythonProcessor(BaseProcessor):
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
-        """if len(error_listener.symbol) > 0:
-            raise IOError(
-                f"Syntax error in {stream} at line {error_listener.line} "
-                f"({repr(error_listener.symbol)}) : {error.getvalue()}")"""
 
         pruned_tree = TreePruner().visit(tree)
 

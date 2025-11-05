@@ -1,11 +1,18 @@
+import io
+
+from antlr4 import InputStream, CommonTokenStream
 from antlr4.ParserRuleContext import ParserRuleContext
 from antlr4.tree.Tree import TerminalNode
 from antlr4.tree.Trees import Trees
 from loguru import logger
 
 from .Macro import Macro, loaded_macros
+from .macro_visitor import Macro_Visitor
 from ..antlr.python import Python3Parser
-from ..language_processors import get_processor, Languages
+from ..antlr.python.Python3Lexer import Python3Lexer
+from ..language_processors import Languages
+from ..pyttern_error_listener import Python3ErrorListener
+from ..pytternfsm.python.tree_pruner import TreePruner
 
 
 def get_all_nodes(tree, rule_index):
@@ -65,6 +72,24 @@ def handle_new_transformation(tree: Python3Parser.File_inputContext):
     logger.debug(end_ctx)"""
     return new_root
 
+def string_to_macro_tree(macro_string):
+    logger.info("Generating macro tree")
+    stream = InputStream(macro_string)
+    lexer = Python3Lexer(stream)
+    stream = CommonTokenStream(lexer)
+    py_parser = Python3Parser(stream)
+
+    error = io.StringIO()
+
+    py_parser.removeErrorListeners()
+    error_listener = Python3ErrorListener(error)
+    py_parser.addErrorListener(error_listener)
+
+    tree = py_parser.macro_input()
+
+    pruned_tree = TreePruner().visit(tree)
+
+    return pruned_tree
 
 def parse_macro_from_string(code: str, language: Languages, override: bool=False):
     """
@@ -76,49 +101,13 @@ def parse_macro_from_string(code: str, language: Languages, override: bool=False
     :return: The list of parsed Macros.
     :raises ValueError: If the code format is invalid or no macro definition is found.
     """
-    logger.debug("Parsing macro from string")
+    logger.trace("Parsing macro from string")
 
-    parsed_macros = []
+    macro_tree = string_to_macro_tree(code)
+    macros = Macro_Visitor().visit(macro_tree)
 
-    macros = code.split("?#")
-    if len(macros) < 2:
-        raise ValueError("Invalid macro format. Expected at least one macro definition.")
 
-    processor = get_processor(language)
-    current_macro = None
-    for macro in macros:
-        if len(macro.strip()) == 0:
-            continue
-
-        logger.debug(macro.strip())
-        macro_name = macro.split("\n")[0].strip()
-        macro_code = "\n".join(macro.split("\n")[1:]).strip()
-
-        tree = processor.generate_tree_from_code(macro_code)
-
-        if macro_name == "DEFINE":
-            if current_macro is not None:
-                parsed_macros.append(current_macro)
-                logger.debug(f"Completed macro: {current_macro.name} with tranformations: "
-                             f"{current_macro.transformations.keys()}")
-            current_macro = define_new_macro(tree, override, code)
-            logger.debug(f"Defined macro: {current_macro.name} with args: {current_macro.args}")
-            continue
-
-        if current_macro is None:
-            raise ValueError("No macro definition found in the string.")
-
-        pruned_tree = handle_new_transformation(tree)
-        logger.debug(f"Pruned tree for macro {macro_name}: {pruned_tree.toStringTree()}")
-        macro_pda = processor.create_pda(pruned_tree)
-        current_macro.add_transformation(macro_name, macro_pda)
-
-    if current_macro is not None:
-        parsed_macros.append(current_macro)
-        logger.debug(f"Completed macro: {current_macro.name} with transformations: "
-                     f"{current_macro.transformations.keys()}")
-
-    return parsed_macros
+    return macros
 
 def parse_macro_from_file(file: str, language: Languages, override: bool=False):
     """

@@ -5,4 +5,4 @@ match command:
     case 'Goodbye, World!':
         print('See you later')
     case other:
-        print('No match found')
+        print('No match_rule found')

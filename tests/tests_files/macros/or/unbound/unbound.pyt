@@ -1,0 +1,3 @@
+def ?(?*):
+    ?Bound(?x)
+    return ?x

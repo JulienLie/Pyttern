@@ -1,11 +1,12 @@
 import math
+from itertools import permutations
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...macro.Macro import loaded_macros
+from ...macro.Macro import loaded_macros, Macro
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -329,16 +330,18 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return dummy_state
 
-    def visitMacro(self, ctx: Python3Parser.MacroContext):
-        return ctx.getChild(0).accept(self)
 
-    def visitSimple_macro(self, ctx: Python3Parser.Simple_macroContext):
-        macro_name = ctx.getChild(0).getText()[1:]  # Remove the leading '?'
+    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+        macro_name = ctx.NAME().getText()
+        logger.debug(f"Calling macro {macro_name}")
         if macro_name not in loaded_macros:
             raise ValueError(f"Macro {macro_name} is not defined. Available macros: {list(loaded_macros.keys())}")
 
-        args_nodes = ctx.macro_arg()
-        args_names = [arg_node.atom_wildcard().getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        args_nodes = ctx.macro_args().macro_arg()
+        if args_nodes is not None:
+            args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        else:
+            args_names = []
 
         macro = loaded_macros[macro_name]
         n_args_req = list(macro.args.keys()).count(lambda key: macro.args[key] is None)
@@ -346,19 +349,53 @@ class Python_to_PDA(Python3ParserVisitor):
             logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
             raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
+        if macro.type == "OR":
+            self.__visit_or_macro(macro, args_names)
+        elif macro.type == "AND":
+            self.__visit_and_macro(macro, args_names)
+        else:
+            logger.error(f"Unknown macro type {macro.type} for macro {macro_name}")
+
+        return self._add_up_transition(ctx)
+
+    def __visit_or_macro(self, macro: Macro, args):
         next_state = self.pda.new_state()
+        macro_name = macro.name
 
         for transformation in macro.transformations:
-            logger.debug(f"Adding transformation {transformation} for macro {macro_name}")
-            #args = ','.join(args_names)
-            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args_names),
-                                    [], next_state, '')
+            logger.debug(f"Adding transformation {transformation} for OR macro {macro_name}")
+            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args), [],
+                                    next_state, '')
             self.pda.add_transition(transition)
 
         self.current_state = next_state
-        return self._add_up_transition(ctx)
+        return self.current_state
 
+    def __visit_and_macro(self, macro: Macro, args):
+        perms = permutations(macro.transformations)
+        start_state = self.current_state
+        end_state = self.pda.new_state()
+        for permutation in perms:
+            self.current_state = start_state
+            for transformation in permutation:
+                next_state = self.pda.new_state()
+                macro_name = macro.name
+                logger.debug(f"Adding transformation {transformation} for AND macro {macro_name}")
+                transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args), [],
+                                        next_state, '')
+                self.pda.add_transition(transition)
 
+                self_transition = Transition(next_state, '', NodeTransition(''), [NavigationAlphabet.PARENT,
+                                                                                  NavigationAlphabet.RIGHT_SIBLING,
+                                                                                  NavigationAlphabet.LEFT_CHILD],
+                                             next_state, '')
+                self.pda.add_transition(self_transition)
+                self.current_state = next_state
+            end_transition = Transition(self.current_state, '', NodeTransition(''), [], end_state, '')
+            self.pda.add_transition(end_transition)
+
+        self.current_state = end_state
+        return self.current_state
 
     def _handle_empty_list(self, ctx):
         list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)

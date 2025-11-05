@@ -104,6 +104,7 @@ YIELD : 'yield';
 
 
 STRICT: 'strict';
+DEFINE: 'define';
 
 
 NEWLINE
@@ -113,10 +114,19 @@ NEWLINE
    {self.onNewLine();}
  ;
 
+/*
+
+MACRO_NAME
+    : [A-Z] ID_CONTINUE*
+    ;
+
+*/
+
 /// identifier   ::=  id_start id_continue*
 NAME
  : ID_START ID_CONTINUE*
  ;
+
 
 /// stringliteral   ::=  [stringprefix](shortstring | longstring)
 /// stringprefix    ::=  "r" | "u" | "R" | "U" | "f" | "F"
@@ -213,12 +223,7 @@ IDIV_ASSIGN : '//=';
 
 // Rules for wildcards
 WILDCARD : '?';
-DEFINE: 'DEFINE';
-
-MACRO_NAME
-    : WILDCARD [A-Z] ID_CONTINUE*
-    ;
-
+BALISE: '?#';
 
 
 SKIP_
