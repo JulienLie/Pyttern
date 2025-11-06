@@ -372,9 +372,11 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.current_state
 
     def __visit_and_macro(self, macro: Macro, args):
-        perms = permutations(macro.transformations)
+        perms = list(permutations(macro.transformations))
         start_state = self.current_state
         end_state = self.pda.new_state()
+        if len(perms) > 10:
+            logger.warning(f"Macro {macro.name} has {len(perms)} permutations, which may lead to a large PDA.")
         for permutation in perms:
             self.current_state = start_state
             for transformation in permutation:
