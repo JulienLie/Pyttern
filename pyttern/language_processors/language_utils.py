@@ -8,4 +8,6 @@ def determine_language(filename):
         return "python"
     elif extension in {"jat", "java"}:
         return "java"
+    elif extension in {"lud", "lut"}:
+        return "ludii"
     return None
