@@ -1,0 +1,5 @@
+?# define
+?|Assign(?var)
+
+?# assign
+?var = ?

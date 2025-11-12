@@ -139,6 +139,7 @@ class Matcher:
             class_name = current_node.__class__.__name__
 
             new_var = var.copy()
+            new_vars = []
 
             # Default terminal node
             if isinstance(A, NodeTransition):
@@ -148,6 +149,7 @@ class Matcher:
                     else:
                         logger.debug(f"Wrong input: expecting {A.name} but was {class_name}")
                     continue
+                new_vars.append(new_var)
 
             # Handle Variables
             elif isinstance(A, NamedTransition):
@@ -158,6 +160,7 @@ class Matcher:
                 elif not self._match_tree(new_var[name], current_node):
                     logger.debug(f"Wrong variable: {name} expecting {new_var[name]} but was {current_node}")
                     continue
+                new_vars.append(new_var)
 
             # Handle Macros
             elif isinstance(A, CallTransition):
@@ -167,9 +170,10 @@ class Matcher:
 
                 logger.debug(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
 
-                macro_match = self.call_macro(macro_name, trnsf_name, args, current_node, new_var)
-                if macro_match is None or macro_match.count() == 0:
+                possible_bindings = self.call_macro(macro_name, trnsf_name, args, current_node, new_var)
+                if len(possible_bindings) < 1:
                     continue
+                new_vars += possible_bindings
 
             else:
                 logger.error(f"Unknown transition type: {A}")
@@ -186,8 +190,9 @@ class Matcher:
             new_stack += beta
             new_matches = matches + [(transition, current_node.__class__.__name__)]
 
-            new_config = (q_prime, next_node, new_stack, new_var.copy(), new_matches)
-            self.configurations.append(new_config)
+            for variables in new_vars:
+                new_config = (q_prime, next_node, new_stack, variables.copy(), new_matches)
+                self.configurations.append(new_config)
 
         self.n_step += 1
         return self
@@ -206,7 +211,7 @@ class Matcher:
         macro = loaded_macros.get(macro_name)
         if not macro or trnsf_name not in macro.transformations:
             logger.warning(f"Macro or transformation not found: {macro_name}:{trnsf_name}")
-            return MatchSet()
+            return []
 
         macro_pda = macro.transformations[trnsf_name]
 
@@ -217,17 +222,22 @@ class Matcher:
 
         logger.debug(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
 
-        match_set = Matcher.match(macro_pda, current_node, stop_at_first=True, bindings=macro_params)
+        match_set = Matcher.match(macro_pda, current_node, stop_at_first=False, bindings=macro_params)
         if match_set.count() == 0:
             logger.debug(f"Macro {macro_name}:{trnsf_name} did not match")
-            return None
+            return []
 
-        sub_bindings = match_set.matches[0].bindings
-        m_i_to_j = mapping(args, macro.args_order)
-        comp = composition(m_i_to_j, sub_bindings)
-        bindings.update(comp)
+        new_bindings = []
+        for match in match_set.matches:
+            print(f"Macro {macro_name}:{trnsf_name} matched with bindings {match.bindings}")
+            sub_bindings = match.bindings
+            m_i_to_j = mapping(args, macro.args_order)
+            comp = composition(m_i_to_j, sub_bindings)
+            new_binding = bindings.copy()
+            new_binding.update(comp)
+            new_bindings.append(new_binding)
 
-        return match_set
+        return new_bindings
 
 
     def _get_next_node(self, node, directions):

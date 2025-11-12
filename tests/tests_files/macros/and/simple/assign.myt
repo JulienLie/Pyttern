@@ -6,9 +6,3 @@
 
 ?# assign_var_2
 ?var2 = ?
-
-?# foo
-?
-
-?# bar
-?
