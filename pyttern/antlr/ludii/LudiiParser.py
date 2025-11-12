@@ -11,20 +11,22 @@ else:
 
 def serializedATN():
     return [
-        4,1,15,46,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,5,
+        4,1,15,51,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,5,
         0,14,8,0,10,0,12,0,17,9,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,2,1,2,5,
         2,28,8,2,10,2,12,2,31,9,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,3,4,40,8,4,
-        1,5,1,5,1,5,1,5,1,5,0,0,6,0,2,4,6,8,10,0,0,44,0,15,1,0,0,0,2,20,
-        1,0,0,0,4,29,1,0,0,0,6,32,1,0,0,0,8,39,1,0,0,0,10,41,1,0,0,0,12,
-        14,3,2,1,0,13,12,1,0,0,0,14,17,1,0,0,0,15,13,1,0,0,0,15,16,1,0,0,
-        0,16,18,1,0,0,0,17,15,1,0,0,0,18,19,5,0,0,1,19,1,1,0,0,0,20,21,5,
-        1,0,0,21,22,5,11,0,0,22,23,3,4,2,0,23,24,5,2,0,0,24,3,1,0,0,0,25,
-        28,3,8,4,0,26,28,3,6,3,0,27,25,1,0,0,0,27,26,1,0,0,0,28,31,1,0,0,
-        0,29,27,1,0,0,0,29,30,1,0,0,0,30,5,1,0,0,0,31,29,1,0,0,0,32,33,5,
-        11,0,0,33,34,5,3,0,0,34,35,3,8,4,0,35,7,1,0,0,0,36,40,3,2,1,0,37,
-        40,3,10,5,0,38,40,5,11,0,0,39,36,1,0,0,0,39,37,1,0,0,0,39,38,1,0,
-        0,0,40,9,1,0,0,0,41,42,5,6,0,0,42,43,3,4,2,0,43,44,5,7,0,0,44,11,
-        1,0,0,0,4,15,27,29,39
+        1,5,1,5,5,5,44,8,5,10,5,12,5,47,9,5,1,5,1,5,1,5,0,0,6,0,2,4,6,8,
+        10,0,0,50,0,15,1,0,0,0,2,20,1,0,0,0,4,29,1,0,0,0,6,32,1,0,0,0,8,
+        39,1,0,0,0,10,41,1,0,0,0,12,14,3,2,1,0,13,12,1,0,0,0,14,17,1,0,0,
+        0,15,13,1,0,0,0,15,16,1,0,0,0,16,18,1,0,0,0,17,15,1,0,0,0,18,19,
+        5,0,0,1,19,1,1,0,0,0,20,21,5,1,0,0,21,22,5,11,0,0,22,23,3,4,2,0,
+        23,24,5,2,0,0,24,3,1,0,0,0,25,28,3,6,3,0,26,28,3,8,4,0,27,25,1,0,
+        0,0,27,26,1,0,0,0,28,31,1,0,0,0,29,27,1,0,0,0,29,30,1,0,0,0,30,5,
+        1,0,0,0,31,29,1,0,0,0,32,33,5,11,0,0,33,34,5,3,0,0,34,35,3,8,4,0,
+        35,7,1,0,0,0,36,40,3,2,1,0,37,40,3,10,5,0,38,40,5,11,0,0,39,36,1,
+        0,0,0,39,37,1,0,0,0,39,38,1,0,0,0,40,9,1,0,0,0,41,45,5,6,0,0,42,
+        44,3,8,4,0,43,42,1,0,0,0,44,47,1,0,0,0,45,43,1,0,0,0,45,46,1,0,0,
+        0,46,48,1,0,0,0,47,45,1,0,0,0,48,49,5,7,0,0,49,11,1,0,0,0,5,15,27,
+        29,39,45
     ]
 
 class LudiiParser ( Parser ):
@@ -216,18 +218,18 @@ class LudiiParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def argument(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(LudiiParser.ArgumentContext)
-            else:
-                return self.getTypedRuleContext(LudiiParser.ArgumentContext,i)
-
-
         def named_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(LudiiParser.Named_argumentContext)
             else:
                 return self.getTypedRuleContext(LudiiParser.Named_argumentContext,i)
+
+
+        def argument(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LudiiParser.ArgumentContext)
+            else:
+                return self.getTypedRuleContext(LudiiParser.ArgumentContext,i)
 
 
         def getRuleIndex(self):
@@ -266,12 +268,12 @@ class LudiiParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
                 if la_ == 1:
                     self.state = 25
-                    self.argument()
+                    self.named_argument()
                     pass
 
                 elif la_ == 2:
                     self.state = 26
-                    self.named_argument()
+                    self.argument()
                     pass
 
 
@@ -429,12 +431,15 @@ class LudiiParser ( Parser ):
         def LBRACE(self):
             return self.getToken(LudiiParser.LBRACE, 0)
 
-        def args(self):
-            return self.getTypedRuleContext(LudiiParser.ArgsContext,0)
-
-
         def RBRACE(self):
             return self.getToken(LudiiParser.RBRACE, 0)
+
+        def argument(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(LudiiParser.ArgumentContext)
+            else:
+                return self.getTypedRuleContext(LudiiParser.ArgumentContext,i)
+
 
         def getRuleIndex(self):
             return LudiiParser.RULE_lst
@@ -460,13 +465,22 @@ class LudiiParser ( Parser ):
 
         localctx = LudiiParser.LstContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_lst)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 41
             self.match(LudiiParser.LBRACE)
-            self.state = 42
-            self.args()
-            self.state = 43
+            self.state = 45
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 2114) != 0):
+                self.state = 42
+                self.argument()
+                self.state = 47
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+
+            self.state = 48
             self.match(LudiiParser.RBRACE)
         except RecognitionException as re:
             localctx.exception = re

@@ -104,7 +104,7 @@
                 (result Mover Loss) //last to place wins a tie
 ))))
 
-/-----------------------------------------
+//-----------------------------------------
 // Defines for Options
 
 (define "LoSDirection" <Grid:connectivity>)

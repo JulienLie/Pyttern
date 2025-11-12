@@ -94,8 +94,6 @@ def file_check():
 
 def get_matcher(pattern_code, code, lang=None) -> Matcher:
     if lang is None:
-        lang = determine_language(code)
-    if lang is None:
         raise Exception("Cannot determine the language")
 
     current_language_processor = get_processor(lang)
@@ -137,12 +135,10 @@ class JsonListener(PytternListener):
 
 
 def try_processors(code):
-    languages = ["python", "java"]
-    for lang in languages:
+    for lang in Languages:
         try:
             processor = get_processor(lang)
             processor.generate_tree_from_code(code)
-            session["pattern_language"] = lang
             return json.dumps({"status": "ok"})
         except Exception as e:
             logger.error(f"Error with {lang}: {e}")
@@ -203,13 +199,17 @@ def validate():
     logger.info(f"Current lang: {pattern_lang}")
     try:
         lang = determine_language(pattern_lang)
-        session['pattern_language'] = lang
+        logger.info(f"Determined language: {lang}")
+        logger.info("Getting processor...")
         current_language_processor = get_processor(lang)
+        logger.info("Validating code...")
         current_language_processor.generate_tree_from_code(pattern_code)
+        logger.info("Code is valid.")
     except PytternSyntaxException as e:
         return json.dumps({"status": "error",
             "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}})
     except Exception as e:
+        logger.error(e)
         return json.dumps({"status": "error", "message": f"{e}"})
     return json.dumps({"status": "ok"})
 
@@ -331,9 +331,12 @@ def code():
     if "lang" in data:
         lang = data["lang"]
     else:
+        logger.info("No language provided, trying to determine...")
         lang = determine_language_from_code(code)
+        logger.info(f"Determined language: {lang}")
     current_language_processor = get_processor(lang)
     tree = current_language_processor.generate_tree_from_code(code)
+    logger.debug(tree.children)
     tree_graph = PtToJson().visit(tree)
     return json.dumps({
         "status": "ok",
@@ -401,7 +404,9 @@ def match():
     if "lang" in data:
         lang = data["lang"]
     else:
+        logger.info("No language provided, trying to determine...")
         lang = determine_language_from_code(code)
+        logger.info("Determined language: {lang}")
 
     matcher = get_matcher(pattern, code, lang)
     json_listener = JsonListener()

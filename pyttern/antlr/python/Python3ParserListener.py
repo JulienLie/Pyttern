@@ -1070,15 +1070,6 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#wildcard_type.
-    def enterWildcard_type(self, ctx:Python3Parser.Wildcard_typeContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#wildcard_type.
-    def exitWildcard_type(self, ctx:Python3Parser.Wildcard_typeContext):
-        pass
-
-
     # Enter a parse tree produced by Python3Parser#wildcard_number.
     def enterWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
         pass
