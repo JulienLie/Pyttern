@@ -6,7 +6,7 @@ import time
 from loguru import logger
 from tqdm import tqdm
 
-from .language_processors import get_processor
+from .language_processors import get_processor, Languages
 from .simulator.Matcher import Matcher
 
 
@@ -22,20 +22,17 @@ def parse_subfolders(folder_path, op="and"):
         subfolder_path = os.path.join(folder_path, subfolder)
         if os.path.isdir(subfolder_path) and subfolder in ["and", "or", "not"]:
             res.append(parse_subfolders(subfolder_path, subfolder))
-        elif subfolder.endswith('.pyt'):
-            pattern_file_path = os.path.join(folder_path, subfolder)
-            processor = get_processor("python")
-            tree = processor.generate_tree_from_file(pattern_file_path)
-            fsm = processor.create_pda(tree)
-            res.append(fsm)
-        elif subfolder.endswith('.jat'):
-            pattern_file_path = os.path.join(folder_path, subfolder)
-            processor = get_processor("java")
-            tree = processor.generate_tree_from_file(pattern_file_path)
-            fsm = processor.create_pda(tree)
-            res.append(fsm)
-        else:
-            logger.warning(f"Unknown file type in {subfolder_path}: {subfolder}")
+
+        for language in Languages:
+            processor = get_processor(language)
+            for file_extension in processor.get_language_extensions():
+                if subfolder.endswith(file_extension):
+                    logger.info(f"Processing pattern file: {subfolder} with language: {language}")
+                    pattern_file_path = os.path.join(folder_path, subfolder)
+                    tree = processor.generate_tree_from_file(pattern_file_path)
+                    fsm = processor.create_pda(tree)
+                    res.append(fsm)
+                    break
     return {op: res}
 
 
@@ -52,6 +49,7 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
         # Handle logical operations like 'and', 'or', 'not'
         op = list(pattern_tree.keys())[0]
         subpatterns = pattern_tree[op]
+        logger.debug(f"Processing logical operation: {op} with {len(subpatterns)} subpatterns")
         if op == "and":
             for subpattern in subpatterns:
                 result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
@@ -73,7 +71,14 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
         else:
             return False  # Unknown operation
     else:
+        logger.debug("Matching pattern tree with code tree")
         res = Matcher.match(pattern_tree, code_tree, stop_at_first=stop_at_first)
+        if res.count() > 0:
+            logger.debug(f"Match found with {res.count()} matches")
+        else:
+            logger.debug("No match found")
+        # if match_details:
+        #     return res
         return True if res.count() > 0 else False
 
 def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
@@ -91,18 +96,18 @@ def match_folders(pattern_path, code_path, match_details=False, stop_at_first=Fa
 
     # Compile all patterns to speed up matching
     logger.info("Compiling patterns...")
-    start_pattern = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    start_pattern = time.time()
     patterns = {}
     for pyttern_folder in os.listdir(pattern_path):
         pyttern_folder_path = os.path.join(pattern_path, pyttern_folder)
         if os.path.isdir(pyttern_folder_path):
             patterns[pyttern_folder] = parse_subfolders(pyttern_folder_path)
-    end_pattern = time.clock_gettime_ns(time.CLOCK_UPTIME)
-    logger.info(f"Patterns compiled in {end_pattern - start_pattern} ns")
+    end_pattern = time.time()
+    logger.info(f"Patterns compiled in {end_pattern - start_pattern} s")
 
     # Compile all code files to speed up matching
     logger.info("Compiling code files...")
-    start_code = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    start_code = time.time()
     code_trees = []
     for root, dirs, files in os.walk(code_path):
         for file in files:
@@ -121,22 +126,22 @@ def match_folders(pattern_path, code_path, match_details=False, stop_at_first=Fa
                 logger.error(f"Error processing file {code_file_path}: {e}")
                 continue
 
-    end_code = time.clock_gettime_ns(time.CLOCK_UPTIME)
-    logger.info(f"Code files compiled in {end_code - start_code} ns")
+    end_code = time.time()
+    logger.info(f"Code files compiled in {end_code - start_code} s")
 
     logger.info("Starting matching...")
-    start_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
+    start_match = time.time()
     ret = {}
     for code_file_path, code_tree in code_trees:
         for pyttern in patterns:
             pattern_tree = patterns[pyttern]
             ret[code_file_path] = match_pyttern(pattern_tree, code_tree, match_details=match_details, stop_at_first=stop_at_first)
-    stop_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
-    logger.info(f"Matching completed in {stop_match - start_match} ns.")
+    stop_match = time.time()
+    logger.info(f"Matching completed in {stop_match - start_match} s.")
 
 
-    end_match = time.clock_gettime_ns(time.CLOCK_UPTIME)
-    logger.info(f"Matching completed in {end_match - start_match} ns.")
+    end_match = time.time()
+    logger.info(f"Matching completed in {end_match - start_match} s.")
 
     return ret
 
