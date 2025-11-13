@@ -23,6 +23,7 @@ We extended the python syntax to create pattern files. Our new syntax includes t
 | Wildcard | Description                                                               |
 |----------|---------------------------------------------------------------------------|
 | ?        | Match 1 element                                                           |
+| ?{n, m}  | Match between ``n`` and ``m`` elements                                    |
 | ?*       | Match 0 or more elements                                                  |
 | ?name    | Match 1 element and bind it to ``name``                                   |
 | ?:       | Match 1 element with a body                                               |
@@ -30,11 +31,6 @@ We extended the python syntax to create pattern files. Our new syntax includes t
 | ?<...>   | Match if the inside of the wildcard is contained inside the matching node |
 
 In addition to these wildcards, we added some optional elements to allow more options:
-
-| Option       | Description                            |
-|--------------|----------------------------------------|
-| ?[Type, ...] | Match 1 element of type ``Type``       |
-| ?{n, m}      | Match between ``n`` and ``m`` elements |
 
 
 
@@ -79,6 +75,22 @@ def foo():
     x = 0
     return "bar"
 ```
+
+### Wildcard: ``?{n, m}``
+The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
+
+#### Pyttern
+```python
+def foo():
+    lst = [?{3, 5}]
+```
+
+#### Code
+```python
+def foo():
+    lst = [1, 2, 3, 4]
+```
+
 ### Wildcard: ``?*``
 The `?*` wildcard matches zero or more elements in the code. For example, the pattern `?*` will match any sequence of elements.
 
@@ -213,7 +225,7 @@ as long as the main matching criteria are met. In contrast, in a strict match, p
 code structure and syntax is necessary, and there is limited to no allowance for variations or 
 additional code outside the specified structure.
 
-### The syntax `?:[]`
+### [DEPRECATED] ~~The syntax `?:[]`~~
 The wildcard `?![]` is a notation that allows for a combination of strict and soft matching in certain parts of a code pattern. It is useful when you want to perform a soft match but have a strict match requirement within a specific section of code.
 
 Let's consider an example to illustrate this. Suppose we have the following pattern:
@@ -256,61 +268,6 @@ the pattern won't match because the strict match requirement `?![ ... ]` doesn't
 In summary, the wildcard `?![]` allows for a combination of soft and strict matching. 
 It provides flexibility by allowing soft matches for variables and loop structures while enforcing strict matches for 
 specific code sections. This helps in creating adaptable code patterns that can match similar code snippets with some variations.
-
-# Flexibility
-To add some flexibility to our pattern we implemented different features.
-
-## Wildcards Options
-We added some options to put on the wildcards:
-1. `?[Type1, Type2, ...]` allows to specify the type of the element to match.
-2. `?{n, m}` allows to specify the number of elements to match. It can be used with or without the type option.
-This option can be used in five different ways:
-    1. `?{n, m}`: Match between `n` and `m` elements
-    2. `?{n, }`: Match at least `n` elements
-    3. `?{, m}`: Match at most `m` elements
-    4. `?{n}`: Match exactly `n` elements
-[//]: # (5. `?{0}`: Create a `not` wildcard. For example: `?:{0}` will ensure that the current element does not have a body.)
-
-### Wildcard Option: ``?[Type, ...]``
-The `?[Type, ...]` option allows you to specify the type of the element to match. For example, the pattern `?[For]` will match any integer value.
-
-#### Pyttern
-```python
-def foo():
-    ?[For]:
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    for i in range(10):
-        x = 0
-    return x
-```
-
-### Wildcard Option: ``?{n, m}``
-The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
-
-#### Pyttern
-```python
-def foo():
-    ?:{3} # I want to match exactly 3 level of indentation
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    if True:
-        if True:
-            if True:
-                x = 0
-    return x
-```
-
 
 ## File structure
 To implement a system that allows to create logic with different patterns, we implemented a specific file structure.
