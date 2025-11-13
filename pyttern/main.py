@@ -51,24 +51,38 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
         subpatterns = pattern_tree[op]
         logger.debug(f"Processing logical operation: {op} with {len(subpatterns)} subpatterns")
         if op == "and":
+            all_matches = []
             for subpattern in subpatterns:
                 result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                if not result:
+                all_matches.append(result)
+                if not result and not match_details:
                     return False
+            if match_details:
+                return {op: all_matches, 'res': all([len(m) > 0 for m in all_matches])}
             return True
         elif op == "or":
+            all_matches = []
             for subpattern in subpatterns:
                 result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                if result:
+                all_matches.append(result)
+                if result and not match_details:
                     return True
+            if match_details:
+                return {op: all_matches, 'res': any([len(m) > 0 for m in all_matches])}
             return False
         elif op == "not":
+            all_matches = []
             for subpattern in subpatterns:
                 result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                if result:
+                all_matches.append(result)
+                if result and not match_details:
                     return False
+            if match_details:
+                return {op: all_matches, 'res': not any([len(m) > 0 for m in all_matches])}
             return True
         else:
+            if match_details:
+                return {op: [], 'res': False}
             return False  # Unknown operation
     else:
         logger.debug("Matching pattern tree with code tree")
@@ -77,8 +91,8 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             logger.debug(f"Match found with {res.count()} matches")
         else:
             logger.debug("No match found")
-        # if match_details:
-        #     return res
+        if match_details:
+            return {'res': res.count() > 0, 'matches': res}
         return True if res.count() > 0 else False
 
 def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
