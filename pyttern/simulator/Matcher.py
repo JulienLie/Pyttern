@@ -105,11 +105,11 @@ class Matcher:
         return self
 
     def step(self):
-        logger.debug(f"Step {self.n_step}")
+        logger.trace(f"Step {self.n_step}")
         if len(self.configurations) == 0:
             raise Warning("No more configurations to process")
         current_config = self.configurations.pop()
-        logger.debug(f"Checking config: {current_config}")
+        logger.trace(f"Checking config: {current_config}")
         current_state, current_node, stack, var, matches = current_config
         for listener in self._listeners:
             listener.step(self, current_state, current_node, stack, var, matches)
@@ -132,7 +132,7 @@ class Matcher:
             beta = transition.beta
 
             if not stack.endswith(alpha):
-                logger.debug(f"Wrong stack elements: expecting {alpha} but was {stack[-len(alpha):]}")
+                logger.trace(f"Wrong stack elements: expecting {alpha} but was {stack[-len(alpha):]}")
                 continue
             new_stack = stack.removesuffix(alpha)
 
@@ -145,9 +145,9 @@ class Matcher:
             if isinstance(A, NodeTransition):
                 if not self._match_node(current_node, A):
                     if isinstance(current_node, TerminalNode):
-                        logger.debug(f"Wrong input: expecting {A.name} but was {str(current_node)}")
+                        logger.trace(f"Wrong input: expecting {A.name} but was {str(current_node)}")
                     else:
-                        logger.debug(f"Wrong input: expecting {A.name} but was {class_name}")
+                        logger.trace(f"Wrong input: expecting {A.name} but was {class_name}")
                     continue
                 new_vars.append(new_var)
 
@@ -155,10 +155,10 @@ class Matcher:
             elif isinstance(A, NamedTransition):
                 name = A.name
                 if new_var[name] is None:
-                    logger.debug(f"New variable: {name}")
+                    logger.trace(f"New variable: {name}")
                     new_var[name] = current_node
                 elif not self._match_tree(new_var[name], current_node):
-                    logger.debug(f"Wrong variable: {name} expecting {new_var[name]} but was {current_node}")
+                    logger.trace(f"Wrong variable: {name} expecting {new_var[name]} but was {current_node}")
                     continue
                 new_vars.append(new_var)
 
@@ -168,7 +168,7 @@ class Matcher:
                 trnsf_name = A.transformation_name
                 args = A.args
 
-                logger.debug(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
+                logger.trace(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
 
                 possible_bindings = self.call_macro(macro_name, trnsf_name, args, current_node, new_var)
                 if len(possible_bindings) < 1:
@@ -182,10 +182,10 @@ class Matcher:
 
             next_node = self._get_next_node(current_node, t)
             if next_node is None:
-                logger.debug(f"Wrong direction: cannot get next node at {t}")
+                logger.trace(f"Wrong direction: cannot get next node at {t}")
                 continue
 
-            logger.debug(f"Taking {transition}")
+            logger.trace(f"Taking {transition}")
 
             new_stack += beta
             new_matches = matches + [(transition, current_node.__class__.__name__)]
@@ -220,11 +220,11 @@ class Matcher:
         m_j_epsilon = {u: None for u in macro_pda.named_wildcards}
         macro_params = join_dicts(m_j_epsilon, comp)
 
-        logger.debug(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
+        logger.trace(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
 
         match_set = Matcher.match(macro_pda, current_node, stop_at_first=False, bindings=macro_params)
         if match_set.count() == 0:
-            logger.debug(f"Macro {macro_name}:{trnsf_name} did not match")
+            logger.trace(f"Macro {macro_name}:{trnsf_name} did not match")
             return []
 
         new_bindings = []
@@ -281,7 +281,7 @@ class Matcher:
 
     @staticmethod
     def _match_tree(tree1, tree2):
-        logger.debug(f'Matching {tree1} and {tree2}')
+        logger.trace(f'Matching {tree1} and {tree2}')
         if tree1 is None or tree2 is None:
             return False
         if isinstance(tree1, TerminalNode) and isinstance(tree2, TerminalNode):

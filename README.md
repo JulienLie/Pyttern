@@ -75,21 +75,18 @@ def foo():
 ```
 
 ### Wildcard: ``?{n, m}``
-
 The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
 
 #### Pyttern
 ```python
 def foo():
-    x = [?{1, 5}]
-    return x
+    lst = [?{3, 5}]
 ```
 
 #### Code
 ```python
 def foo():
-    x = [1, 2, 3] # Can have between 1 and 5 elements
-    return x
+    lst = [1, 2, 3, 4]
 ```
 
 ### Wildcard: ``?*``
@@ -253,7 +250,7 @@ as long as the main matching criteria are met. In contrast, in a strict match, p
 code structure and syntax is necessary, and there is limited to no allowance for variations or 
 additional code outside the specified structure.
 
-### The syntax `?:[]`
+### [DEPRECATED] ~~The syntax `?:[]`~~
 The wildcard `?![]` is a notation that allows for a combination of strict and soft matching in certain parts of a code pattern. It is useful when you want to perform a soft match but have a strict match requirement within a specific section of code.
 
 Let's consider an example to illustrate this. Suppose we have the following pattern:
