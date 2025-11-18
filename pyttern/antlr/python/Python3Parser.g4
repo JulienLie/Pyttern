@@ -68,7 +68,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: macro | simple_stmts | compound_stmt;
+stmt: macro | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -260,7 +260,7 @@ strings: STRING+ ;
 
 // syntax of wildcards
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
-stmt_wildcard: (double_wildcard | simple_wildcard | number_wildcard | var_wildcard | contains_wildcard);
+stmt_wildcard: (double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard);
 expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
 simple_wildcard: WILDCARD;

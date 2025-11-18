@@ -599,11 +599,6 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#wildcard_type.
-    def visitWildcard_type(self, ctx:Python3Parser.Wildcard_typeContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by Python3Parser#wildcard_number.
     def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
         return self.visitChildren(ctx)
