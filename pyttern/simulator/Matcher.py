@@ -116,10 +116,10 @@ class Matcher:
 
         if current_state == self.pda.final_states:
             logger.info("Match found")
-            match = Match(self.n_step, var.copy())
+            match = Match(self.n_step, var.copy(), matches)
             self.match_set.record(match)
             for listener in self._listeners:
-                listener.on_match(self)
+                listener.on_match(self, match)
             return self
 
 
@@ -188,7 +188,7 @@ class Matcher:
             logger.trace(f"Taking {transition}")
 
             new_stack += beta
-            new_matches = matches + [(transition, current_node.__class__.__name__)]
+            new_matches = matches + [(transition, current_node)]
 
             for variables in new_vars:
                 new_config = (q_prime, next_node, new_stack, variables.copy(), new_matches)
@@ -229,7 +229,9 @@ class Matcher:
 
         new_bindings = []
         for match in match_set.matches:
-            print(f"Macro {macro_name}:{trnsf_name} matched with bindings {match.bindings}")
+            pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
+            v in match.bindings.items()}
+            print(f"Macro {macro_name}:{trnsf_name} matched with bindings {pretty_bindings}")
             sub_bindings = match.bindings
             m_i_to_j = mapping(args, macro.args_order)
             comp = composition(m_i_to_j, sub_bindings)
@@ -245,6 +247,8 @@ class Matcher:
         for direction in directions:
             match direction:
                 case NavigationAlphabet.RIGHT_SIBLING:
+                    if current_node == self.parse_tree:
+                        return None
                     try:
                         parent = current_node.parentCtx
                         if parent is None:

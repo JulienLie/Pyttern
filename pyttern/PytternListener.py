@@ -4,7 +4,7 @@ from loguru import logger
 
 
 class PytternListener(ABC):
-    def on_match(self, simulator):
+    def on_match(self, simulator, match):
         pass
 
     def step(self, simulator, fsm, ast, stack, variables, matches):

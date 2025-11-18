@@ -1,9 +1,15 @@
 from dataclasses import dataclass
 
+from antlr4 import ParserRuleContext
+
+from ...simulator.pda.transition import Transition
+
+
 @dataclass
 class Match:
     n_step: int
     bindings: dict
+    matches: list[tuple[Transition, ParserRuleContext]]  # List of (Transition, code_node) pairs
 
 class MatchSet:
     def __init__(self):

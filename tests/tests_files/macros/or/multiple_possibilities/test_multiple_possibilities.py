@@ -26,7 +26,7 @@ def test_incr_macro():
     assert "x" in bindings, "Expected binding for 'x'"
     binding_x = bindings["x"]
     assert binding_x.__class__.__name__ == "NameContext", f"Expected binding type 'NameContext', got {binding_x.__class__.__name__}"
-    assert binding_x.getText() == "a", f"Expected binding text 'a', got {binding_x.getText()}"
+    assert binding_x.getText() == "c", f"Expected binding text 'c', got {binding_x.getText()}"
 
     match = det.matches[1]
     bindings = match.bindings
@@ -40,4 +40,4 @@ def test_incr_macro():
     assert "x" in bindings, "Expected binding for 'x'"
     binding_x = bindings["x"]
     assert binding_x.__class__.__name__ == "NameContext", f"Expected binding type 'NameContext', got {binding_x.__class__.__name__}"
-    assert binding_x.getText() == "c", f"Expected binding text 'c', got {binding_x.getText()}"
+    assert binding_x.getText() == "a", f"Expected binding text 'a', got {binding_x.getText()}"

@@ -132,7 +132,7 @@ class JsonListener(PytternListener):
             "code_pos": pos
         })
 
-    def on_match(self, _):
+    def on_match(self, _, __):
         self.data[-1]["match"] = True
 
 
