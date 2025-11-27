@@ -3,6 +3,8 @@ import os
 from unittest import skipIf
 
 import pytest
+
+pytestmark = pytest.mark.skip("Tests migrated to tests_files; this module is kept for reference.")
 from loguru import logger
 
 from pyttern import match_files, match_wildcards
