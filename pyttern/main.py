@@ -36,6 +36,27 @@ def parse_subfolders(folder_path, op="and"):
     return {op: res}
 
 
+def parse_json_pattern(pattern_json, language_processor):
+    """
+    Parse a JSON pattern and return a dictionary with the patterns.
+    :param pattern_json: JSON object with the patterns.
+    :param language_processor: Language processor to use.
+    :return: Dictionary with the patterns.
+    """
+    logger.debug(pattern_json)
+    if "children" in pattern_json:
+        logger.debug("Children")
+        op = pattern_json["name"]
+        res = [parse_json_pattern(child, language_processor) for child in pattern_json["children"]]
+        return {op: res}
+    else:
+        logger.debug("else")
+        pattern_code = pattern_json["pattern"]
+        tree = language_processor.generate_tree_from_code(pattern_code)
+        fsm = language_processor.create_pda(tree)
+        return fsm
+
+
 def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=False):
     """
     Match a pattern tree with a code tree.

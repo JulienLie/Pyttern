@@ -12,6 +12,7 @@ from ...PytternListener import PytternListener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
 from ...macro.Macro import loaded_macros
 from ...macro.macro_parser import parse_macro_from_string
+from ...main import parse_json_pattern, match_pyttern
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
 from ...simulator.pda.PDA import PDAEncoder
@@ -142,7 +143,6 @@ def try_processors(code):
         try:
             processor = get_processor(lang)
             processor.generate_tree_from_code(code)
-            session["pattern_language"] = lang
             return json.dumps({"status": "ok"})
         except Exception as e:
             logger.error(f"Error with {lang}: {e}")
@@ -202,9 +202,7 @@ def validate():
         return try_processors(pattern_code)
     logger.info(f"Current lang: {pattern_lang}")
     try:
-        lang = determine_language(pattern_lang)
-        session['pattern_language'] = lang
-        current_language_processor = get_processor(lang)
+        current_language_processor = get_processor(pattern_lang)
         current_language_processor.generate_tree_from_code(pattern_code)
     except PytternSyntaxException as e:
         return json.dumps({"status": "error",
@@ -469,9 +467,20 @@ def batch_match():
     data = request.json
     codes = data["codes"]
     patterns = data["patterns"]
+    lang = data["lang"]
+    logger.debug(data)
 
-    # TODO: Change main file to handle compound patterns with json rather than files
-    return Response("Not implemented yet", status=501)
+    processor = get_processor(lang)
+    logger.debug(processor)
+    pattern_tree = parse_json_pattern(patterns, processor)
+    logger.debug(pattern_tree)
+
+    results = {}
+    for filename, code_content in codes.items():
+        code_tree = processor.generate_tree_from_code(code_content)
+        results[filename] = match_pyttern(pattern_tree, code_tree)
+
+    return json.dumps(results)
 
 @app.route("/api/batch_validate", methods=['POST'])
 def batch_validate():
@@ -493,12 +502,12 @@ def batch_validate():
                   file1.py: "def foo(): pass"
                   file2.py: "def ?(): ?"
                 description: The list of code/pattern files to validate
-                lang:
-                  type: string
-                  description: The language of the code/pattern (python/java). If empty, try to determine the language.
-                required:
-                  - codes
-                  - lang
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+              required:
+                - codes
+                - lang
     responses:
       '200':
         description: Validation result
@@ -523,8 +532,7 @@ def batch_validate():
     logger.info(f"Current lang: {pattern_lang}")
     res = {}
     try:
-        lang = determine_language(pattern_lang)
-        current_language_processor = get_processor(lang)
+        current_language_processor = get_processor(pattern_lang)
         for pattern_code in pattern_codes:
             try:
                 current_language_processor.generate_tree_from_code(pattern_codes[pattern_code])
@@ -537,6 +545,8 @@ def batch_validate():
                     "status": "error",
                     "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
                 }
+    except ValueError as e:
+        return Response(f"Error: {e}", status=400)
     except Exception as e:
         return Response(f"Error: {e}", status=500)
     return json.dumps(res)
