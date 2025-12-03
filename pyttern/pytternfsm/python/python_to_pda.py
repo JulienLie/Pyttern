@@ -235,7 +235,7 @@ class Python_to_PDA(Python3ParserVisitor):
         return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
-        # Handle a case when double wildcard is the only statement
+        # Handle a case when the double wildcard is the only statement
         parent_block = self.lookbehind(ctx, Python3Parser.BlockContext)
         if parent_block is None:
             logger.error("Double wildcard not in a block")
@@ -344,7 +344,7 @@ class Python_to_PDA(Python3ParserVisitor):
             args_names = []
 
         macro = loaded_macros[macro_name]
-        n_args_req = list(macro.args.keys()).count(lambda key: macro.args[key] is None)
+        n_args_req = sum(1 for key in macro.args if macro.args[key] is None)
         if len(args_names) < n_args_req:
             logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
             raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
@@ -473,7 +473,7 @@ class Python_to_PDA(Python3ParserVisitor):
         :param ctx:
         :param clazz:
         :param predicate:
-        :return: The first instance of clazz found in the descendant of ctx or None if not found.
+        :return: True if the first instance of @clazz is found in the descendant of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx
@@ -488,10 +488,10 @@ class Python_to_PDA(Python3ParserVisitor):
     @staticmethod
     def lookbehind(ctx, clazz):
         """
-        Check if one of the ancestors of ctx is instance of clazz.
+        Check if one of the ancestors of ctx is an instance of clazz.
         :param ctx:
         :param clazz:
-        :return: The first instance of clazz found in the ancestors of ctx or None if not found.
+        :return: True if the first instance of clazz is found in the ancestors of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx
