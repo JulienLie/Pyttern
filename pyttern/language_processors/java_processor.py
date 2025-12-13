@@ -8,11 +8,13 @@ from ..PytternListener import ConsolePytternListener
 from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
+from ..pytternfsm.java.java_to_pda import Java_to_PDA
 
 
 class JavaProcessor(BaseProcessor):
     def generate_tree_from_code(self, code):
         code = code.strip()
+        code += "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
@@ -44,8 +46,7 @@ class JavaProcessor(BaseProcessor):
         return self.generate_tree_from_stream(file_input)
 
     def create_pda(self, pattern_tree):
-        #return Java_Visitor().visit(pattern_tree)
-        raise NotImplementedError("Java PDA creation not implemented yet.")
+        return Java_to_PDA().visit(pattern_tree)
     
     def create_listener(self):
         return ConsolePytternListener()
