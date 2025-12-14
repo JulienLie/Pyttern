@@ -20,7 +20,7 @@ def rightmost_terminal(root):
         node = children[-1]
     return node
 
-class Java_to_PDA(JavaParserVisitor):
+class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
     def __init__(self):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
@@ -49,13 +49,14 @@ class Java_to_PDA(JavaParserVisitor):
 
         down, up = self._define_boundaries(node)
 
+        """
         while len(children) > 1 and (
                 self.lookahead(children[-1], JavaParser.Double_wildcardContext)
                 or self.lookahead(children[-1], JavaParser.List_wildcardContext)
         ):
             children.pop()
             logger.debug("Remove double wildcard")
-
+        """
 
         next_state = self.pda.new_state()
         transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
@@ -87,17 +88,17 @@ class Java_to_PDA(JavaParserVisitor):
         """
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
-        if isinstance(ctx, (JavaParser.File_inputContext, JavaParser.BlockContext)):
+        if False and isinstance(ctx, (JavaParser.File_inputContext, JavaParser.BlockContext)):
             logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif isinstance(ctx, JavaParser.If_stmtContext):
+        elif False and isinstance(ctx, JavaParser.If_stmtContext):
             logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (JavaParser.Double_wildcardContext, JavaParser.List_wildcardContext)) is not None:
+                if False and self.lookahead(child, (JavaParser.Double_wildcardContext, JavaParser.List_wildcardContext)) is not None:
                     logger.debug(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
@@ -106,7 +107,7 @@ class Java_to_PDA(JavaParserVisitor):
                 everything = lambda _: True
                 predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
 
-                simple_node = self.lookahead(child, JavaParser.Number_wildcardContext, predicate)
+                simple_node = None # self.lookahead(child, JavaParser.Number_wildcardContext, predicate)
                 if simple_node is not None:
                     numbers_node = simple_node.getChild(0, JavaParser.Wildcard_numberContext)
                     if numbers_node is not None:
@@ -120,18 +121,21 @@ class Java_to_PDA(JavaParserVisitor):
 
         return down, up
 
-    def visitStmt(self, ctx:JavaParser.StmtContext):
+    def visitStmt(self, ctx):
         # Handle double wildcard as Stmt
         logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
+        """
         lookahead_double_wildcard = self.lookahead(ctx, JavaParser.Double_wildcardContext)
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
+        """
 
         self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                       self.current_state, '')
         self.pda.add_transition(self_transition)
 
+        """
         lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
@@ -143,25 +147,26 @@ class Java_to_PDA(JavaParserVisitor):
         lookahead_number_wildcard = self.lookahead(ctx, JavaParser.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
+        """
 
         return self.visitChildren(ctx)
 
-    def visitExpr_wildcard(self, ctx:JavaParser.Expr_wildcardContext):
+    def visitExpr_wildcard(self, ctx):
         return ctx.getChild(0).accept(self)
 
-    def visitStmt_wildcard(self, ctx:JavaParser.Stmt_wildcardContext):
+    def visitStmt_wildcard(self, ctx):
         return ctx.getChild(0).accept(self)
 
-    def visitCompound_wildcard(self, ctx:JavaParser.Compound_wildcardContext):
+    def visitCompound_wildcard(self, ctx):
         return ctx.getChild(0).accept(self)
 
-    def visitAtom_wildcard(self, ctx:JavaParser.Atom_wildcardContext):
+    def visitAtom_wildcard(self, ctx):
         return ctx.getChild(0).accept(self)
 
-    def visitSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
+    def visitSimple_wildcard(self, ctx):
         return self._add_up_transition(ctx)
 
-    def visitNumber_wildcard(self, ctx:JavaParser.Number_wildcardContext):
+    def visitNumber_wildcard(self, ctx):
         numbers_node = ctx.getChild(0, JavaParser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
@@ -203,7 +208,7 @@ class Java_to_PDA(JavaParserVisitor):
         self.current_state = dummy_state
         return self._add_up_transition(ctx)
 
-    def visitWildcard_number(self, ctx:JavaParser.Wildcard_numberContext):
+    def visitWildcard_number(self, ctx):
         low = int(ctx.NUMBER(0).getText())
         high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
         if ctx.COMMA() is None:
@@ -214,7 +219,7 @@ class Java_to_PDA(JavaParserVisitor):
             return 1, 1
         return low, high
 
-    def visitSimple_compound_wildcard(self, ctx:JavaParser.Simple_compound_wildcardContext):
+    def visitSimple_compound_wildcard(self, ctx):
         # Go to children
         child_state = self.pda.new_state()
         child_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
@@ -231,7 +236,7 @@ class Java_to_PDA(JavaParserVisitor):
         # Explore body
         return ctx.getChild(0, JavaParser.BlockContext).accept(self)
 
-    def visitDouble_wildcard(self, ctx:JavaParser.Double_wildcardContext):
+    def visitDouble_wildcard(self, ctx):
         # Handle a case when double wildcard is the only statement
         parent_block = self.lookbehind(ctx, JavaParser.BlockContext)
         if parent_block is None:
@@ -246,7 +251,7 @@ class Java_to_PDA(JavaParserVisitor):
             self._add_up_transition(ctx)
         return self.current_state
 
-    def visitList_wildcard(self, ctx:JavaParser.List_wildcardContext):
+    def visitList_wildcard(self, ctx):
         # Adding self-transition to search for the next element
         self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                                                self.current_state, '')
@@ -267,16 +272,16 @@ class Java_to_PDA(JavaParserVisitor):
 
         return self._add_up_transition(node, node_transition)
 
-    def visitParameters(self, ctx:JavaParser.ParametersContext):
+    def visitParameters(self, ctx):
         return self._handle_empty_list(ctx)
 
-    def visitVarargslist(self, ctx:JavaParser.VarargslistContext):
+    def visitVarargslist(self, ctx):
         return self._handle_empty_list(ctx)
 
-    def visitArgument(self, ctx:JavaParser.ArgumentContext):
+    def visitArgument(self, ctx):
         return self._handle_empty_list(ctx)
 
-    def visitVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
+    def visitVar_wildcard(self, ctx):
         label = ctx.NAME().getText()
         # if label not in self.__var_names:
         #     uuid_label = str(uuid.uuid4())[:8]
@@ -286,7 +291,7 @@ class Java_to_PDA(JavaParserVisitor):
         self._add_up_transition(ctx, NamedTransition(f"{label}"))
         return self.current_state
 
-    def visitMultiple_compound_wildcard(self, ctx:JavaParser.Multiple_compound_wildcardContext):
+    def visitMultiple_compound_wildcard(self, ctx):
         # Transition to push B on the stack
         dummy_state = self.__add_body_transition()
 
@@ -298,7 +303,7 @@ class Java_to_PDA(JavaParserVisitor):
 
         return ret
 
-    def visitContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+    def visitContains_wildcard(self, ctx):
         self.__add_body_transition()
 
         logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
