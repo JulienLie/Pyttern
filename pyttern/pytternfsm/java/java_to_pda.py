@@ -88,11 +88,11 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         """
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
-        if False and isinstance(ctx, (JavaParser.File_inputContext, JavaParser.BlockContext)):
+        if isinstance(ctx, (JavaParser.JavaParser.CompilationUnitContext, JavaParser.JavaParser.BlockContext)):
             logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif False and isinstance(ctx, JavaParser.If_stmtContext):
+        elif False and isinstance(ctx, JavaParser.JavaParser.If_stmtContext):
             logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
@@ -121,7 +121,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         return down, up
 
-    def visitStmt(self, ctx):
+    def visitStatement(self, ctx):
         # Handle double wildcard as Stmt
         logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
