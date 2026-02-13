@@ -48,7 +48,7 @@ class TestTrivial():
         code_path = get_test_file("trivial_case/arrays/array_ko.java")
 
         res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
-        assert res, det
+        assert not res, det
 
 class TestRelaxed():
     @pytest.mark.timeout(1)
