@@ -42,6 +42,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
     def visitChildren(self, node):
         logger.debug(f"Visiting {node}")
+        logger.debug(f"Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
         children = node.children
         if len(children) == 0:
@@ -57,6 +58,23 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             children.pop()
             logger.debug("Remove double wildcard")
         """
+
+        if node.__class__.__name__ in [
+                "BlockStatementContext",
+                "PackageDeclarationContext",
+                "ImportDeclarationContext",
+                "TypeDeclarationContext",
+                "ClassBodyDeclarationContext",
+                "MemberDeclarationContext",
+                "InterfaceBodyDeclarationContext",
+                "ModuleDeclarationContext",
+                "ModuleDirectiveContext",
+                "RecordDeclarationContext",
+                "CompactConstructorDeclarationContext"
+            ]:
+            self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                        self.current_state, '')
+            self.pda.add_transition(self_transition)
 
         next_state = self.pda.new_state()
         transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
@@ -130,10 +148,6 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
         """
-
-        self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                      self.current_state, '')
-        self.pda.add_transition(self_transition)
 
         """
         lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
