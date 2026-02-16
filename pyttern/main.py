@@ -51,7 +51,7 @@ def parse_json_pattern(pattern_json, language_processor):
         return {op: res}
     else:
         logger.debug("else")
-        pattern_code = pattern_json["pattern"]
+        pattern_code = pattern_json["code"]
         tree = language_processor.generate_tree_from_code(pattern_code)
         fsm = language_processor.create_pda(tree)
         return fsm
@@ -223,7 +223,7 @@ def match_wildcards(pattern_path, code_path, match_details=False):
 def run_application():
     from .visualizer.web import application
     logger.enable("pyttern")
-    application.app.run(debug=True)
+    application.app.run(debug=True, port=5001)
 
 
 def main():
@@ -240,12 +240,12 @@ def main():
     if args and args.web:
         run_application()
         return
-    
+
     if not args.lang or not args.pattern or not args.code:
         print("You must specify --lang, pattern file, and code file when not running the web application.")
         return
 
-    processor = get_processor(args.lang) # Get processor behaviour adapted to language
+    processor = get_processor(args.lang)  # Get processor behaviour adapted to language
     pattern = args.pattern
     code = args.code
 
@@ -268,6 +268,7 @@ def main():
     while len(simu.configurations) > 0:
         simu.step()
     print(simu.match_set.matches)
+
 
 logger.disable("pyttern")
 if __name__ == "__main__":

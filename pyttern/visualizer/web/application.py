@@ -439,7 +439,7 @@ def batch_match():
                 example:
                     file1.py: "def foo(): pass"
                     file2.py: "def bar(): pass"
-              patterns:
+              coumpoundPattern:
                 type: object
                 description: The list of pattern files to match
                 $ref: '#/components/schemas/PatternTree'
@@ -466,7 +466,7 @@ def batch_match():
     logger.info("Asking to start match")
     data = request.json
     codes = data["codes"]
-    patterns = data["patterns"]
+    patterns = data["compoundPattern"]
     lang = data["lang"]
     logger.debug(data)
 
@@ -476,8 +476,18 @@ def batch_match():
     logger.debug(pattern_tree)
 
     results = {}
-    for filename, code_content in codes.items():
-        code_tree = processor.generate_tree_from_code(code_content)
+    logger.debug(f"Pattern tree: {pattern_tree}")
+    logger.debug(f"Codes Data {codes}")
+
+    for item in codes:
+        filename = item["filename"]
+        code = item["code"]
+        logger.debug(f"Processing {filename}")
+        logger.debug(f"Debug {code}")
+
+        code_tree = processor.generate_tree_from_code(code)
+        logger.debug(f"Code Tree {code_tree}")
+
         results[filename] = match_pyttern(pattern_tree, code_tree)
 
     return json.dumps(results)
@@ -495,19 +505,31 @@ def batch_validate():
             type: object
             properties:
               codes:
-                type: object
-                additionalProperties:
-                  type: string
+                type: array
+                items:
+                  type: object
+                  properties:
+                    filename:
+                      type: string
+                      description: The filename
+                    code:
+                      type: string
+                      description: The code content
+                  required:
+                    - filename
+                    - code
                 example:
-                  file1.py: "def foo(): pass"
-                  file2.py: "def ?(): ?"
+                  - filename: "file1.py"
+                    code: "def foo(): pass"
+                  - filename: "file2.py"
+                    code: "def ?(): ?"
                 description: The list of code/pattern files to validate
               lang:
                 type: string
                 description: The language of the code/pattern (python/java). If empty, try to determine the language.
-              required:
-                - codes
-                - lang
+            required:
+              - codes
+              - lang
     responses:
       '200':
         description: Validation result
@@ -515,35 +537,69 @@ def batch_validate():
           application/json:
             schema:
               type: object
+              description: Object with file IDs as keys and validation results as values
               additionalProperties:
                 type: object
                 properties:
+                  filename:
+                    type: string
+                    description: The filename of the validated code
                   status:
                     type: string
                     enum: [ok, error]
+                    description: Validation status
                   message:
-                    type: string
-                    description: Error message if status is error
+                    type: object
+                    description: Error details if status is error, null otherwise
+                    nullable: true
+                    properties:
+                      line:
+                        type: integer
+                        description: Line number where the error occurred
+                      column:
+                        type: integer
+                        description: Column number where the error occurred
+                      symbol:
+                        type: string
+                        description: The symbol that caused the error
+                      msg:
+                        type: string
+                        description: Error message
+              example:
+                file1.py:
+                  status: "ok"
+                  message: null
+                file2.py:
+                  status: "error"
+                  message:
+                    line: 1
+                    column: 5
+                    symbol: "?"
+                    msg: "syntax error"
     """
     pattern_codes = request.json["codes"]
     pattern_lang = request.json['lang']
+
     if pattern_lang == "":
-        return try_processors(pattern_codes[0].code)
+        return try_processors(pattern_codes[0]["code"])
     logger.info(f"Current lang: {pattern_lang}")
     res = {}
     try:
-        current_language_processor = get_processor(pattern_lang)
-        for pattern_code in pattern_codes:
+        lang = pattern_lang
+        current_language_processor = get_processor(lang)
+        for item in pattern_codes:
+            filename = item["filename"]
+
             try:
-                current_language_processor.generate_tree_from_code(pattern_codes[pattern_code])
-                res[pattern_code] = {
-                    "status": "ok",
-                    "message": None
+                current_language_processor.generate_tree_from_code(item["code"])
+                res[filename] = {
+                  "status": "ok",
+                  "message": None
                 }
             except PytternSyntaxException as e:
-                res[pattern_code] = {
-                    "status": "error",
-                    "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
+                res[filename] = {
+                  "status": "error",
+                  "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
                 }
     except ValueError as e:
         return Response(f"Error: {e}", status=400)
