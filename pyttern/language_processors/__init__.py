@@ -3,12 +3,11 @@ from .java_processor import JavaProcessor
 from .languages import Languages
 
 def get_processor(lang):
-    if lang == 'python' or lang == Languages.PYTHON:
+    if lang in ('python', Languages.PYTHON):
         return PythonProcessor()
-    elif lang == 'java' or lang == Languages.JAVA:
+    if lang in ('java', Languages.JAVA):
         return JavaProcessor()
-    else:
-        raise ValueError(f"Unsupported language: {lang}")
+    raise ValueError(f"Unsupported language: {lang}")
 
 def determine_language(filename):
     """

@@ -114,14 +114,6 @@ NEWLINE
    {self.onNewLine();}
  ;
 
-/*
-
-MACRO_NAME
-    : [A-Z] ID_CONTINUE*
-    ;
-
-*/
-
 /// identifier   ::=  id_start id_continue*
 NAME
  : ID_START ID_CONTINUE*
@@ -223,7 +215,8 @@ IDIV_ASSIGN : '//=';
 
 // Rules for wildcards
 WILDCARD : '?';
-BALISE: '?#';
+BALISE: '$#';
+SUB_PATTERN: '$';
 
 
 SKIP_

@@ -1,11 +1,10 @@
-?# define
-?|Loop(?i, ?n)
+$|Loop(?i, ?n)
 
-?# for_loop
+$# for_loop
 for ?i in range(?n):
     ?
 
-?# while_loop
+$# while_loop
 while ?i < ?n:
     ?
     ?i += 1

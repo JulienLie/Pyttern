@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "pyttern"
-version = "0.3.1"
+version = "0.3.2"
 description = ""
 authors = ["julien <julien.lienard@uclouvain.be>"]
 readme = "README.md"
 packages = [{include = "pyttern"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">3.10"
 antlr4-python3-runtime="4.13.2"
 cachelib="^0.13.0"
 Flask="^3.0.3"
@@ -17,12 +17,14 @@ loguru="^0.7.2"
 pymemcache="^4.0.0"
 tqdm="^4.66.5"
 flasgger="0.9.7b2"
+pygraphviz = "^1.14"
 
 [tool.poetry.group.test.dependencies]
 pytest="^8.2.2"
 pylint="^3.2.2"
 pytest-subtests="^0.14.2"
 flake8 = "^7.3.0"
+pytest-timeout = "^2.4.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -32,3 +34,4 @@ build-backend = "poetry.core.masonry.api"
 pyttern = "pyttern.main:main"
 pytternweb = "pyttern.main:run_application"
 pytterncompile = "pyttern.main:_compile_code"
+pytterngraph = "pyttern.main:generate_graph"

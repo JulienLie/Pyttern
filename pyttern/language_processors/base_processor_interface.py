@@ -3,7 +3,7 @@ class BaseProcessor:
         if not hasattr(cls, 'instance'):
             cls.instance = super(BaseProcessor, cls).__new__(cls)
         return cls.instance
-    
+
     def generate_tree_from_code(self, code):
         raise NotImplementedError
 

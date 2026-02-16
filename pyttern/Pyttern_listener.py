@@ -1,10 +1,12 @@
 from abc import ABC
+from .simulator import Matcher
+from .pytternfsm.python.match_set import Match
 
 from loguru import logger
 
 
-class PytternListener(ABC):
-    def on_match(self, simulator, match):
+class Pyttern_listener(ABC):
+    def on_match(self, matcher: Matcher, match: Match):
         pass
 
     def step(self, simulator, fsm, ast, stack, variables, matches):
@@ -23,7 +25,7 @@ class PytternListener(ABC):
         pass
 
 
-class ConsolePytternListener(PytternListener):
+class ConsolePytternListener(Pyttern_listener):
     def on_transition(self, simulator, current_fsm, current_ast, next_node, next_ast, classes, movements, _):
         current_ast_str = f"{current_ast.__class__.__name__[:-7]}({current_ast.getText()})".replace("\n", "\\n")
         next_ast_str = f"{next_ast.__class__.__name__[:-7]}({next_ast.getText()})".replace("\n", "\\n")
@@ -35,5 +37,5 @@ class ConsolePytternListener(PytternListener):
     def on_start(self, simulator, fsm, node):
         print(f"Start matching {fsm} with {node}")
 
-    def on_match(self, simulator):
+    def on_match(self, simulator, _):
         print(f"Match found at step {simulator.n_step}!")

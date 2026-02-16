@@ -1,20 +1,19 @@
-?# define
-?|Comp(?left, ?right)
+$|Comp(?left, ?right)
 
-?# eq
+$# eq
 ?left == ?right
 
-?# ne
+$# ne
 ?left != ?right
 
-?# lt
+$# lt
 ?left < ?right
 
-?# le
+$# le
 ?left <= ?right
 
-?# gt
+$# gt
 ?left > ?right
 
-?# ge
+$# ge
 ?left >= ?right

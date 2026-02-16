@@ -69,7 +69,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: macro_call | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
+stmt: (macro_call NEWLINE) | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -262,7 +262,7 @@ strings: STRING+ ;
 // syntax of wildcards
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 stmt_wildcard: (double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard);
-expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
+expr_wildcard:  macro_call | var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
 simple_wildcard: WILDCARD;
 number_wildcard: WILDCARD wildcard_number;
@@ -275,14 +275,14 @@ multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 list_wildcard: WILDCARD '*';
 
 // syntax of macro
-macro_call: WILDCARD NAME '(' macro_args? ')' NEWLINE;
+macro_call: WILDCARD SUB_PATTERN NAME '(' macro_args? ')' (':' block)?;
 
 macro_stmts: macro_def transformation+;
-macro_def: BALISE DEFINE NEWLINE macro;
+macro_def: macro;
 macro: compound_macro | (simple_macro NEWLINE);
 macro_args: macro_arg (',' macro_arg)*;
 macro_arg: (atom_wildcard | atom) ('=' test)?;
-simple_macro: WILDCARD ('&'|'|') NAME '(' macro_args? ')';
+simple_macro: SUB_PATTERN ('&'|'|') NAME '(' macro_args? ')';
 compound_macro: simple_macro ':' block;
 
 transformation: BALISE NAME NEWLINE stmt;

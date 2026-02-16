@@ -1,11 +1,10 @@
-?# define
-?|Bound(?x)
+$|Bound(?x)
 
-?# assign
+$# assign
 ?x = ?
 
-?# use
+$# use
 ? = ?x
 
-?# call
+$# call
 ?x(?*)

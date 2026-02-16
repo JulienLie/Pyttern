@@ -1,5 +1,4 @@
-?# define
-?|Assign(?var)
+$|Assign(?var)
 
-?# assign
+$# assign
 ?<?var>

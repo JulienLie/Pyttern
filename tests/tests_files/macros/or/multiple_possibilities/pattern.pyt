@@ -1,3 +1,3 @@
 def ?(?*):
-    ?Assign(?x)
+    ?$Assign(?x)
     ?x = 0

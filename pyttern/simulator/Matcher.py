@@ -55,8 +55,9 @@ def composition(mapping, bindings):
     return result
 
 class Matcher:
-    def __init__(self, pda: PDA, parse_tree: Tree):
-        self.pda = pda
+    def __init__(self, pdas: dict[str, PDA], parse_tree: Tree):
+        self.pda = pdas["__main__"]
+        self.callable = pdas
         self.parse_tree = parse_tree
         self.match_set = MatchSet()
         self.configurations = []
@@ -73,7 +74,7 @@ class Matcher:
         self._listeners.clear()
 
     @staticmethod
-    def match(pda: PDA, parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
+    def match(pda: dict[str, PDA], parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
         """
         Matches a given parse tree against a Pushdown Automaton (PDA) and returns the resulting matches.
 
@@ -208,12 +209,14 @@ class Matcher:
         :param bindings: The current variable bindings.
         :return: A MatchSet containing the results of the macro call.
         """
-        macro = loaded_macros.get(macro_name)
-        if not macro or trnsf_name not in macro.transformations:
+        macro = loaded_macros[macro_name]
+        to_call = f"{macro_name}::{trnsf_name}"
+        if to_call not in self.callable or not macro:
             logger.warning(f"Macro or transformation not found: {macro_name}:{trnsf_name}")
             return []
 
-        macro_pda = macro.transformations[trnsf_name]
+        macro_pdas = self.callable[to_call]
+        macro_pda = macro_pdas["__main__"]
 
         m_j_to_i = mapping(macro.args_order, args)
         comp = composition(m_j_to_i, bindings)
@@ -222,7 +225,7 @@ class Matcher:
 
         logger.trace(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
 
-        match_set = Matcher.match(macro_pda, current_node, stop_at_first=False, bindings=macro_params)
+        match_set = Matcher.match(macro_pdas, current_node, stop_at_first=False, bindings=macro_params)
         if match_set.count() == 0:
             logger.trace(f"Macro {macro_name}:{trnsf_name} did not match")
             return []

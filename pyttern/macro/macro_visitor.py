@@ -57,10 +57,11 @@ class Macro_Visitor(Python3ParserVisitor):
 
     def visitTransformation(self, ctx:Python3Parser.TransformationContext):
         name = ctx.NAME().accept(self)
-        pda = Python_to_PDA().visit(ctx.stmt().getChild(0))
+        parse_tree = ctx.stmt().getChild(0)
+        # pda = Python_to_PDA().visit(ctx.stmt().getChild(0))
 
-        logger.debug(f"Transformation {name} with stmt {pda}")
-        return name, pda
+        logger.debug(f"Transformation {name} with stmt {parse_tree}")
+        return name, parse_tree
 
     def visitTerminal(self, node: TerminalNodeImpl):
         return node.getText()

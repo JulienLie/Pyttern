@@ -1,46 +1,43 @@
-?# define
-?|Incr(?var, ?incr)
+$|Incr(?var, ?incr)
 
-?# augassign
+$# augassign
 ?var += ?incr
 
-?# var_first
+$# var_first
 ?var = ?var + ?incr
 
-?# incr_first
+$# incr_first
 ?var = ?incr + ?var
 
 
-?# define
-?|Comp(?left, ?right)
+$|Comp(?left, ?right)
 
-?# eq
+$# eq
 ?left == ?right
 
-?# ne
+$# ne
 ?left != ?right
 
-?# lt
+$# lt
 ?left < ?right
 
-?# le
+$# le
 ?left <= ?right
 
-?# gt
+$# gt
 ?left > ?right
 
-?# ge
+$# ge
 ?left >= ?right
 
 
-?# define
-?|Loop(?i, ?n)
+$|Loop(?i, ?n)
 
-?# for_loop
+$# for_loop
 for ?i in ?range(?n):
     ?
 
-?# while_loop
-while ?Comp(?i, ?n):
+$# while_loop
+while ?$Comp(?i, ?n):
     ?
-    ?Incr(?i, 1)
+    ?$Incr(?i, 1)

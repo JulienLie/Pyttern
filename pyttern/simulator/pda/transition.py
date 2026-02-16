@@ -48,6 +48,9 @@ class CallTransition(TransitionCondition):
             "transformation_name": self.transformation_name,
             "args": self.args
         }
+    
+    def __str__(self):
+        return f"{self.macro_name}:{self.transformation_name}({self.args})"
 
 
 @dataclass(frozen=True)

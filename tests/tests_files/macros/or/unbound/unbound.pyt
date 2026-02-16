@@ -1,3 +1,3 @@
 def ?(?*):
-    ?Bound(?x)
+    ?$Bound(?x)
     return ?x

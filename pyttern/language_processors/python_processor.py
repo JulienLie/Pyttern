@@ -4,8 +4,9 @@ from functools import cache
 from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
 
+from ..simulator.pda import PDA
 from .base_processor_interface import BaseProcessor
-from ..PytternListener import ConsolePytternListener
+from ..Pyttern_listener import ConsolePytternListener
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener
@@ -47,7 +48,7 @@ class PythonProcessor(BaseProcessor):
         return self.generate_tree_from_stream(file_input)
 
     @cache
-    def create_pda(self, pattern_tree):
+    def create_pda(self, pattern_tree) -> dict[str, PDA]:
         return Python_to_PDA().visit(pattern_tree)
 
     def create_listener(self):

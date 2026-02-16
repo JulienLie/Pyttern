@@ -8,7 +8,7 @@ from flask import Flask, request, session, flash, get_flashed_messages, send_fro
 from flask_session import Session
 from loguru import logger
 
-from ...PytternListener import PytternListener
+from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
 from ...macro.Macro import loaded_macros
 from ...macro.macro_parser import parse_macro_from_string
@@ -105,7 +105,7 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
 
     return Matcher(pyttern_fsm, code_tree)
 
-class JsonListener(PytternListener):
+class JsonListener(Pyttern_listener):
     def __init__(self):
         self.data = []
 

@@ -6,6 +6,6 @@ def determine_language(filename):
     extension = filename.split('.')[-1]
     if extension in {"pyt", "py"}:
         return "python"
-    elif extension in {"jat", "java"}:
+    if extension in {"jat", "java"}:
         return "java"
     return None

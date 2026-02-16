@@ -1,2 +1,2 @@
 def foo():
-    ?Loop(?i, ?v)
+    ?$Loop(?i, ?v)

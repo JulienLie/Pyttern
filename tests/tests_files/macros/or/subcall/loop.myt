@@ -1,11 +1,10 @@
-?# define
-?|Loop(?i, ?n)
+$|Loop(?i, ?n)
 
-?# for_loop
-for ?i in ?range(?n):
+$# for_loop
+for ?i in range(?n):
     ?
 
-?# while_loop
-while ?Comp(?i, ?n):
+$# while_loop
+while ?$Comp(?i, ?n):
     ?
-    ?Incr(?i, 1)
+    ?$Incr(?i, 1)

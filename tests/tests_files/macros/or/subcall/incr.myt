@@ -1,11 +1,10 @@
-?# define
-?|Incr(?var, ?incr)
+$|Incr(?var, ?incr)
 
-?# augassign
+$# augassign
 ?var += ?incr
 
-?# var_first
+$# var_first
 ?var = ?var + ?incr
 
-?# incr_first
+$# incr_first
 ?var = ?incr + ?var

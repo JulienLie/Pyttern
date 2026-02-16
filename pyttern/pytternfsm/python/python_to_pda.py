@@ -32,16 +32,19 @@ class Python_to_PDA(Python3ParserVisitor):
         self.__var_names = {}
         self.__last_node = None
         self.__is_last_branch = True
+        self.__dict_pda = {}
 
-    def visit(self, tree):
+    def visit(self, tree) -> dict[str, PDA]:
         logger.debug(f"Visiting tree: {tree}")
+        self.__dict_pda = {}
         self.__var_names = {}
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
-        return self.pda
+        self.__dict_pda["__main__"] = self.pda
+        return self.__dict_pda
 
     def visitChildren(self, node):
         logger.debug(f"Visiting {node}")
@@ -337,18 +340,30 @@ class Python_to_PDA(Python3ParserVisitor):
         if macro_name not in loaded_macros:
             raise ValueError(f"Macro {macro_name} is not defined. Available macros: {list(loaded_macros.keys())}")
 
+        # TODO: change handling of macro args
+        # Should be able to handle 3 types -> maybe check types from macro?
+        # 1: simple var wildcard -> can stay the same
+        # 2: expr -> change all var in expr then compile
+        # 3: stmts -> change all var in stmts then compile
         args_nodes = ctx.macro_args().macro_arg()
         if args_nodes is not None:
             args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
         else:
             args_names = []
 
+        body = ctx.block()
+
         macro = loaded_macros[macro_name]
+
+        # TODO: same as before, change compilation in relation to macro args 
+        transformations = macro.compile(body)
+        self.__dict_pda.update(transformations)
         n_args_req = sum(1 for key in macro.args if macro.args[key] is None)
         if len(args_names) < n_args_req:
             logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
             raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
+        # TODO: Probably no change but should be checked
         if macro.type == "OR":
             self.__visit_or_macro(macro, args_names)
         elif macro.type == "AND":
