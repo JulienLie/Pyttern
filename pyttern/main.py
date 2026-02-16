@@ -223,7 +223,7 @@ def match_wildcards(pattern_path, code_path, match_details=False):
 def run_application():
     from .visualizer.web import application
     logger.enable("pyttern")
-    application.app.run(debug=True, port=5001)
+    application.app.run(debug=True)
 
 
 def main():
