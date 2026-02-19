@@ -439,7 +439,7 @@ def batch_match():
                 example:
                     file1.py: "def foo(): pass"
                     file2.py: "def bar(): pass"
-              coumpoundPattern:
+              compoundPattern:
                 type: object
                 description: The list of pattern files to match
                 $ref: '#/components/schemas/PatternTree'
@@ -448,7 +448,7 @@ def batch_match():
                 description: The language of the code/pattern (python/java). If empty, try to determine the language.
             required:
                 - codes
-                - pattern
+                - compoundPattern
     responses:
       '200':
         description: Match result
@@ -467,7 +467,12 @@ def batch_match():
     data = request.json
     codes = data["codes"]
     patterns = data["compoundPattern"]
-    lang = data["lang"]
+    if "lang" in data and data["lang"]:
+        lang = data["lang"]
+    else:
+        if not codes:
+            return json.dumps({})
+        lang = determine_language_from_code(next(iter(codes.values())))
     logger.debug(data)
 
     processor = get_processor(lang)
@@ -475,7 +480,7 @@ def batch_match():
     pattern_tree = parse_json_pattern(patterns, processor)
     logger.debug(pattern_tree)
 
-    results = {}
+    matches = {}
     logger.debug(f"Pattern tree: {pattern_tree}")
     logger.debug(f"Codes Data {codes}")
 
@@ -488,9 +493,32 @@ def batch_match():
         code_tree = processor.generate_tree_from_code(code)
         logger.debug(f"Code Tree {code_tree}")
 
-        results[filename] = match_pyttern(pattern_tree, code_tree)
+        name = pattern_tree['name']
+        pattern_tree['name'] = "and"
+        matches[filename] = match_pyttern(pattern_tree, code_tree, match_details=True)
+        pattern_tree['name'] = name
 
+    results = []
+    for filename in matches:
+        match = matches[filename]
+        patterns = list(__get_pyt_files(match))
+        result = {
+            'match': match['result'],
+            'patternsMatchResults': patterns
+        }
+        results.append(result)
+        
+    
     return json.dumps(results)
+
+def __get_pyt_files(data):
+    name = data["name"]
+    if name.endswith(".pyt"):
+        yield {name: {'match': data['result']}}
+    else:
+        children = data['children']
+        for child in children:
+            yield from __get_pyt_files(child)
 
 @app.route("/api/batch_validate", methods=['POST'])
 def batch_validate():
