@@ -503,6 +503,7 @@ def batch_match():
         match = matches[filename]
         patterns = list(__get_pyt_files(match))
         result = {
+            'name': filename,
             'match': match['result'],
             'patternsMatchResults': patterns
         }
