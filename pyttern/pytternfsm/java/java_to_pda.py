@@ -67,8 +67,6 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
                 "ClassBodyDeclarationContext",
                 "MemberDeclarationContext",
                 "InterfaceBodyDeclarationContext",
-                "ModuleDeclarationContext",
-                "ModuleDirectiveContext",
                 "RecordDeclarationContext",
                 "CompactConstructorDeclarationContext"
             ]:
