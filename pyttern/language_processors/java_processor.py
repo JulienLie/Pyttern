@@ -9,6 +9,7 @@ from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.java.java_to_pda import Java_to_PDA
+from ..pytternfsm.java.tree_pruner import TreePruner
 
 
 class JavaProcessor(BaseProcessor):
@@ -36,10 +37,9 @@ class JavaProcessor(BaseProcessor):
         #         f"Syntax error in {stream} at line {error_listener.line} "
         #         f"({repr(error_listener.symbol)}) : {error.getvalue()}")
 
-        # pruned_tree = TreePruner().visit(tree)
+        pruned_tree = TreePruner().visit(tree)
 
-        # return pruned_tree
-        return tree
+        return pruned_tree
 
     def generate_tree_from_file(self, file):
         file_input = FileStream(file, encoding="utf-8")
