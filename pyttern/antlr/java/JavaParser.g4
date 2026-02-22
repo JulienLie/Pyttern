@@ -461,6 +461,7 @@ blockStatement
     : localVariableDeclaration ';'
     | localTypeDeclaration
     | statement
+    | simple_wildcard
     ;
 
 localVariableDeclaration
@@ -802,4 +803,5 @@ arguments
     ;
 
 // Syntax of wildcards
-var_wildcard: '#' identifier;
+simple_wildcard: '#';
+var_wildcard: simple_wildcard identifier;
