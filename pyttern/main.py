@@ -37,6 +37,28 @@ def parse_subfolders(folder_path, op="and"):
     return {op: res}
 
 
+def parse_json_pattern(pattern_json, language_processor):
+    """
+    Parse a JSON pattern and return a dictionary with the patterns.
+    :param pattern_json: JSON object with the patterns.
+    :param language_processor: Language processor to use.
+    :return: Dictionary with the patterns.
+    """
+    logger.debug(pattern_json)
+    if "children" in pattern_json:
+        logger.debug("Children")
+        op = pattern_json["name"]
+        res = [parse_json_pattern(child, language_processor) for child in pattern_json["children"]]
+        return {'name': op, 'children': res}
+    else:
+        logger.debug("else")
+        name = pattern_json['filename']
+        pattern_code = pattern_json["code"]
+        tree = language_processor.generate_tree_from_code(pattern_code)
+        fsm = language_processor.create_pda(tree)
+        return {'name': name,'result': fsm}
+
+
 def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=False):
     """
     Match a pattern tree with a code tree.
@@ -46,54 +68,50 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
     :param stop_at_first: If True, stop at the first match found.
     :return: A boolean indicating if the match was successful or a list of matches if match_details is True.
     """
-    if isinstance(pattern_tree, dict):
-        # Handle logical operations like 'and', 'or', 'not'
-        op = list(pattern_tree.keys())[0]
-        subpatterns = pattern_tree[op]
-        logger.debug(f"Processing logical operation: {op} with {len(subpatterns)} subpatterns")
-        if op == "and":
-            all_matches = []
-            for subpattern in subpatterns:
-                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                all_matches.append(result)
-                if not result and not match_details:
-                    return False
-            if match_details:
-                return {op: all_matches, 'res': all([len(m) > 0 for m in all_matches])}
-            return True
-        elif op == "or":
-            all_matches = []
-            for subpattern in subpatterns:
-                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                all_matches.append(result)
-                if result and not match_details:
-                    return True
-            if match_details:
-                return {op: all_matches, 'res': any([len(m) > 0 for m in all_matches])}
-            return False
-        elif op == "not":
-            all_matches = []
-            for subpattern in subpatterns:
-                result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-                all_matches.append(result)
-                if result and not match_details:
-                    return False
-            if match_details:
-                return {op: all_matches, 'res': not any([len(m) > 0 for m in all_matches])}
-            return True
-        else:
-            if match_details:
-                return {op: [], 'res': False}
-            return False  # Unknown operation
+    # Handle logical operations like 'and', 'or', 'not'
+    name = pattern_tree['name']
+    subpatterns = pattern_tree['children'] if 'children' in pattern_tree else []
+    logger.debug(f"Processing logical operation: {name} with {len(subpatterns)} subpatterns")
+    if name == "and":
+        all_matches = []
+        for subpattern in subpatterns:
+            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+            all_matches.append(result)
+            if not result and not match_details:
+                return False
+        if match_details:
+            return {'name': name, 'result': all([len(m) > 0 for m in all_matches]), 'children': all_matches}
+        return True
+    elif name == "or":
+        all_matches = []
+        for subpattern in subpatterns:
+            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+            all_matches.append(result)
+            if result and not match_details:
+                return True
+        if match_details:
+            return {'name': name, 'result': any([len(m) > 0 for m in all_matches]), 'children': all_matches}
+        return False
+    elif name == "not":
+        all_matches = []
+        for subpattern in subpatterns:
+            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
+            all_matches.append(result)
+            if result and not match_details:
+                return False
+        if match_details:
+            return {'name': name, 'result': not any([len(m) > 0 for m in all_matches]), 'children': all_matches}
+        return True
     else:
         logger.debug("Matching pattern tree with code tree")
-        res = Matcher.match(pattern_tree, code_tree, stop_at_first=stop_at_first)
+        pattern_fsm = pattern_tree['result']
+        res = Matcher.match(pattern_fsm, code_tree, stop_at_first=stop_at_first)
         if res.count() > 0:
             logger.debug(f"Match found with {res.count()} matches")
         else:
             logger.debug("No match found")
         if match_details:
-            return {'res': res.count() > 0, 'matches': res}
+            return {'name': name, 'result': res.count() > 0, 'matches': res}
         return True if res.count() > 0 else False
 
 def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
@@ -221,12 +239,12 @@ def main():
     if args and args.web:
         run_application()
         return
-    
+
     if not args.lang or not args.pattern or not args.code:
         print("You must specify --lang, pattern file, and code file when not running the web application.")
         return
 
-    processor = get_processor(args.lang) # Get processor behaviour adapted to language
+    processor = get_processor(args.lang)  # Get processor behaviour adapted to language
     pattern = args.pattern
     code = args.code
 
@@ -249,6 +267,7 @@ def main():
     while len(simu.configurations) > 0:
         simu.step()
     print(simu.match_set.matches)
+
 
 logger.disable("pyttern")
 if __name__ == "__main__":
