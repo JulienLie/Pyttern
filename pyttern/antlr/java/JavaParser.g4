@@ -89,7 +89,7 @@ variableModifier
     ;
 
 classDeclaration
-    : CLASS (var_wildcard | identifier) typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
+    : CLASS (identifier | simple_wildcard | var_wildcard) typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
         PERMITS typeList
     )? // Java17
     classBody
@@ -160,7 +160,7 @@ memberDeclaration
    for invalid return type after parsing.
  */
 methodDeclaration
-    : typeTypeOrVoid identifier formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
+    : typeTypeOrVoid (identifier | simple_wildcard | var_wildcard) formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
     ;
 
 methodBody
@@ -253,6 +253,7 @@ variableDeclarator
 
 variableDeclaratorId
     : identifier ('[' ']')*
+    | simple_wildcard
     | var_wildcard
     ;
 
@@ -461,7 +462,6 @@ blockStatement
     : localVariableDeclaration ';'
     | localTypeDeclaration
     | statement
-    | simple_wildcard
     ;
 
 localVariableDeclaration
@@ -528,6 +528,7 @@ statement
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
     | identifierLabel = identifier ':' statement
+    | simple_wildcard
     ;
 
 catchClause
@@ -660,6 +661,8 @@ expression
 
     // Level 0, Lambda Expression
     | lambdaExpression // Java8
+
+    | simple_wildcard
     ;
 
 // Java17
@@ -771,6 +774,7 @@ typeList
 
 typeType
     : annotation* (classOrInterfaceType | primitiveType) (annotation* '[' ']')*
+    | simple_wildcard
     ;
 
 primitiveType
