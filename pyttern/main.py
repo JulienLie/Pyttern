@@ -79,9 +79,9 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if not result and not match_details:
                 return False
         if match_details:
-            return {'name': name, 'result': all([m['result'] for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': all(m['result'] for m in all_matches), 'children': all_matches}
         return True
-    elif name == "or":
+    if name == "or":
         all_matches = []
         for subpattern in subpatterns:
             result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
@@ -89,9 +89,9 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if result and not match_details:
                 return True
         if match_details:
-            return {'name': name, 'result': any([m['result'] for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': any(m['result'] for m in all_matches), 'children': all_matches}
         return False
-    elif name == "not":
+    if name == "not":
         all_matches = []
         for subpattern in subpatterns:
             result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
@@ -99,19 +99,19 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if result and not match_details:
                 return False
         if match_details:
-            return {'name': name, 'result': not any([m['result'] for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': not any(m['result'] for m in all_matches), 'children': all_matches}
         return True
+
+    logger.debug("Matching pattern tree with code tree")
+    pattern_fsm = pattern_tree['result']
+    res = Matcher.match(pattern_fsm, code_tree, stop_at_first=stop_at_first)
+    if res.count() > 0:
+        logger.debug(f"Match found with {res.count()} matches")
     else:
-        logger.debug("Matching pattern tree with code tree")
-        pattern_fsm = pattern_tree['result']
-        res = Matcher.match(pattern_fsm, code_tree, stop_at_first=stop_at_first)
-        if res.count() > 0:
-            logger.debug(f"Match found with {res.count()} matches")
-        else:
-            logger.debug("No match found")
-        if match_details:
-            return {'name': name, 'result': res.count() > 0, 'matches': res}
-        return True if res.count() > 0 else False
+        logger.debug("No match found")
+    if match_details:
+        return {'name': name, 'result': res.count() > 0, 'matches': res}
+    return res.count() > 0
 
 def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
     """
@@ -218,6 +218,7 @@ def match_wildcards(pattern_path, code_path, match_details=False):
 
 
 def run_application():
+    # pylint: disable=import-outside-toplevel
     from .visualizer.web import application
     logger.enable("pyttern")
     application.app.run(debug=True)
