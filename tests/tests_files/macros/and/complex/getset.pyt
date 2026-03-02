@@ -1,2 +1,2 @@
 class ?:
-    ?$GetSet(?getter, ?setter, ?var)
+    ?$GetSet(?, ?, ?var)

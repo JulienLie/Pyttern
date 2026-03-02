@@ -1,4 +1,8 @@
 class Clazz:
+
+    def __new__(clazz):
+        return clazz()
+
     def __init__(self):
         self.foo = 0
         self.bar = 0
@@ -14,3 +18,6 @@ class Clazz:
     
     def set_bar(self, bar):
         self.bar = bar
+
+    def __str__(self):
+        return ""
