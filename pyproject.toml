@@ -29,6 +29,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
+
 pyttern = "pyttern.main:main"
+
 pytternweb = "pyttern.main:run_application"
-pytterncompile = "pyttern.main:_compile_code"

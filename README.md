@@ -37,26 +37,32 @@ In addition to these wildcards, we added some optional elements to allow more op
 ## Usage
 
 ```python
-
-import Matcher
+from pyttern import PytternMatcher
 
 code = "code_file.py"
 pattern = "pattern_file.py"
-match = Matcher.match_files(pattern, code, strict_match=False, match_details=False)
+
+# Instantiate the matcher with desired options
+matcher = PytternMatcher(match_details=False)
+
+# Perform the match
+match = matcher.match_files(pattern, code, lang="python")
+
 if match:
     print("We found a match")
 else:
     print("No match")
 ```
-The `match_files` function takes 4 arguments:
+The `PytternMatcher` class is the main entry point for matching. The `match_files` method takes 3 arguments:
 1. `pattern_file: string` The path to the file describing the pattern
 2. `code_file: string` The path to the python code file
-3. `strict_match: boolean` (optional) When strict_match is set to True, a strict match is performed. 
-A strict match requires an exact match between the code file and the pattern file, including code structure and syntax. 
-If strict_match is set to False, a "soft" match is performed, which allows for flexibility in code sections using wildcards.
-4. `match_details: boolean` (optional) If match_details is set to True, the function returns a tuple (result, details), 
-where result is a boolean value indicating whether the code matches the pattern. 
-If result is True, details contains the match details. If result is False, details contains the error that prevented the match.
+3. `lang: string` The language of the code file (e.g., "python" or "java")
+
+The `PytternMatcher` constructor takes optional arguments:
+1. `match_details: boolean` (optional) If `match_details` is set to `True`, the `match_files` method returns a tuple `(result, details)`,
+where `result` is a boolean value indicating whether the code matches the pattern.
+If `result` is `True`, `details` contains the match details. If `result` is `False`, `details` may contain information about the mismatch.
+2. `stop_at_first: boolean` (optional) If `stop_at_first` is `True`, the matching process will stop as soon as the first match is found.
 
 ## Examples
 ### Wildcard: ``?``

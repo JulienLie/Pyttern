@@ -2,7 +2,7 @@ import importlib.resources as pkg_resources
 
 from loguru import logger
 
-from pyttern import match_files
+from pyttern import PytternMatcher
 from pyttern.language_processors import Languages
 from pyttern.macro.macro_parser import parse_macro_from_file
 from . import tests_files
@@ -33,9 +33,10 @@ def test_incr_macro():
     code_path = get_test_file("macros/increment_1_ok.py")
     pattern_path = get_test_file("macros/increment.pyt")
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    matcher = PytternMatcher(match_details=True)
+    res, det = matcher.match(pattern_path, code_path, lang="python")
     assert res, det
 
     code_path = get_test_file("macros/increment_2_ok.py")
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = matcher.match(pattern_path, code_path, lang="python")
     assert res, det

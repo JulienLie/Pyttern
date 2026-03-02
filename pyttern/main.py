@@ -1,220 +1,202 @@
 import argparse
 import glob
 import os
-import time
 
 from loguru import logger
-from tqdm import tqdm
 
 from .language_processors import get_processor, Languages
 from .simulator.Matcher import Matcher
 
 
-def parse_subfolders(folder_path, op="and"):
+class PytternMatcher:
     """
-    Parse all subfolders in the given folder path and return a dictionary with the patterns.
-    :param folder_path: Path to the folder containing the patterns.
-    :param op:
-    :return: Dictionary with the patterns.
+    A class to handle matching of patterns against code.
+    It encapsulates the logic for parsing patterns, compiling them into Finite State Machines,
+    and running the matching process against code files.
     """
-    res = []
-    for subfolder in os.listdir(folder_path):
-        subfolder_path = os.path.join(folder_path, subfolder)
-        if os.path.isdir(subfolder_path) and subfolder in ["and", "or", "not"]:
-            res.append(parse_subfolders(subfolder_path, subfolder))
 
-        for language in Languages:
-            processor = get_processor(language)
-            for file_extension in processor.get_language_extensions():
-                if subfolder.endswith(file_extension):
-                    logger.info(f"Processing pattern file: {subfolder} with language: {language}")
-                    pattern_file_path = os.path.join(folder_path, subfolder)
-                    tree = processor.generate_tree_from_file(pattern_file_path)
-                    fsm = processor.create_pda(tree)
-                    res.append(fsm)
-                    break
-    return {op: res}
+    def __init__(self, match_details=False, stop_at_first=False):
+        self.match_details = match_details
+        self.stop_at_first = stop_at_first
+        self._language_processors = {lang: get_processor(lang) for lang in Languages}
+        self._extension_to_processor = {
+            ext: processor
+            for processor in self._language_processors.values()
+            for ext in processor.get_language_extensions()
+        }
 
+    def _get_processor_for_file(self, file_name):
+        """Get the language processor for a given file name based on its extension."""
+        file_ext = os.path.splitext(file_name)[1]
+        return self._extension_to_processor.get(file_ext)
 
-def parse_json_pattern(pattern_json, language_processor):
-    """
-    Parse a JSON pattern and return a dictionary with the patterns.
-    :param pattern_json: JSON object with the patterns.
-    :param language_processor: Language processor to use.
-    :return: Dictionary with the patterns.
-    """
-    logger.debug(pattern_json)
-    if "children" in pattern_json:
-        logger.debug("Children")
-        op = pattern_json["name"]
-        res = [parse_json_pattern(child, language_processor) for child in pattern_json["children"]]
-        return {'name': op, 'children': res}
-    else:
-        logger.debug("else")
-        name = pattern_json['filename']
-        pattern_code = pattern_json["code"]
-        tree = language_processor.generate_tree_from_code(pattern_code)
-        fsm = language_processor.create_pda(tree)
-        return {'name': name,'result': fsm}
+    def parse_json_pattern(self, pattern_json, lang=None, _processor=None):
+        """
+        Parse a JSON pattern and return a dictionary with the patterns.
+        :param pattern_json: JSON object with the patterns.
+        :param lang: language of the patterns
+        :param _processor: (internal) language processor to use
+        :return: Dictionary with the patterns.
+        """
+        processor = _processor
+        if processor is None:
+            if lang is None:
+                raise ValueError("Either lang or _processor must be provided")
+            processor = self._language_processors.get(Languages[lang.upper()])
+            if not processor:
+                raise ValueError(f"Unsupported language: {lang}")
 
-
-def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=False):
-    """
-    Match a pattern tree with a code tree.
-    :param pattern_tree: The pattern tree to match.
-    :param code_tree: The code tree to match against.
-    :param match_details: If True, the function will return the match details.
-    :param stop_at_first: If True, stop at the first match found.
-    :return: A boolean indicating if the match was successful or a list of matches if match_details is True.
-    """
-    # Handle logical operations like 'and', 'or', 'not'
-    name = pattern_tree['name']
-    subpatterns = pattern_tree['children'] if 'children' in pattern_tree else []
-    logger.debug(f"Processing logical operation: {name} with {len(subpatterns)} subpatterns")
-    if name == "and":
-        all_matches = []
-        for subpattern in subpatterns:
-            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-            all_matches.append(result)
-            if not result and not match_details:
-                return False
-        if match_details:
-            return {'name': name, 'result': all([m['result'] for m in all_matches]), 'children': all_matches}
-        return True
-    elif name == "or":
-        all_matches = []
-        for subpattern in subpatterns:
-            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-            all_matches.append(result)
-            if result and not match_details:
-                return True
-        if match_details:
-            return {'name': name, 'result': any([m['result'] for m in all_matches]), 'children': all_matches}
-        return False
-    elif name == "not":
-        all_matches = []
-        for subpattern in subpatterns:
-            result = match_pyttern(subpattern, code_tree, match_details, stop_at_first)
-            all_matches.append(result)
-            if result and not match_details:
-                return False
-        if match_details:
-            return {'name': name, 'result': not any([m['result'] for m in all_matches]), 'children': all_matches}
-        return True
-    else:
-        logger.debug("Matching pattern tree with code tree")
-        pattern_fsm = pattern_tree['result']
-        res = Matcher.match(pattern_fsm, code_tree, stop_at_first=stop_at_first)
-        if res.count() > 0:
-            logger.debug(f"Match found with {res.count()} matches")
+        logger.debug(f"Parsing json pattern: {pattern_json}")
+        if "children" in pattern_json:
+            op = pattern_json["name"]
+            res = [self.parse_json_pattern(child, _processor=processor) for child in pattern_json["children"]]
+            return {'name': op, 'children': res}
         else:
-            logger.debug("No match found")
-        if match_details:
-            return {'name': name, 'result': res.count() > 0, 'matches': res}
-        return True if res.count() > 0 else False
+            name = pattern_json.get('filename', 'unnamed')
+            pattern_code = pattern_json["code"]
+            tree = processor.generate_tree_from_code(pattern_code)
+            fsm = processor.create_pda(tree)
+            return {'name': name, 'result': fsm}
 
-def match_folders(pattern_path, code_path, match_details=False, stop_at_first=False):
-    """
-    Match all files in the pattern folder with all files in the code folder.
-    The pattern_path and code_path can contain wildcards.
-    The function returns a dictionary with the results of the matches.
-    :param pattern_path: Path to the pattern files with wildcards.
-    :param code_path: Path to the python files with wildcards.
-    :param match_details: If True, the function will return the match details.
-    :param lang: Language of the code (default is "python").
-    :param stop_at_first: If True, stop at the first match found.
-    :return: Dictionary with the results of the matches.
-    """
+    def match_tree(self, pattern_tree, code_tree):
+        """
+        Match a compiled pattern tree against a compiled code tree.
+        This is the dispatcher for pattern matching, calling the appropriate
+        method based on `match_details`.
+        """
+        logger.debug(f"Matching pattern '{pattern_tree.get('name', 'root')}' with code tree.")
+        if self.match_details:
+            return self._match_pyttern_details(pattern_tree, code_tree)
+        return self._match_pyttern_bool(pattern_tree, code_tree)
 
-    # Compile all patterns to speed up matching
-    logger.info("Compiling patterns...")
-    start_pattern = time.time()
-    patterns = {}
-    for pyttern_folder in os.listdir(pattern_path):
-        pyttern_folder_path = os.path.join(pattern_path, pyttern_folder)
-        if os.path.isdir(pyttern_folder_path):
-            patterns[pyttern_folder] = parse_subfolders(pyttern_folder_path)
-    end_pattern = time.time()
-    logger.info(f"Patterns compiled in {end_pattern - start_pattern} s")
+    def _match_pyttern_bool(self, pattern_tree, code_tree):
+        """
+        Perform pattern matching and return a boolean result. Supports short-circuiting.
+        """
+        name = pattern_tree.get('name')
+        if 'children' not in pattern_tree:
+            pattern_fsm = pattern_tree['result']
+            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first)
+            match_found = res.count() > 0
+            logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
+            return match_found
 
-    # Compile all code files to speed up matching
-    logger.info("Compiling code files...")
-    start_code = time.time()
-    code_trees = []
-    for root, dirs, files in os.walk(code_path):
-        for file in files:
-            if file.endswith('.py'):
-                processor = get_processor("python")
-            elif file.endswith('.java'):
-                processor = get_processor("java")
-            else:
-                logger.warning(f"Unknown file type in {root}: {file}")
+        subpatterns = pattern_tree.get('children', [])
+        results_gen = (self._match_pyttern_bool(sp, code_tree) for sp in subpatterns)
+
+        if name == 'and':
+            result = all(results_gen)
+            logger.debug(f"Result for 'and' operator: {result}")
+            return result
+        if name == 'or':
+            result = any(results_gen)
+            logger.debug(f"Result for 'or' operator: {result}")
+            return result
+        if name == 'not':
+            result = not any(results_gen)
+            logger.debug(f"Result for 'not' operator: {result}")
+            return result
+        return False
+
+    def _match_pyttern_details(self, pattern_tree, code_tree):
+        """
+        Perform pattern matching and return detailed results.
+        """
+        name = pattern_tree.get('name')
+        if 'children' not in pattern_tree:
+            pattern_fsm = pattern_tree['result']
+            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first)
+            match_found = res.count() > 0
+            logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
+            return {'name': name, 'result': match_found, 'matches': res}
+
+        subpatterns = pattern_tree.get('children', [])
+        child_results = [self._match_pyttern_details(sp, code_tree) for sp in subpatterns]
+        child_bools = [cr['result'] for cr in child_results]
+
+        result_bool = False
+        if name == 'and':
+            result_bool = all(child_bools)
+        if name == 'or':
+            result_bool = any(child_bools)
+        if name == 'not':
+            result_bool = not any(child_bools)
+
+        logger.debug(f"Result for logical operator '{name}': {result_bool}")
+        return {'name': name, 'result': result_bool, 'children': child_results}
+
+    def _dir_to_pattern_tree(self, path, processor, op='and'):
+        """
+        Recursively traverse a directory and convert its structure into a pattern_tree.
+        """
+        logger.debug(f"Parsing directory '{path}' with operator '{op}'")
+        children = []
+        for item in sorted(os.listdir(path)):
+            item_path = os.path.join(path, item)
+            if item in ['and', 'or', 'not']:
+                children.append(self._dir_to_pattern_tree(item_path, processor, op=item))
+            elif os.path.isdir(item_path):
+                logger.debug(f"Descending into sub-directory '{item_path}'")
+                children.append(self._dir_to_pattern_tree(item_path, processor, op='and'))
+            elif os.path.isfile(item_path):
+                if self._get_processor_for_file(item):
+                    logger.debug(f"Compiling pattern file: {item_path}")
+                    tree = processor.generate_tree_from_file(item_path)
+                    fsm = processor.create_pda(tree)
+                    children.append({'name': item, 'result': fsm})
+        return {'name': op, 'children': children}
+
+    def match(self, pattern_path, code_path, lang):
+        """
+        Main matching method. Compiles pattern and code from paths and matches them.
+        The pattern can be a single file or a directory representing a composite pattern.
+        """
+        logger.info(f"Starting match for pattern '{pattern_path}' on code '{code_path}' with language '{lang}'")
+        processor = self._language_processors.get(Languages[lang.upper()])
+        if not processor:
+            raise ValueError(f"Unsupported language: {lang}")
+
+        # Compile pattern
+        if os.path.isdir(pattern_path):
+            logger.debug(f"Pattern is a directory, compiling composite pattern from '{pattern_path}'")
+            pattern_tree = self._dir_to_pattern_tree(pattern_path, processor)
+        else:  # single file
+            logger.debug(f"Pattern is a single file, compiling from '{pattern_path}'")
+            tree = processor.generate_tree_from_file(pattern_path)
+            fsm = processor.create_pda(tree)
+            pattern_tree = {'name': os.path.basename(pattern_path), 'result': fsm}
+
+        # Compile code
+        code_tree = processor.generate_tree_from_file(code_path)
+
+        # Match
+        match_result = self.match_tree(pattern_tree, code_tree)
+        if self.match_details:
+            return match_result['result'], match_result
+        return match_result
+
+    def match_wildcards(self, pattern_path, code_path):
+        """
+        Match files using glob patterns for both patterns and code files.
+        """
+        ret = {}
+        patterns_filespath = glob.glob(str(pattern_path))
+        code_filespath = glob.glob(str(code_path))
+        logger.info(f"Found {len(patterns_filespath)} pattern(s) and {len(code_filespath)} code file(s).")
+
+        for code_filepath in code_filespath:
+            processor = self._get_processor_for_file(code_filepath)
+            if not processor:
+                logger.warning(f"No processor found for code file: {code_filepath}, skipping.")
                 continue
-            code_file_path = os.path.join(root, file)
-            try:
-                code_tree = processor.generate_tree_from_file(code_file_path)
-                code_trees.append((code_file_path, code_tree))
-            except Exception as e:
-                logger.error(f"Error processing file {code_file_path}: {e}")
-                continue
 
-    end_code = time.time()
-    logger.info(f"Code files compiled in {end_code - start_code} s")
-
-    logger.info("Starting matching...")
-    start_match = time.time()
-    ret = {}
-    for code_file_path, code_tree in code_trees:
-        for pyttern in patterns:
-            pattern_tree = patterns[pyttern]
-            ret[code_file_path] = match_pyttern(pattern_tree, code_tree, match_details=match_details, stop_at_first=stop_at_first)
-    stop_match = time.time()
-    logger.info(f"Matching completed in {stop_match - start_match} s.")
-
-
-    end_match = time.time()
-    logger.info(f"Matching completed in {end_match - start_match} s.")
-
-    return ret
-
-def match_files(pattern_path, code_path, match_details=False, lang="python", stop_at_first=False):
-    language_processor = get_processor(lang)
-    pattern = language_processor.generate_tree_from_file(pattern_path)
-    code = language_processor.generate_tree_from_file(code_path)
-
-    fsm = language_processor.create_pda(pattern)
-    matches = Matcher.match(fsm, code, stop_at_first=stop_at_first)
-    if match_details:
-        return matches.count() > 0, matches
-    return matches.count() > 0
-
-
-def match_wildcards(pattern_path, code_path, match_details=False):
-    """
-    Match all python files with all pattern files.
-    The path_pattern_with_wildcards and path_python_with_wildcard
-    can contain wildcards. The function returns a dictionary with the results of the matches.
-    :param pattern_path: Path to the pattern files with wildcards.
-    :param code_path: Path to the python files with wildcards.
-    :param match_details: If True, the function will return the match details.
-    :return: Dictionary with the results of the matches.
-    """
-    ret = {}
-    patterns_filespath = glob.glob(str(pattern_path))
-    pythons_filespath = glob.glob(str(code_path))
-
-    try:
-        pythons_filespath = tqdm(pythons_filespath)
-    except NameError:
-        pass
-
-    for python_filepath in pythons_filespath:
-        for pattern_filepath in patterns_filespath:
-            result = match_files(pattern_filepath, python_filepath, match_details)
-            if python_filepath not in ret:
-                ret[python_filepath] = {}
-            ret[python_filepath][pattern_filepath] = result
-    return ret
+            lang = processor.language.value.lower()
+            for pattern_filepath in patterns_filespath:
+                result = self.match(pattern_filepath, code_filepath, lang)
+                if code_filepath not in ret:
+                    ret[code_filepath] = {}
+                ret[code_filepath][pattern_filepath] = result
+        return ret
 
 
 def run_application():
@@ -224,50 +206,58 @@ def run_application():
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Pyttern: A tool for pattern matching in code.")
+    parser.add_argument("--web", action="store_true", help="Launch the web application.")
+    parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language for single file matching.")
+    parser.add_argument("--details", action="store_true", help="Return detailed match information.")
+    parser.add_argument("--stop-first", action="store_true", help="Stop at the first match found.")
 
-    parser.add_argument("--web", action="store_true", help="Launch the web application")
-    parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language (python/java)")
-
-    parser.add_argument("pattern", nargs="?", help="Pattern file path")
-    parser.add_argument("code", nargs="?", help="Code file path")
+    parser.add_argument("pattern", nargs="?", help="Pattern file path or glob pattern.")
+    parser.add_argument("code", nargs="?", help="Code file path or glob pattern.")
 
     args = parser.parse_args()
 
-    if args and args.web:
+    if args.web:
         run_application()
         return
 
-    if not args.lang or not args.pattern or not args.code:
-        print("You must specify --lang, pattern file, and code file when not running the web application.")
+    if not args.pattern or not args.code:
+        parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
 
-    processor = get_processor(args.lang)  # Get processor behaviour adapted to language
-    pattern = args.pattern
-    code = args.code
+    matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first)
 
-    try:
-        pattern_tree = processor.generate_tree_from_file(pattern)
-        code_tree = processor.generate_tree_from_file(code)
-    except Exception as e:
-        print(e)
-        return
+    # Use wildcards if they are likely present, otherwise treat as single files
+    if '*' in args.pattern or '*' in args.code:
+        results = matcher.match_wildcards(args.pattern, args.code)
+        logger.info(results)
+    else:
+        if not args.lang:
+            parser.error("--lang is required for single file matching.")
+            return
 
-    fsm = processor.create_pda(pattern_tree)
+        if not os.path.exists(args.pattern):
+            logger.error(f"Pattern file not found: {args.pattern}")
+            return
+        if not os.path.exists(args.code):
+            logger.error(f"Code file not found: {args.code}")
+            return
 
-    simu = Matcher(fsm, code_tree)
+        result = matcher.match(args.pattern, args.code, args.lang)
+        if args.details:
+            res, det = result
+            if res:
+                logger.success("Match found!")
+                logger.info(det)
+            else:
+                logger.warning("No match found.")
+        else:
+            if result:
+                logger.success("Match found!")
+            else:
+                logger.warning("No match found.")
 
-    listener = processor.create_listener()
 
-    simu.add_listener(listener)
-    simu.start()
-
-    while len(simu.configurations) > 0:
-        simu.step()
-    print(simu.match_set.matches)
-
-
-logger.disable("pyttern")
 if __name__ == "__main__":
     logger.enable("pyttern")
     main()
