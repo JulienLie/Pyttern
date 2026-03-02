@@ -501,7 +501,7 @@ def batch_match():
     results = []
     for filename in matches:
         match = matches[filename]
-        patterns = list(__get_pyt_files(match))
+        patterns = dict(__get_pyt_files(match))
         result = {
             'name': filename,
             'match': match['result'],
@@ -515,7 +515,7 @@ def batch_match():
 def __get_pyt_files(data):
     name = data["name"]
     if name.endswith(".pyt"):
-        yield {name: {'match': data['result']}}
+        yield name, data['result']
     else:
         children = data['children']
         for child in children:

@@ -79,7 +79,7 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if not result and not match_details:
                 return False
         if match_details:
-            return {'name': name, 'result': all([len(m) > 0 for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': all([m['result'] for m in all_matches]), 'children': all_matches}
         return True
     elif name == "or":
         all_matches = []
@@ -89,7 +89,7 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if result and not match_details:
                 return True
         if match_details:
-            return {'name': name, 'result': any([len(m) > 0 for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': any([m['result'] for m in all_matches]), 'children': all_matches}
         return False
     elif name == "not":
         all_matches = []
@@ -99,7 +99,7 @@ def match_pyttern(pattern_tree, code_tree, match_details=False, stop_at_first=Fa
             if result and not match_details:
                 return False
         if match_details:
-            return {'name': name, 'result': not any([len(m) > 0 for m in all_matches]), 'children': all_matches}
+            return {'name': name, 'result': not any([m['result'] for m in all_matches]), 'children': all_matches}
         return True
     else:
         logger.debug("Matching pattern tree with code tree")
