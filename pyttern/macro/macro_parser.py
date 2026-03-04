@@ -59,10 +59,6 @@ def define_new_macro(tree, override, code) -> Macro:
 def handle_new_transformation(tree: Python3Parser.File_inputContext):
     new_root: ParserRuleContext = tree.stmt(0).getChild(0)
     new_root.parent = None
-    """end_ctx = TerminalMacroNode()
-    end_ctx.parentCtx = new_root
-    new_root.addChild(end_ctx)
-    logger.debug(end_ctx)"""
     return new_root
 
 

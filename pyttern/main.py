@@ -51,12 +51,12 @@ class PytternMatcher:
             op = pattern_json["name"]
             res = [self.parse_json_pattern(child, _processor=processor) for child in pattern_json["children"]]
             return {'name': op, 'children': res}
-        else:
-            name = pattern_json.get('filename', 'unnamed')
-            pattern_code = pattern_json["code"]
-            tree = processor.generate_tree_from_code(pattern_code)
-            fsm = processor.create_pda(tree)
-            return {'name': name, 'result': fsm}
+        
+        name = pattern_json.get('filename', 'unnamed')
+        pattern_code = pattern_json["code"]
+        tree = processor.generate_tree_from_code(pattern_code)
+        fsm = processor.create_pda(tree)
+        return {'name': name, 'result': fsm}
 
     def match_tree(self, pattern_tree, code_tree):
         """

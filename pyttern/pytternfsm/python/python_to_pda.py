@@ -188,7 +188,7 @@ class Python_to_PDA(Python3ParserVisitor):
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, '')
         self.pda.add_transition(dummy_transition)
 
-        for i in range(low, high):
+        for _ in range(low, high):
             # Add transitions for high - low
             next_state = self.pda.new_state()
 
