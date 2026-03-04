@@ -1,5 +1,5 @@
 import io
-from functools import cache
+from functools import lru_cache
 
 from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
@@ -15,14 +15,14 @@ from ..pytternfsm.python.tree_pruner import TreePruner
 
 class PythonProcessor(BaseProcessor):
 
-    @cache(maxsize=None)
+    @lru_cache(maxsize=128)
     def generate_tree_from_code(self, code):
         code = code.strip()
         code += "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
-    @cache
+    @lru_cache(maxsize=128)
     def generate_tree_from_stream(self, stream):
         logger.info("Generating tree")
         lexer = Python3Lexer(stream)
@@ -41,12 +41,12 @@ class PythonProcessor(BaseProcessor):
 
         return pruned_tree
 
-    @cache
+    @lru_cache(maxsize=128)
     def generate_tree_from_file(self, file):
         file_input = FileStream(file, encoding="utf-8")
         return self.generate_tree_from_stream(file_input)
 
-    @cache
+    @lru_cache(maxsize=128)
     def create_pda(self, pattern_tree):
         return Python_to_PDA().visit(pattern_tree)
 

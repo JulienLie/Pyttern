@@ -500,7 +500,7 @@ def batch_match():
         pattern_tree['name'] = name
 
     results = []
-    for filename in matches.items():
+    for filename in matches:
         match = matches[filename]
         patterns = dict(__get_pyt_files(match))
         result = {
