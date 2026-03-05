@@ -100,7 +100,7 @@ typeParameters
     ;
 
 typeParameter
-    : annotation* identifier (EXTENDS annotation* typeBound)?
+    : annotation* (identifier | simple_wildcard | var_wildcard) (EXTENDS annotation* typeBound)?
     ;
 
 typeBound
@@ -108,7 +108,7 @@ typeBound
     ;
 
 enumDeclaration
-    : ENUM identifier (IMPLEMENTS typeList)? '{' enumConstants? ','? enumBodyDeclarations? '}'
+    : ENUM (identifier | simple_wildcard | var_wildcard) (IMPLEMENTS typeList)? '{' enumConstants? ','? enumBodyDeclarations? '}'
     ;
 
 enumConstants
@@ -116,7 +116,7 @@ enumConstants
     ;
 
 enumConstant
-    : annotation* identifier arguments? classBody?
+    : annotation* (identifier | simple_wildcard | var_wildcard) arguments? classBody?
     ;
 
 enumBodyDeclarations
@@ -124,7 +124,7 @@ enumBodyDeclarations
     ;
 
 interfaceDeclaration
-    : INTERFACE identifier typeParameters? (EXTENDS typeList)? (PERMITS typeList)? interfaceBody
+    : INTERFACE (identifier | simple_wildcard | var_wildcard) typeParameters? (EXTENDS typeList)? (PERMITS typeList)? interfaceBody
     ;
 
 classBody
@@ -182,7 +182,7 @@ genericConstructorDeclaration
     ;
 
 constructorDeclaration
-    : identifier formalParameters (THROWS qualifiedNameList)? constructorBody = block
+    : (identifier | simple_wildcard | var_wildcard) formalParameters (THROWS qualifiedNameList)? constructorBody = block
     ;
 
 compactConstructorDeclaration
@@ -214,7 +214,7 @@ constDeclaration
     ;
 
 constantDeclarator
-    : identifier ('[' ']')* '=' variableInitializer
+    : (identifier | simple_wildcard | var_wildcard) ('[' ']')* '=' variableInitializer
     ;
 
 // Early versions of Java allows brackets after the method name, eg.
@@ -240,7 +240,7 @@ genericInterfaceMethodDeclaration
     ;
 
 interfaceCommonBodyDeclaration
-    : annotation* typeTypeOrVoid identifier formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
+    : annotation* typeTypeOrVoid (identifier | simple_wildcard | var_wildcard) formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
     ;
 
 variableDeclarators
@@ -267,7 +267,7 @@ arrayInitializer
     ;
 
 classOrInterfaceType
-    : (identifier typeArguments? '.')* typeIdentifier typeArguments?
+    : (identifier typeArguments? '.')* typeIdentifier typeArguments? // TODO ?
     ;
 
 typeArgument
@@ -288,7 +288,7 @@ formalParameters
     ;
 
 receiverParameter
-    : typeType (identifier '.')* THIS
+    : typeType (identifier '.')* THIS // TODO ?
     ;
 
 formalParameterList
@@ -433,7 +433,7 @@ requiresModifier
 // RECORDS - Java 17
 
 recordDeclaration
-    : RECORD identifier typeParameters? recordHeader (IMPLEMENTS typeList)? recordBody
+    : RECORD (identifier | simple_wildcard | var_wildcard) typeParameters? recordHeader (IMPLEMENTS typeList)? recordBody
     ;
 
 recordHeader
@@ -445,7 +445,7 @@ recordComponentList
     ;
 
 recordComponent
-    : typeType identifier
+    : typeType (identifier | simple_wildcard | var_wildcard)
     ;
 
 recordBody
@@ -484,7 +484,7 @@ identifier
     | SEALED
     | PERMITS
     | RECORD
-    | VAR
+    | VAR // TODO: put wildcard here to simplify things?
     ;
 
 typeIdentifier // Identifiers that are not restricted for type declarations
@@ -612,6 +612,8 @@ expression
         | NEW nonWildcardTypeArguments? innerCreator
         | SUPER superSuffix
         | explicitGenericInvocation
+        | simple_wildcard 
+        | var_wildcard
     )
     // Method calls and method references are part of primary, and hence level 16 precedence
     | methodCall
@@ -635,7 +637,7 @@ expression
     | expression bop = ('+' | '-') expression                 // Level 11, Additive operators
     | expression ('<' '<' | '>' '>' '>' | '>' '>') expression // Level 10, Shift operators
     | expression bop = ('<=' | '>=' | '>' | '<') expression   // Level 9, Relational operators
-    | expression bop = INSTANCEOF (typeType | pattern)
+    | expression bop = INSTANCEOF (simple_wildcard | var_wildcard | typeType | pattern)
     | expression bop = ('==' | '!=') expression                      // Level 8, Equality Operators
     | expression bop = '&' expression                                // Level 7, Bitwise AND
     | expression bop = '^' expression                                // Level 6, Bitwise XOR
@@ -663,6 +665,7 @@ expression
     | lambdaExpression // Java8
 
     | simple_wildcard
+    | var_wildcard
     ;
 
 // Java17
@@ -681,6 +684,8 @@ lambdaParameters
     | '(' formalParameterList? ')'
     | '(' identifier (',' identifier)* ')'
     | '(' lambdaLVTIList? ')'
+    | simple_wildcard
+    | var_wildcard
     ;
 
 // Java8
