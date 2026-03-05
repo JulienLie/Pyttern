@@ -68,7 +68,6 @@ class TestRelaxed():
         code_path = get_test_file(file_path)
 
         res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
-        print(file_path)
         assert res, det
 
     @pytest.mark.parametrize("file_path", discover_files(get_test_file("trivial_case/non_strict_mode/"), ".java", "relaxed_ko"))
@@ -77,5 +76,86 @@ class TestRelaxed():
         code_path = get_test_file(file_path)
 
         res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
-        print(file_path)
         assert not res, det
+
+class TestSimpleWildcard():
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/statement/"), ".java", "statement_ok"))
+    def test_statement_ok(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/statement/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/classname/"), ".java", "statement_ko"))
+    def test_statement_ko(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/classname/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert not res, det
+    
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/classname/"), ".java", "class_ok"))
+    def test_class_ok(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/classname/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/classname/"), ".java", "class_ko"))
+    def test_class_ko(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/classname/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert not res, det
+    
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/classname/"), ".java", "expression_ok"))
+    def test_expression_ok(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/expression/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+    @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/expression/"), ".java", "expression_ko"))
+    def test_expression_ko(self, file_path):
+        pattern_path = get_test_file("simple_wildcard/expression/pattern.jat")
+        code_path = get_test_file(file_path)
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert not res, det
+    
+    def test_method_name(self):
+        pattern_path = get_test_file("simple_wildcard/names/method_name.jat")
+        code_path = get_test_file("simple_wildcard/names/method_name.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+    def test_variable_name(self):
+        pattern_path = get_test_file("simple_wildcard/names/variable_name.jat")
+        code_path = get_test_file("simple_wildcard/names/variable_name.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+    
+    def test_field_name(self):
+        pattern_path = get_test_file("simple_wildcard/names/field_name.jat")
+        code_path = get_test_file("simple_wildcard/names/field_name.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+    
+    def test_type(self):
+        pattern_path = get_test_file("simple_wildcard/type/pattern.jat")
+        code_path = get_test_file("simple_wildcard/type/primitive.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+        code_path = get_test_file("simple_wildcard/type/class.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
