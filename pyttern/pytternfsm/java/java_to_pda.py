@@ -151,11 +151,13 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
+        """
 
-        lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.Simple_wildcardContext)
+        lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.JavaParser.Simple_wildcardContext)
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
-
+        
+        """
         lookahead_number_wildcard = self.lookahead(ctx, JavaParser.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
