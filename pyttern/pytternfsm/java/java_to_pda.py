@@ -296,7 +296,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._handle_empty_list(ctx)
 
     def visitVar_wildcard(self, ctx):
-        label = ctx.NAME().getText()
+        label = ctx.identifier().getText()
         # if label not in self.__var_names:
         #     uuid_label = str(uuid.uuid4())[:8]
         #     self.__var_names[label] = f"{label}_{uuid_label}"
