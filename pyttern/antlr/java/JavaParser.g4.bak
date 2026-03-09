@@ -780,6 +780,7 @@ typeList
 typeType
     : annotation* (classOrInterfaceType | primitiveType) (annotation* '[' ']')*
     | simple_wildcard
+    | var_wildcard
     ;
 
 primitiveType

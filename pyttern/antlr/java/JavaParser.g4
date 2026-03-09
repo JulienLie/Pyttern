@@ -521,7 +521,7 @@ statement
     | SYNCHRONIZED parExpression block
     | RETURN expression? ';'
     | THROW expression ';'
-    | BREAK identifier? ';'
+    | BREAK identifier? ';' // TODO: add wildcard here?
     | CONTINUE identifier? ';'
     | YIELD expression ';' // Java17
     | SEMI
@@ -532,7 +532,7 @@ statement
     ;
 
 catchClause
-    : CATCH '(' variableModifier* catchType identifier ')' block
+    : CATCH '(' variableModifier* catchType identifier ')' block // TODO: add wildcard here?
     ;
 
 catchType
@@ -552,7 +552,7 @@ resources
     ;
 
 resource
-    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression
+    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression // TODO: add wildcard here?
     | qualifiedName
     ;
 
@@ -563,7 +563,7 @@ switchBlockStatementGroup
     : switchLabel+ blockStatement+
     ;
 
-switchLabel
+switchLabel// TODO: add wildcard here?
     : CASE (
         constantExpression = expression
         | enumConstantName = IDENTIFIER
@@ -597,7 +597,7 @@ expressionList
     ;
 
 methodCall
-    : (identifier | THIS | SUPER) arguments
+    : (identifier | THIS | SUPER) arguments // TODO: add wildcard here?
     ;
 
 expression
@@ -729,7 +729,7 @@ switchRuleOutcome
     ;
 
 classType
-    : (classOrInterfaceType '.')? annotation* identifier typeArguments?
+    : (classOrInterfaceType '.')? annotation* identifier typeArguments? // TODO: add wildcard here?
     ;
 
 creator
@@ -738,7 +738,7 @@ creator
     ;
 
 createdName
-    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)*
+    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)* // TODO: add wildcard here?
     | primitiveType
     ;
 
@@ -780,6 +780,7 @@ typeList
 typeType
     : annotation* (classOrInterfaceType | primitiveType) (annotation* '[' ']')*
     | simple_wildcard
+    | var_wildcard
     ;
 
 primitiveType
