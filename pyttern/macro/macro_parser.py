@@ -50,7 +50,7 @@ def parse_macro_from_string(code: str, language: Languages, override: bool=False
 
     return macros
 
-def parse_macro_from_file(file: str, language: Languages, override: bool=False):
+def parse_macro_from_file(file: str, language: Languages, override: bool=False) -> list[Macro]:
     """
     Parses macros from a file and returns the last parsed macro.
 
