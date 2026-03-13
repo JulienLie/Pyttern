@@ -50,14 +50,12 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         down, up = self._define_boundaries(node)
 
-        """
         while len(children) > 1 and (
-                self.lookahead(children[-1], JavaParser.Double_wildcardContext)
-                or self.lookahead(children[-1], JavaParser.List_wildcardContext)
+                # self.lookahead(children[-1], JavaParser.JavaParser.Double_wildcardContext) or
+                self.lookahead(children[-1], JavaParser.JavaParser.List_wildcardContext)
         ):
             children.pop()
             logger.debug("Remove double wildcard")
-        """
 
         if node.__class__.__name__ in [
                 "BlockStatementContext",
@@ -286,13 +284,13 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         return self._add_up_transition(node, node_transition)
 
-    def visitParameters(self, ctx):
+    def visitFormalParameterList(self, ctx):
         return self._handle_empty_list(ctx)
 
-    def visitVarargslist(self, ctx):
+    def visitExpressionList(self, ctx):
         return self._handle_empty_list(ctx)
 
-    def visitArgument(self, ctx):
+    def visitArguments(self, ctx):
         return self._handle_empty_list(ctx)
 
     def visitVar_wildcard(self, ctx):
