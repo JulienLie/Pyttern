@@ -639,13 +639,13 @@ class JavaParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by JavaParser#simple_wildcard.
-    def visitSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
+    # Visit a parse tree produced by JavaParser#var_wildcard.
+    def visitVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by JavaParser#var_wildcard.
-    def visitVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
+    # Visit a parse tree produced by JavaParser#simple_wildcard.
+    def visitSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
         return self.visitChildren(ctx)
 
 

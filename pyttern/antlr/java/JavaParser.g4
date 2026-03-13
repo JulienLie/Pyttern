@@ -528,6 +528,7 @@ statement
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
     | identifierLabel = identifier ':' statement
+    | var_wildcard
     | simple_wildcard
     ;
 
@@ -612,8 +613,8 @@ expression
         | NEW nonWildcardTypeArguments? innerCreator
         | SUPER superSuffix
         | explicitGenericInvocation
-        | simple_wildcard 
         | var_wildcard
+        | simple_wildcard 
     )
     // Method calls and method references are part of primary, and hence level 16 precedence
     | methodCall
@@ -813,5 +814,5 @@ arguments
     ;
 
 // Syntax of wildcards
-simple_wildcard: '#';
-var_wildcard: simple_wildcard identifier;
+var_wildcard: WILDCARD identifier;
+simple_wildcard: WILDCARD_SPACE;

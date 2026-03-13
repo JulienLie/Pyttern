@@ -521,18 +521,19 @@ statement
     | SYNCHRONIZED parExpression block
     | RETURN expression? ';'
     | THROW expression ';'
-    | BREAK identifier? ';'
+    | BREAK identifier? ';' // TODO: add wildcard here?
     | CONTINUE identifier? ';'
     | YIELD expression ';' // Java17
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
     | identifierLabel = identifier ':' statement
+    | var_wildcard
     | simple_wildcard
     ;
 
 catchClause
-    : CATCH '(' variableModifier* catchType identifier ')' block
+    : CATCH '(' variableModifier* catchType identifier ')' block // TODO: add wildcard here?
     ;
 
 catchType
@@ -552,7 +553,7 @@ resources
     ;
 
 resource
-    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression
+    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression // TODO: add wildcard here?
     | qualifiedName
     ;
 
@@ -563,7 +564,7 @@ switchBlockStatementGroup
     : switchLabel+ blockStatement+
     ;
 
-switchLabel
+switchLabel// TODO: add wildcard here?
     : CASE (
         constantExpression = expression
         | enumConstantName = IDENTIFIER
@@ -597,7 +598,7 @@ expressionList
     ;
 
 methodCall
-    : (identifier | THIS | SUPER) arguments
+    : (identifier | THIS | SUPER) arguments // TODO: add wildcard here?
     ;
 
 expression
@@ -612,8 +613,8 @@ expression
         | NEW nonWildcardTypeArguments? innerCreator
         | SUPER superSuffix
         | explicitGenericInvocation
-        | simple_wildcard 
         | var_wildcard
+        | simple_wildcard 
     )
     // Method calls and method references are part of primary, and hence level 16 precedence
     | methodCall
@@ -729,7 +730,7 @@ switchRuleOutcome
     ;
 
 classType
-    : (classOrInterfaceType '.')? annotation* identifier typeArguments?
+    : (classOrInterfaceType '.')? annotation* identifier typeArguments? // TODO: add wildcard here?
     ;
 
 creator
@@ -738,7 +739,7 @@ creator
     ;
 
 createdName
-    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)*
+    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)* // TODO: add wildcard here?
     | primitiveType
     ;
 
@@ -813,5 +814,5 @@ arguments
     ;
 
 // Syntax of wildcards
-simple_wildcard: '#';
-var_wildcard: simple_wildcard identifier;
+var_wildcard: WILDCARD identifier;
+simple_wildcard: WILDCARD_SPACE;
