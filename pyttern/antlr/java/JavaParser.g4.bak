@@ -292,7 +292,7 @@ receiverParameter
     ;
 
 formalParameterList
-    : formalParameter (',' formalParameter)* (',' lastFormalParameter)?
+    : (list_wildcard | formalParameter) (',' (list_wildcard | formalParameter))* (',' lastFormalParameter)?
     | lastFormalParameter
     ;
 
@@ -594,7 +594,7 @@ parExpression
     ;
 
 expressionList
-    : expression (',' expression)*
+    : (list_wildcard | expression) (',' (list_wildcard | expression))*
     ;
 
 methodCall
@@ -810,9 +810,11 @@ explicitGenericInvocationSuffix
     ;
 
 arguments
-    : '(' expressionList? ')'
+    : '(' (expressionList? | list_wildcard) ')'
     ;
 
 // Syntax of wildcards
 var_wildcard: WILDCARD identifier;
+//indent_wildcard: WILDCARD '{' '}';
+list_wildcard: WILDCARD '*';
 simple_wildcard: WILDCARD_SPACE;

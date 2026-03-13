@@ -349,7 +349,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
 
     def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, JavaParser.List_wildcardContext)
+        list_wildcard = self.lookahead(ctx, JavaParser.JavaParser.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
             logger.debug("Handling empty list")
