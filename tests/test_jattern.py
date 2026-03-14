@@ -111,6 +111,23 @@ class TestSimpleWildcard():
         res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
         assert not res, det
     
+    def test_interface(self):
+        pattern_path = get_test_file("simple_wildcard/interfacename/pattern.jat")
+        code_path = get_test_file("simple_wildcard/interfacename/interface_ok.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+        code_path = get_test_file("simple_wildcard/interfacename/interface_ok_2.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert res, det
+
+        code_path = get_test_file("simple_wildcard/interfacename/interface_ko.java")
+
+        res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
+        assert not res, det
+
     @pytest.mark.parametrize("file_path", discover_files(get_test_file("simple_wildcard/classname/"), ".java", "expression_ok"))
     def test_expression_ok(self, file_path):
         pattern_path = get_test_file("simple_wildcard/expression/pattern.jat")
