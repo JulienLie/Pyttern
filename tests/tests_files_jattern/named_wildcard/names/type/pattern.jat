@@ -1,0 +1,6 @@
+class TestType {
+    public static #type main() {
+        #type #var = # ;
+        return #var ;
+    }
+}
