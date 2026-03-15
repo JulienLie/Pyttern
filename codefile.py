@@ -1,3 +1,3 @@
-def foo(x):
-    y = x
-    return y
+def a(b, d, c):
+  b(c, d)
+  pass

@@ -284,7 +284,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         return self._add_up_transition(node, node_transition)
 
-    def visitFormalParameterList(self, ctx):
+    def visitFormalParameters(self, ctx):
         return self._handle_empty_list(ctx)
 
     def visitExpressionList(self, ctx):

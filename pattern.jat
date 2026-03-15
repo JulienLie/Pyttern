@@ -1,5 +1,5 @@
 class A {
-  void a(int d, #*) {
-    b(c, #*);
-  }
+    void main(#*, int a) {
+
+    }
 }

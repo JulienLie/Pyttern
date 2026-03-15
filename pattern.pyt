@@ -1,3 +1,3 @@
-def foo(?x):
-    ?abc = ?x
-    return ?abc
+def a(b, ?*, c):
+  b(c, ?*)
+  pass

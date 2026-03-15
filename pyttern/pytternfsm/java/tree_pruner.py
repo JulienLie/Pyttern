@@ -1,9 +1,10 @@
 from antlr4 import TerminalNode, Token
 
 from ...antlr.python import Python3ParserVisitor, Python3Parser
+from ...antlr.java import JavaParserVisitor, JavaParser
 
 
-class TreePruner(Python3ParserVisitor):
+class TreePruner(JavaParserVisitor.JavaParserVisitor):
 
     def visitChildren(self, node):
         result = super().visitChildren(node)
@@ -27,20 +28,8 @@ class TreePruner(Python3ParserVisitor):
             #     return new_child
         return new_child
 
-    def visitTest(self, ctx: Python3Parser.TestContext):
+    def visitExpr_stmt(self, ctx:JavaParser.JavaParser.ExpressionContext):
         return self.prune_single_child(ctx)
-
-    def visitExpr_stmt(self, ctx:Python3Parser.Expr_stmtContext):
-        return self.prune_single_child(ctx)
-
-    def visitTfpdef(self, ctx:Python3Parser.TfpdefContext):
-        return self.prune_single_child(ctx)
-
-    def visitExpr(self, ctx:Python3Parser.ExprContext):
-        return self.prune_single_child(ctx)
-
-    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
-        return ctx
 
     def visitTerminal(self, node):
         sym = node.getSymbol()
