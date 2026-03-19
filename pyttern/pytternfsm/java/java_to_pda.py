@@ -149,7 +149,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             return self.visitDouble_wildcard(lookahead_double_wildcard)
         """
 
-        lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
+        lookahead_multiple_body = self.lookahead(ctx, JavaParser.JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
 
@@ -234,6 +234,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return low, high
 
     def visitSimple_compound_wildcard(self, ctx):
+        """
         # Go to children
         child_state = self.pda.new_state()
         child_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
@@ -241,10 +242,12 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.pda.add_transition(child_transition)
         self.current_state = child_state
         self.depth += 1
+        """
+        # NOTE: the above is not necessary in jattern, only in pyttern 
 
         # Find body node
-        self_transition = Transition(child_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                     child_state, '')
+        self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                     self.current_state, '')
         self.pda.add_transition(self_transition)
 
         # Explore body

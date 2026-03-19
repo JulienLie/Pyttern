@@ -509,16 +509,8 @@ localTypeDeclaration
     ;
 
 statement
-    : blockLabel = block
+    : compound_stmt
     | ASSERT expression (':' expression)? ';'
-    | IF parExpression statement (ELSE statement)?
-    | FOR '(' forControl ')' statement
-    | WHILE parExpression statement
-    | DO statement WHILE parExpression ';'
-    | TRY block (catchClause+ finallyBlock? | finallyBlock)
-    | TRY resourceSpecification block catchClause* finallyBlock?
-    | SWITCH parExpression '{' switchBlockStatementGroup* switchLabel* '}'
-    | SYNCHRONIZED parExpression block
     | RETURN expression? ';'
     | THROW expression ';'
     | BREAK identifier? ';' // TODO: add wildcard here?
@@ -527,9 +519,22 @@ statement
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
-    | identifierLabel = identifier ':' statement
     | var_wildcard
     | simple_wildcard
+    ;
+
+compound_stmt
+    : compound_wildcard
+    | blockLabel = block // unsure about this one
+    | IF parExpression statement (ELSE statement)?
+    | FOR '(' forControl ')' statement
+    | WHILE parExpression statement
+    | DO statement WHILE parExpression ';'
+    | TRY block (catchClause+ finallyBlock? | finallyBlock)
+    | TRY resourceSpecification block catchClause* finallyBlock?
+    | SWITCH parExpression '{' switchBlockStatementGroup* switchLabel* '}'
+    | SYNCHRONIZED parExpression block
+    | identifierLabel = identifier ':' statement // unsure about this one
     ;
 
 catchClause
@@ -815,6 +820,10 @@ arguments
 
 // Syntax of wildcards
 var_wildcard: WILDCARD identifier;
-//indent_wildcard: WILDCARD '{' '}';
 list_wildcard: WILDCARD '*';
 simple_wildcard: WILDCARD_SPACE;
+
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
+simple_compound_wildcard: WILDCARD ':' wildcard_number? block;
+multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
+wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
