@@ -101,7 +101,11 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         :return: A tuple of (down, up) boundaries.
         """
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
-        down = up = 0
+        # down = up = 0 # TODO: put this back in
+        up = math.inf
+        down = 0
+        return down, up
+
         if isinstance(ctx, (JavaParser.JavaParser.CompilationUnitContext, JavaParser.JavaParser.BlockContext)):
             logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
