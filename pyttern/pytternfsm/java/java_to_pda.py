@@ -149,11 +149,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             return self.visitDouble_wildcard(lookahead_double_wildcard)
         """
 
-        """
         lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
-        """
 
         lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.JavaParser.Simple_wildcardContext)
         if lookahead_simple_wildcard:
@@ -250,7 +248,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.pda.add_transition(self_transition)
 
         # Explore body
-        return ctx.getChild(0, JavaParser.BlockContext).accept(self)
+        return ctx.getChild(0, JavaParser.JavaParser.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx):
         # Handle a case when double wildcard is the only statement
