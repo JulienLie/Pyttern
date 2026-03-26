@@ -525,7 +525,7 @@ statement
 
 compound_stmt
     : compound_wildcard
-    | blockLabel = block // unsure about this one
+    | blockLabel = block
     | IF parExpression statement (ELSE statement)?
     | FOR '(' forControl ')' statement
     | WHILE parExpression statement
@@ -534,7 +534,7 @@ compound_stmt
     | TRY resourceSpecification block catchClause* finallyBlock?
     | SWITCH parExpression '{' switchBlockStatementGroup* switchLabel* '}'
     | SYNCHRONIZED parExpression block
-    | identifierLabel = identifier ':' statement // unsure about this one
+    | identifierLabel = identifier ':' statement
     ;
 
 catchClause
@@ -824,6 +824,6 @@ list_wildcard: WILDCARD '*';
 simple_wildcard: WILDCARD_SPACE;
 
 compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
-simple_compound_wildcard: WILDCARD ':' wildcard_number? block;
+simple_compound_wildcard: WILDCARD wildcard_number? block;
 multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
