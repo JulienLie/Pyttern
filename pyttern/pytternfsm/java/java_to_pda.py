@@ -250,6 +250,20 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
                                                                      self.current_state, '')
         self.pda.add_transition(self_transition)
 
+        # Here, we need to handle two different cases
+        # 1. Add empty transition to "commit" to exploring the body
+        next_state = self.pda.new_state()
+
+        empty_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
+        self.pda.add_transition(empty_transition)
+
+        # 2. Add double left child transition in case it's a Statement -> Block -> blockStatement*
+        self_transition = Transition(self.current_state, "", NodeTransition("StatementContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD, NavigationAlphabet.LEFT_CHILD], next_state, 'II') # TODO: Are the "I" necessary here?
+        self.pda.add_transition(self_transition)
+
+        self.current_state = next_state
+
         # Explore body
         return ctx.getChild(0, JavaParser.JavaParser.BlockContext).accept(self)
 
