@@ -521,6 +521,7 @@ statement
     | switchExpression ';'? // Java17
     | var_wildcard
     | simple_wildcard
+    | contains_wildcard
     ;
 
 compound_stmt
@@ -672,6 +673,7 @@ expression
 
     | simple_wildcard
     | var_wildcard
+    | contains_wildcard
     ;
 
 // Java17
@@ -827,3 +829,5 @@ compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
 simple_compound_wildcard: WILDCARD wildcard_number? block;
 multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
+
+contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';

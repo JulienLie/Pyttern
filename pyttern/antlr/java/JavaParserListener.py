@@ -1214,5 +1214,14 @@ class JavaParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by JavaParser#contains_wildcard.
+    def enterContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#contains_wildcard.
+    def exitContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        pass
+
+
 
 del JavaParser

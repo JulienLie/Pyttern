@@ -679,5 +679,10 @@ class JavaParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by JavaParser#contains_wildcard.
+    def visitContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        return self.visitChildren(ctx)
+
+
 
 del JavaParser
