@@ -101,23 +101,23 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         :return: A tuple of (down, up) boundaries.
         """
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
-        # down = up = 0 # TODO: put this back in
-        up = math.inf
-        down = 0
-        return down, up
+        down = up = 0
 
-        if isinstance(ctx, (JavaParser.JavaParser.CompilationUnitContext, JavaParser.JavaParser.BlockContext)):
-            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
-            down = 1
+        if isinstance(ctx, (JavaParser.JavaParser.CompilationUnitContext, JavaParser.JavaParser.ClassBodyContext, JavaParser.JavaParser.BlockContext)):
+            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 0 and inf")
+            down = 0
             up = math.inf
-        elif False and isinstance(ctx, JavaParser.JavaParser.If_stmtContext):
-            logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
+        elif isinstance(ctx, (JavaParser.JavaParser.BlockStatementContext)):
+            # Special case for the simple wildcard: a block statement can have either 1 child (most cases) or 2 children (local variable definition)
+            logger.debug(f"Context {ctx.__class__.__name__} is a block statement, setting boundaries to 1 and 2")
             down = 1
-            up = math.inf
+            up = 2
         else:
             for child in ctx.children:
-                if False and self.lookahead(child, (JavaParser.Double_wildcardContext, JavaParser.List_wildcardContext)) is not None:
-                    logger.debug(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
+                if self.lookahead(child, (JavaParser.JavaParser.List_wildcardContext,
+                                          JavaParser.JavaParser.Simple_compound_wildcardContext,
+                                          JavaParser.JavaParser.Contains_wildcardContext)) is not None:
+                    logger.debug(f"Child {child.__class__.__name__} is a list or compound wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
 
