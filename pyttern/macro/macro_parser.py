@@ -33,7 +33,7 @@ def string_to_macro_tree(macro_string):
 
     return pruned_tree
 
-def parse_macro_from_string(code: str, language: Languages, override: bool=False):
+def parse_macro_from_string(code: str, language: Languages, override: bool=False) -> list[Macro]:
     """
     Parses macros from a string and returns the last parsed macro.
 

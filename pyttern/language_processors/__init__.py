@@ -3,9 +3,9 @@ from .java_processor import JavaProcessor
 from .languages import Languages
 
 def get_processor(lang):
-    if lang in ('python', Languages.PYTHON):
+    if lang in ('python', Languages.PYTHON, "pyt", "pyh", "py"):
         return PythonProcessor()
-    if lang in ('java', Languages.JAVA):
+    if lang in ('java', Languages.JAVA, "jat", "java"):
         return JavaProcessor()
     raise ValueError(f"Unsupported language: {lang}")
 

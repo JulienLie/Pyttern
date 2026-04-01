@@ -5,7 +5,7 @@ class Subject:
     interface, you'll be able to pass it a proxy instead of a real subject.
     """
 
-    def request(self) -> None:
+    def request(self):
         pass
 
 
@@ -17,7 +17,7 @@ class RealSubject(Subject):
     changes to the RealSubject's code.
     """
 
-    def request(self) -> None:
+    def request(self):
         print("RealSubject: Handling request.")
 
 

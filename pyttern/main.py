@@ -218,17 +218,18 @@ def match_wildcards(pattern_path, code_path, match_details=False):
     return ret
 
 
-def run_application():
+def run_application(host="0.0.0.0", port=5000):
     from .visualizer.web import application
     logger.enable("pyttern")
-    parse_macro_from_file("/home/julien/Documents/phd/Pyttern/tests/tests_files/macros/and/complex/getset.myt", Languages.PYTHON)
-    application.app.run(debug=True)
+    application.app.run(debug=True, host=host, port=port)
 
 
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--web", action="store_true", help="Launch the web application")
+    parser.add_argument("--host", default="0.0.0.0", help="Host for the web application")
+    parser.add_argument("--port", type=int, default=5000, help="Port for the web application")
     parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language (python/java)")
 
     parser.add_argument("pattern", nargs="?", help="Pattern file path")
@@ -237,7 +238,7 @@ def main():
     args = parser.parse_args()
 
     if args and args.web:
-        run_application()
+        run_application(host=args.host, port=args.port)
         return
 
     if not args.lang or not args.pattern or not args.code:

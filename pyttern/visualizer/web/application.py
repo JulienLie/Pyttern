@@ -687,6 +687,8 @@ def step():
     if current_data["match"]:
         flash("New match found", "message")
 
+    logger.debug(json.dumps(current_data["variables"]))
+
     return json.dumps({
         "status": "ok",
         "state": state_info,
@@ -694,7 +696,7 @@ def step():
         "previous_matchings": previous_matchings,
         "messages": get_flashed_messages(),
         "match": current_data["match"],
-        "variables": current_data["variables"],
+        "variables": json.dumps(current_data["variables"]),
         "current_stack": current_stack,
         "previous_stack": previous_stack,
         "code_pos": code_pos
@@ -748,18 +750,20 @@ def parse_macro():
     except Exception as e:
         logger.error(f"Error parsing macro: {e}")
         return json.dumps({"status": "error", "message": str(e)})
-    macro = macros[0] if macros else None
-    if macro is None:
-        return json.dumps({"status": "error", "message": "No macro found"})
-    macro_json = {
-        "name": macro.name,
-        "code": macro_code,
-        "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-            pda in macro.transformations.items()}
-    }
-    logger.debug(f"Macro JSON: {macro_json}")
-    return json.dumps({"status": "ok", "macro": macro_json})
+    if len(macros) < 1:
+      return json.dumps({"status": "error", "message": "No macro found"})
 
+    macro_names = [macro.name for macro in macros]
+    return json.dumps({"status": "ok", "names": macro_names})
+
+@app.route("/api/macro", methods=['DELETE'])
+def remove_macro():
+    macro_name = request.json["name"]
+    logger.debug(f"Removing macro {macro_name}")
+    if loaded_macros[macro_name] is None:
+        return json.dumps({"status": "error", "message": f"No sub pattern called {macro_name}"})
+    del loaded_macros[macro_name]
+    return json.dumps({"status": "ok"})
 
 @app.route("/api/macro", methods=['GET'])
 def loaded_macro():
@@ -770,17 +774,9 @@ def loaded_macro():
         '200':
             description: Loaded macros
     """
-    macros = []
-    for macro in loaded_macros.values():
-        macro_json = {
-            "name": macro.name,
-            "code": macro.code,
-            "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-                pda in macro.transformations.items()}
-        }
-        macros.append(macro_json)
+    macro_names = [macro for macro in loaded_macros]
 
     return json.dumps({
         "status": "ok",
-        "macros": macros
+        "names": macro_names
     })

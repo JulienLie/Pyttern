@@ -11,7 +11,7 @@ def compare_binding(bindings, name, value):
     assert bindings[name].getText() == value, f"Expected {name} to be '{value}' but was '{bindings[name].getText()}'"
 
 #@pytest.mark.timeout(1)
-def test_singleton_macro():
+def test_composite_macro():
     logger.enable("pyttern")
 
     macro_file = Path(__file__).parent / "composite.myt"

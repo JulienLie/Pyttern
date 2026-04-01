@@ -27,7 +27,7 @@ class Decorator(Component):
     initialize it.
     """
 
-    _component: Component = None
+    _component: Component
 
     def __init__(self, component):
         self._component = component
@@ -55,7 +55,7 @@ class ConcreteDecoratorA(Decorator):
         calling the wrapped object directly. This approach simplifies extension
         of decorator classes.
         """
-        return f"ConcreteDecoratorA({self.component.operation()})"
+        return f"ConcreteDecoratorA(" + str(self.component.operation()) + ")"
 
 
 class ConcreteDecoratorB(Decorator):

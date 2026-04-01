@@ -387,31 +387,62 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.current_state
 
     def __visit_and_macro(self, macro: Macro, args):
-        perms = list(permutations(macro.transformations))
-        start_state = self.current_state
-        end_state = self.pda.new_state()
-        if len(perms) > 10:
-            logger.warning(f"Macro {macro.name} has {len(perms)} permutations, which may lead to a large PDA.")
-        for permutation in perms:
-            self.current_state = start_state
-            for transformation in permutation:
-                next_state = self.pda.new_state()
-                macro_name = macro.name
-                logger.debug(f"Adding transformation {transformation} for AND macro {macro_name}")
-                transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args), [],
-                                        next_state, '')
-                self.pda.add_transition(transition)
+        transformations = list(macro.transformations.keys())
+        n = len(transformations)
+        macro_name = macro.name
 
-                self_transition = Transition(next_state, '', NodeTransition(''), [NavigationAlphabet.PARENT,
-                                                                                  NavigationAlphabet.RIGHT_SIBLING,
-                                                                                  NavigationAlphabet.LEFT_CHILD],
-                                             next_state, '')
-                self.pda.add_transition(self_transition)
-                self.current_state = next_state
-            end_transition = Transition(self.current_state, '', NodeTransition(''), [], end_state, '')
-            self.pda.add_transition(end_transition)
+        if n == 0:
+            return self.current_state
 
-        self.current_state = end_state
+        if n > 10:
+            logger.warning(
+                f"Macro {macro_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+            )
+
+        # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
+        pda_states = {mask: self.pda.new_state() for mask in range(1, 1 << n)}
+        pda_states[0] = self.current_state
+
+        for mask in range(1 << n):
+            current_pda_state = pda_states[mask]
+
+            # Add a self-loop to navigate/skip statements that do not match any required transformations.
+            # This allows matching transformations in any order, interspersed with other statements.
+            # The navigation path is based on the original implementation's logic.
+            if mask != (1 << n) - 1:
+                nav_loop_transition = Transition(
+                    current_pda_state,
+                    "",
+                    NodeTransition(""),
+                    [
+                        NavigationAlphabet.PARENT,
+                        NavigationAlphabet.RIGHT_SIBLING,
+                        NavigationAlphabet.LEFT_CHILD,
+                    ],
+                    current_pda_state,
+                    "",
+                )
+                self.pda.add_transition(nav_loop_transition)
+
+            # For each transformation not yet matched in the current subset (mask)
+            for i, trans_name in enumerate(transformations):
+                if not ((mask >> i) & 1):  # Check if i-th bit is not set
+                    next_mask = mask | (1 << i)
+                    next_pda_state = pda_states[next_mask]
+
+                    # Add a transition to match the transformation and move to the next state (subset)
+                    match_transition = Transition(
+                        current_pda_state,
+                        "",
+                        CallTransition(macro_name, trans_name, args),
+                        [],
+                        next_pda_state,
+                        "",
+                    )
+                    self.pda.add_transition(match_transition)
+
+        # The final state is the one where all transformations have been matched
+        self.current_state = pda_states[(1 << n) - 1]
         return self.current_state
 
     def _handle_empty_list(self, ctx):

@@ -2,11 +2,7 @@ $&FactoryMethod(?Creator, ?createProduct, ?Product, ?ProductA, ?ProductB, ?produ
 
 $# Creator
 class ?Creator:
-    def ?(self, ?*):
-        ?<self.?createProduct(?*)>
-
-    def ?createProduct(self, ?*):
-        ?
+    ?$CreatorBody(?createProduct)
 
 $# ConcreteCreatorA
 class ?ConcreteCreatorA(?Creator):
@@ -32,3 +28,13 @@ $# ProductB
 class ?ProductB(?Product):
     def ?productMethod(self, ?*):
         ?
+
+$&CreatorBody(?createProduct)
+
+$# Call
+def ?(self, ?*):
+    ?<self.?createProduct(?*)>
+
+$# Method
+def ?createProduct(self, ?*):
+    ?
