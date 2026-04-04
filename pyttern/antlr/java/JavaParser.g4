@@ -523,7 +523,7 @@ statement
     ;
 
 compound_stmt
-    : compound_wildcard ';'
+    : compound_wildcard
     | blockLabel = block
     | IF parExpression statement (ELSE statement)?
     | FOR '(' forControl ')' statement
