@@ -327,7 +327,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         dummy_state = self.__add_body_transition()
 
         # Explore
-        ret = ctx.getChild(0, JavaParser.BlockContext).accept(self)
+        ret = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext).accept(self)
 
         skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
         self.pda.add_transition(skip_transition)
