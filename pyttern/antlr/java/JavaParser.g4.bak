@@ -519,11 +519,11 @@ statement
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
-    | stmt_wildcard
+    | stmt_wildcard ';'
     ;
 
 compound_stmt
-    : compound_wildcard
+    : compound_wildcard ';'
     | blockLabel = block
     | IF parExpression statement (ELSE statement)?
     | FOR '(' forControl ')' statement
@@ -822,7 +822,7 @@ var_wildcard: WILDCARD identifier;
 list_wildcard: WILDCARD '*';
 contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
 simple_compound_wildcard: WILDCARD wildcard_number? block;
-multiple_compound_wildcard: WILDCARD ('{' '}' '*' | '*' '{' '}') block;
+multiple_compound_wildcard: WILDCARD '*' block;
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 
 // Composite wildcards
