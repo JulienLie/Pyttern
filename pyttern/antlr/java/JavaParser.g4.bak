@@ -519,9 +519,7 @@ statement
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
-    | var_wildcard
-    | simple_wildcard
-    | contains_wildcard
+    | stmt_wildcard
     ;
 
 compound_stmt
@@ -671,9 +669,7 @@ expression
     // Level 0, Lambda Expression
     | lambdaExpression // Java8
 
-    | simple_wildcard
-    | var_wildcard
-    | contains_wildcard
+    | expr_wildcard
     ;
 
 // Java17
@@ -821,13 +817,15 @@ arguments
     ;
 
 // Syntax of wildcards
+simple_wildcard: WILDCARD_SPACE;
 var_wildcard: WILDCARD identifier;
 list_wildcard: WILDCARD '*';
-simple_wildcard: WILDCARD_SPACE;
-
-compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;
+contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
 simple_compound_wildcard: WILDCARD wildcard_number? block;
-multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
+multiple_compound_wildcard: WILDCARD ('{' '}' '*' | '*' '{' '}') block;
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 
-contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
+// Composite wildcards
+stmt_wildcard: (simple_wildcard | var_wildcard | contains_wildcard);
+expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;

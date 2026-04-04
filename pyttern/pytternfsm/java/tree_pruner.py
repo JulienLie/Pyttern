@@ -20,13 +20,16 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
         new_child = self.visitChildren(node)
         while len(new_child.children) == 1:
             new_child = new_child.getChild(0)
-            if isinstance(new_child, TerminalNode) or isinstance(new_child, JavaParser.JavaParser.IdentifierContext):
+            if isinstance(new_child, TerminalNode):
                 return new_child
-            # if isinstance(new_child, Python3Parser.NameContext):
-            #     return new_child
-            # if isinstance(new_child, Python3Parser.Expr_wildcardContext):
-            #     return new_child
+            if isinstance(new_child, JavaParser.JavaParser.IdentifierContext):
+                return new_child
+            if isinstance(new_child, JavaParser.JavaParser.Expr_wildcardContext):
+                return new_child
         return new_child
+
+    def visitExpression(self, ctx:JavaParser.JavaParser.ExpressionContext):
+        return self.prune_single_child(ctx)
 
     def visitPrimary(self, ctx:JavaParser.JavaParser.PrimaryContext):
         return self.prune_single_child(ctx)
