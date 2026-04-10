@@ -1,5 +1,5 @@
 class Instrument {
     public static void play() {
-        # ; // at least one statement, of any kind
+        # // at least one statement, of any kind
     }
 }
