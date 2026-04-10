@@ -14,14 +14,15 @@ PATTERN_EXTENSION = ".jat"
 PATTERN_NAME = "pattern" + PATTERN_EXTENSION
 
 def get_test_file(path):
-    return str(pkg_resources.files(tests_files_jattern) / path)
+    return os.path.dirname(__file__) + "/tests_files_jattern/" + path
 
 def discover_dir(directory):
+    print(directory)
     for root, _, files in os.walk(directory):
         if not PATTERN_NAME in files:
             continue
         
-        pattern_path = get_test_file(os.path.join(root, PATTERN_NAME))
+        pattern_path = os.path.join(root, PATTERN_NAME)
 
         for file in files:
             if PATTERN_EXTENSION not in file:
@@ -35,8 +36,8 @@ def discover_dir(directory):
 class TestJattern():
     @pytest.mark.parametrize("test_data", discover_dir(get_test_file("")))
     def test_statement_ok(self, test_data):
-        pattern_path = get_test_file(test_data[0])
-        code_path = get_test_file(test_data[1])
+        pattern_path = test_data[0]
+        code_path = test_data[1]
 
         res, det = match_files(pattern_path, code_path, match_details=True, lang="java")
 
