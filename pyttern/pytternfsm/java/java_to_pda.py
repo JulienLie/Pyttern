@@ -125,9 +125,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
                 everything = lambda _: True
                 predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
 
-                simple_node = None # self.lookahead(child, JavaParser.Number_wildcardContext, predicate)
+                simple_node = self.lookahead(child, JavaParser.JavaParser.Number_wildcardContext, predicate)
                 if simple_node is not None:
-                    numbers_node = simple_node.getChild(0, JavaParser.Wildcard_numberContext)
+                    numbers_node = simple_node.getChild(0, JavaParser.JavaParser.Wildcard_numberContext)
                     if numbers_node is not None:
                         logger.debug(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
@@ -157,11 +157,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
         
-        """
-        lookahead_number_wildcard = self.lookahead(ctx, JavaParser.Number_wildcardContext)
+        lookahead_number_wildcard = self.lookahead(ctx, JavaParser.JavaParser.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
-        """
 
         return self.visitChildren(ctx)
 
@@ -181,7 +179,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._add_up_transition(ctx)
 
     def visitNumber_wildcard(self, ctx):
-        numbers_node = ctx.getChild(0, JavaParser.Wildcard_numberContext)
+        numbers_node = ctx.getChild(0, JavaParser.JavaParser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
@@ -223,8 +221,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._add_up_transition(ctx)
 
     def visitWildcard_number(self, ctx):
-        low = int(ctx.NUMBER(0).getText())
-        high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
+        children = ctx.DECIMAL_LITERAL()
+        low = int(ctx.DECIMAL_LITERAL(0).getText())
+        high = int(ctx.DECIMAL_LITERAL(1).getText()) if ctx.DECIMAL_LITERAL(1) else math.inf
         if ctx.COMMA() is None:
             high = low
         logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")

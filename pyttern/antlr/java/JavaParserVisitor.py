@@ -674,6 +674,11 @@ class JavaParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by JavaParser#number_wildcard.
+    def visitNumber_wildcard(self, ctx:JavaParser.Number_wildcardContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by JavaParser#wildcard_number.
     def visitWildcard_number(self, ctx:JavaParser.Wildcard_numberContext):
         return self.visitChildren(ctx)

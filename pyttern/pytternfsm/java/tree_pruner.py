@@ -34,6 +34,9 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
     def visitPrimary(self, ctx:JavaParser.JavaParser.PrimaryContext):
         return self.prune_single_child(ctx)
 
+    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
+        return ctx
+
     def visitTerminal(self, node):
         sym = node.getSymbol()
         if sym.type == Token.EOF:

@@ -292,7 +292,7 @@ receiverParameter
     ;
 
 formalParameterList
-    : (list_wildcard | formalParameter) (',' (list_wildcard | formalParameter))* (',' lastFormalParameter)?
+    : (list_wildcard | number_wildcard | formalParameter) (',' (list_wildcard | number_wildcard | formalParameter))* (',' lastFormalParameter)?
     | lastFormalParameter
     ;
 
@@ -598,7 +598,7 @@ parExpression
     ;
 
 expressionList
-    : (list_wildcard | expression) (',' (list_wildcard | expression))*
+    : (list_wildcard | number_wildcard | expression) (',' (list_wildcard | number_wildcard | expression))*
     ;
 
 methodCall
@@ -670,6 +670,7 @@ expression
     | lambdaExpression // Java8
 
     | expr_wildcard
+    | number_wildcard
     ;
 
 // Java17
@@ -823,7 +824,8 @@ list_wildcard: WILDCARD '*';
 contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
 simple_compound_wildcard: WILDCARD wildcard_number? block;
 multiple_compound_wildcard: WILDCARD '*' block;
-wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
+number_wildcard: WILDCARD wildcard_number;
+wildcard_number: '(' DECIMAL_LITERAL (',' | ',' DECIMAL_LITERAL)? ')';
 
 // Composite wildcards
 stmt_wildcard: (simple_wildcard | var_wildcard | contains_wildcard);
