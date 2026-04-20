@@ -43,7 +43,7 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
             sym.text = "<EOF>"
             return node
         txt = node.getText().strip()
-        if txt in "():,.}{":
+        if txt in "():,.}{;":
             return None
         return node
 
