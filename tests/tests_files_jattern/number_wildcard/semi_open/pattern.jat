@@ -1,0 +1,5 @@
+class A {
+    void main( #(2,) ) { // at least 2 arguments
+
+    }
+}
