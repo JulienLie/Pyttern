@@ -818,8 +818,8 @@ arguments
     ;
 
 // Syntax of wildcards
-simple_wildcard: WILDCARD_SPACE;
-var_wildcard: WILDCARD identifier;
+simple_wildcard: WILDCARD | WILDCARD_SPACE;
+var_wildcard: VAR_WILDCARD;
 list_wildcard: WILDCARD '*';
 contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
 simple_compound_wildcard: WILDCARD wildcard_number? block;
