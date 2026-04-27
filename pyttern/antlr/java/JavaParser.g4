@@ -89,7 +89,7 @@ variableModifier
     ;
 
 classDeclaration
-    : CLASS (identifier | simple_wildcard | var_wildcard) typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
+    : CLASS identifier typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
         PERMITS typeList
     )? // Java17
     classBody
@@ -100,7 +100,7 @@ typeParameters
     ;
 
 typeParameter
-    : annotation* (identifier | simple_wildcard | var_wildcard) (EXTENDS annotation* typeBound)?
+    : annotation* identifier (EXTENDS annotation* typeBound)?
     ;
 
 typeBound
@@ -108,7 +108,7 @@ typeBound
     ;
 
 enumDeclaration
-    : ENUM (identifier | simple_wildcard | var_wildcard) (IMPLEMENTS typeList)? '{' enumConstants? ','? enumBodyDeclarations? '}'
+    : ENUM identifier (IMPLEMENTS typeList)? '{' enumConstants? ','? enumBodyDeclarations? '}'
     ;
 
 enumConstants
@@ -116,7 +116,7 @@ enumConstants
     ;
 
 enumConstant
-    : annotation* (identifier | simple_wildcard | var_wildcard) arguments? classBody?
+    : annotation* identifier arguments? classBody?
     ;
 
 enumBodyDeclarations
@@ -124,7 +124,7 @@ enumBodyDeclarations
     ;
 
 interfaceDeclaration
-    : INTERFACE (identifier | simple_wildcard | var_wildcard) typeParameters? (EXTENDS typeList)? (PERMITS typeList)? interfaceBody
+    : INTERFACE identifier typeParameters? (EXTENDS typeList)? (PERMITS typeList)? interfaceBody
     ;
 
 classBody
@@ -160,7 +160,7 @@ memberDeclaration
    for invalid return type after parsing.
  */
 methodDeclaration
-    : typeTypeOrVoid (identifier | simple_wildcard | var_wildcard) formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
+    : typeTypeOrVoid identifier formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
     ;
 
 methodBody
@@ -182,7 +182,7 @@ genericConstructorDeclaration
     ;
 
 constructorDeclaration
-    : (identifier | simple_wildcard | var_wildcard) formalParameters (THROWS qualifiedNameList)? constructorBody = block
+    : identifier formalParameters (THROWS qualifiedNameList)? constructorBody = block
     ;
 
 compactConstructorDeclaration
@@ -214,7 +214,7 @@ constDeclaration
     ;
 
 constantDeclarator
-    : (identifier | simple_wildcard | var_wildcard) ('[' ']')* '=' variableInitializer
+    : identifier ('[' ']')* '=' variableInitializer
     ;
 
 // Early versions of Java allows brackets after the method name, eg.
@@ -240,7 +240,7 @@ genericInterfaceMethodDeclaration
     ;
 
 interfaceCommonBodyDeclaration
-    : annotation* typeTypeOrVoid (identifier | simple_wildcard | var_wildcard) formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
+    : annotation* typeTypeOrVoid identifier formalParameters ('[' ']')* (THROWS qualifiedNameList)? methodBody
     ;
 
 variableDeclarators
@@ -267,7 +267,7 @@ arrayInitializer
     ;
 
 classOrInterfaceType
-    : (identifier typeArguments? '.')* typeIdentifier typeArguments? // TODO ?
+    : (identifier typeArguments? '.')* typeIdentifier typeArguments?
     ;
 
 typeArgument
@@ -288,7 +288,7 @@ formalParameters
     ;
 
 receiverParameter
-    : typeType (identifier '.')* THIS // TODO ?
+    : typeType (identifier '.')* THIS
     ;
 
 formalParameterList
@@ -433,7 +433,7 @@ requiresModifier
 // RECORDS - Java 17
 
 recordDeclaration
-    : RECORD (identifier | simple_wildcard | var_wildcard) typeParameters? recordHeader (IMPLEMENTS typeList)? recordBody
+    : RECORD identifier typeParameters? recordHeader (IMPLEMENTS typeList)? recordBody
     ;
 
 recordHeader
@@ -445,7 +445,7 @@ recordComponentList
     ;
 
 recordComponent
-    : typeType (identifier | simple_wildcard | var_wildcard)
+    : typeType identifier
     ;
 
 recordBody
@@ -484,7 +484,9 @@ identifier
     | SEALED
     | PERMITS
     | RECORD
-    | VAR // TODO: put wildcard here to simplify things?
+    | VAR
+    | simple_wildcard
+    | var_wildcard
     ;
 
 typeIdentifier // Identifiers that are not restricted for type declarations
@@ -513,7 +515,7 @@ statement
     | ASSERT expression (':' expression)? ';'
     | RETURN expression? ';'
     | THROW expression ';'
-    | BREAK identifier? ';' // TODO: add wildcard here?
+    | BREAK identifier? ';'
     | CONTINUE identifier? ';'
     | YIELD expression ';' // Java17
     | SEMI
@@ -537,7 +539,7 @@ compound_stmt
     ;
 
 catchClause
-    : CATCH '(' variableModifier* catchType identifier ')' block // TODO: add wildcard here?
+    : CATCH '(' variableModifier* catchType identifier ')' block
     ;
 
 catchType
@@ -557,7 +559,7 @@ resources
     ;
 
 resource
-    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression // TODO: add wildcard here?
+    : variableModifier* (classOrInterfaceType variableDeclaratorId | VAR identifier) '=' expression
     | qualifiedName
     ;
 
@@ -602,13 +604,15 @@ expressionList
     ;
 
 methodCall
-    : (identifier | THIS | SUPER) arguments // TODO: add wildcard here?
+    : (identifier | THIS | SUPER) arguments // TODO: test
     ;
 
 expression
+    : expr_wildcard
+    | number_wildcard
     // Expression order in accordance with https://introcs.cs.princeton.edu/java/11precedence/
     // Level 16, Primary, array and member access
-    : primary
+    | primary
     | expression '[' expression ']'
     | expression bop = '.' (
         identifier
@@ -668,9 +672,6 @@ expression
 
     // Level 0, Lambda Expression
     | lambdaExpression // Java8
-
-    | expr_wildcard
-    | number_wildcard
     ;
 
 // Java17
@@ -734,7 +735,7 @@ switchRuleOutcome
     ;
 
 classType
-    : (classOrInterfaceType '.')? annotation* identifier typeArguments? // TODO: add wildcard here?
+    : (classOrInterfaceType '.')? annotation* identifier typeArguments?
     ;
 
 creator
@@ -743,7 +744,7 @@ creator
     ;
 
 createdName
-    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)* // TODO: add wildcard here?
+    : identifier typeArgumentsOrDiamond? ('.' identifier typeArgumentsOrDiamond?)*
     | primitiveType
     ;
 

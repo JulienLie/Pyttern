@@ -27,6 +27,11 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
             if isinstance(new_child, JavaParser.JavaParser.Expr_wildcardContext):
                 return new_child
         return new_child
+    
+    def visitIdentifier(self, ctx:JavaParser.JavaParser.IdentifierContext):
+        if isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+            return ctx.getChild(0)
+        return ctx
 
     def visitExpression(self, ctx:JavaParser.JavaParser.ExpressionContext):
         return self.prune_single_child(ctx)
