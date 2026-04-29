@@ -1,1 +1,1 @@
-?$Decorator(?Component, ?execute, ?BaseDecorator, ?ConcreteDecorator)
+?$Decorator(?Component, ?ConcreteComponent, ?execute, ?BaseDecorator, ?ConcreteDecorator)

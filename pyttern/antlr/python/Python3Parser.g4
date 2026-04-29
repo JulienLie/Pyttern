@@ -215,7 +215,7 @@ atom: '(' (yield_expr|testlist_comp)? ')'
    | name | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False' ;
 name : NAME | '_' | 'match' ;
 testlist_comp: (list_wildcard|test|star_expr) ( comp_for | (',' (list_wildcard|test|star_expr))* ','? );
-trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (name | atom_wildcard);
+trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (atom_wildcard | name);
 subscriptlist: subscript_ (',' subscript_)* ','?;
 subscript_: test | test? ':' test? sliceop?;
 sliceop: ':' test?;
@@ -261,7 +261,7 @@ strings: STRING+ ;
 
 // syntax of wildcards
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
-stmt_wildcard: (double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard);
+stmt_wildcard: double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard;
 expr_wildcard:  macro_call | var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
 simple_wildcard: WILDCARD;
@@ -277,12 +277,11 @@ list_wildcard: WILDCARD '*';
 // syntax of macro
 macro_call: WILDCARD SUB_PATTERN NAME '(' macro_args? ')' (':' block)?;
 
-macro_stmts: macro_def transformation+;
-macro_def: macro;
+macro_stmts: macro transformation+;
 macro: compound_macro | (simple_macro NEWLINE);
 macro_args: macro_arg (',' macro_arg)*;
 macro_arg: (atom_wildcard | atom) ('=' test)?;
-simple_macro: SUB_PATTERN ('&'|'|') NAME '(' macro_args? ')';
+simple_macro: SUB_PATTERN ('&'|'|'|'!') NAME '(' macro_args? ')';
 compound_macro: simple_macro ':' block;
 
 transformation: BALISE NAME NEWLINE stmt;

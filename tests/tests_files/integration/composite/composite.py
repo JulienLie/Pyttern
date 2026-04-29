@@ -68,7 +68,7 @@ class Composite(Component):
     children and then "sum-up" the result.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         self._children = []
 
     """

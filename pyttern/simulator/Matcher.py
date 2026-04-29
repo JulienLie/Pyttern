@@ -234,7 +234,7 @@ class Matcher:
         for match in match_set.matches:
             pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
             v in match.bindings.items()}
-            print(f"Macro {macro_name}:{trnsf_name} matched with bindings {pretty_bindings}")
+            logger.debug(f"Macro {macro_name}:{trnsf_name} matched with bindings {pretty_bindings}")
             sub_bindings = match.bindings
             m_i_to_j = mapping(args, macro.args_order)
             comp = composition(m_i_to_j, sub_bindings)

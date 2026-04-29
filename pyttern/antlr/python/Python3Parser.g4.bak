@@ -215,7 +215,7 @@ atom: '(' (yield_expr|testlist_comp)? ')'
    | name | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False' ;
 name : NAME | '_' | 'match' ;
 testlist_comp: (list_wildcard|test|star_expr) ( comp_for | (',' (list_wildcard|test|star_expr))* ','? );
-trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (name | atom_wildcard);
+trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (atom_wildcard | name);
 subscriptlist: subscript_ (',' subscript_)* ','?;
 subscript_: test | test? ':' test? sliceop?;
 sliceop: ':' test?;
@@ -282,7 +282,7 @@ macro_def: macro;
 macro: compound_macro | (simple_macro NEWLINE);
 macro_args: macro_arg (',' macro_arg)*;
 macro_arg: (atom_wildcard | atom) ('=' test)?;
-simple_macro: SUB_PATTERN ('&'|'|') NAME '(' macro_args? ')';
+simple_macro: SUB_PATTERN ('&'|'|'|'!') NAME '(' macro_args? ')';
 compound_macro: simple_macro ':' block;
 
 transformation: BALISE NAME NEWLINE stmt;

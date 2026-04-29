@@ -23,22 +23,13 @@ def __init__(self, ?s):
 
 $# operation
 def ?operation(self, ?*):
-    ?<self.?service.?operation(?*)>
+    ?$Operation(?service, ?operation)
 
-$|Operation()
+$|Operation(?service, ?operation)
 
 $# call
 self.?service.?operation(?*)
 
-$# cache
-?:*
-    if ?input not in self.?cache:
-        
-
-$# if
+$# conditional
 if ?:
-    self.?service.?operation(?*)
-
-$# try
-try ?:
     self.?service.?operation(?*)

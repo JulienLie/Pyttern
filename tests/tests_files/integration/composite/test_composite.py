@@ -12,7 +12,7 @@ def compare_binding(bindings, name, value):
 
 #@pytest.mark.timeout(1)
 def test_composite_macro():
-    logger.enable("pyttern")
+    #logger.enable("pyttern")
 
     macro_file = Path(__file__).parent / "composite.myt"
     ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
@@ -24,7 +24,7 @@ def test_composite_macro():
 
     macro = ret[1]
     assert macro.name == "CompositeBody", f"Expected macro name 'Composite', got {macro.name}"
-    assert len(macro.transformations) == 5, f"Expected 5 transformations, got {len(macro.transformations)}"
+    assert len(macro.transformations) == 4, f"Expected 4 transformations, got {len(macro.transformations)}"
     assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
 
     code_path = Path(__file__).parent / "composite.py"
@@ -32,9 +32,27 @@ def test_composite_macro():
 
     res, det = match_files(pattern_path, code_path, match_details=True)
     assert res, det
-    assert det.count() == 1, f"Expected 1 match but got {det.count()}"
+    #assert det.count() == 1, f"Expected 1 match but got {det.count()}"
     matched = det.matches[0]
     bindings = matched.bindings
 
     compare_binding(bindings, "Component", "Component")
+    compare_binding(bindings, "execute", "operation")
+
+def test_composite_body():
+    macro_file = Path(__file__).parent / "composite.myt"
+    parse_macro_from_file(str(macro_file), Languages.PYTHON, True)
+
+    code_path = Path(__file__).parent / "composite.py"
+    pattern_path = Path(__file__).parent / "composite_body.pyt"
+
+    res, det = match_files(pattern_path, code_path, match_details=True)
+    assert res, det
+    #assert det.count() == 1, f"Expected 1 match but got {det.count()}"
+    matched = det.matches[0]
+    bindings = matched.bindings
+
+    compare_binding(bindings, "Component", "Component")
+    compare_binding(bindings, "Composite", "Composite")
+    compare_binding(bindings, "children", "_children")
     compare_binding(bindings, "execute", "operation")

@@ -1,5 +1,4 @@
 import math
-from itertools import permutations
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
@@ -299,7 +298,7 @@ class Python_to_PDA(Python3ParserVisitor):
         # Explore
         ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
-        skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
+        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
         self.pda.add_transition(skip_transition)
 
         return ret
@@ -356,7 +355,7 @@ class Python_to_PDA(Python3ParserVisitor):
         macro = loaded_macros[macro_name]
 
         # TODO: same as before, change compilation in relation to macro args 
-        transformations = macro.compile(body)
+        transformations = macro.compile(ctx.parentCtx, body)
         self.__dict_pda.update(transformations)
         n_args_req = sum(1 for key in macro.args if macro.args[key] is None)
         if len(args_names) < n_args_req:

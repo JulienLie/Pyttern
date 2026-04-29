@@ -16,22 +16,22 @@ class WebDialog(Dialog):
         return WebButton()
     
 class Button:
-    def render():
+    def render(self):
         pass
 
-    def onClick(f):
+    def onClick(self, f):
         pass
 
 class WindowsButton(Button):
-    def render():
+    def render(self):
         print("new windows button rendered")
 
-    def onClick(f):
+    def onClick(self, f):
         f()
 
 class WebButton(Button):
-    def render():
+    def render(self):
         print("new web button rendered")
 
-    def onClick(f):
+    def onClick(self, f):
         f()

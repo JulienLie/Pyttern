@@ -1,4 +1,4 @@
-$&Decorator(?Component, ?execute, ?BaseDecorator, ?ConcreteDecorator)
+$&Decorator(?Component, ?ConcreteComponent, ?execute, ?BaseDecorator, ?ConcreteDecorator)
 
 $# Component
 class ?Component:
@@ -16,7 +16,7 @@ class ?BaseDecorator(?Component):
         self.?wrappee = ?c
 
     def ?execute(self, ?*):
-        ?<self.?wrappee.execute(?*)>
+        ?<self.?wrappee.?execute(?*)>
 
 $# ConcreteDecorator
 class ?ConcreteDecorator(?BaseDecorator):

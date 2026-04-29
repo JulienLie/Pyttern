@@ -217,6 +217,7 @@ IDIV_ASSIGN : '//=';
 WILDCARD : '?';
 BALISE: '$#';
 SUB_PATTERN: '$';
+NOT_WILDCARD: '!';
 
 
 SKIP_

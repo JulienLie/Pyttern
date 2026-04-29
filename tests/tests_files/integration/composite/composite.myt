@@ -30,10 +30,6 @@ $# remove
 def ?remove(self, ?component):
     self.?children.remove(?component)
 
-$# getChildren
-def ?getChildren(self):
-    return self.?children
-
 $# execute
 def ?execute(self, ?*):
     for ?c in self.?children:

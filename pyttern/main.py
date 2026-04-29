@@ -179,6 +179,10 @@ def match_folders(pattern_path, code_path, match_details=False, stop_at_first=Fa
     return ret
 
 def match_files(pattern_path, code_path, match_details=False, lang="python", stop_at_first=False):
+    """
+    Main matching method
+    :param pattern_path:
+    """
     language_processor = get_processor(lang)
     pattern = language_processor.generate_tree_from_file(pattern_path)
     code = language_processor.generate_tree_from_file(code_path)

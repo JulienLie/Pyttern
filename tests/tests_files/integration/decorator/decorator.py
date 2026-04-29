@@ -55,7 +55,7 @@ class ConcreteDecoratorA(Decorator):
         calling the wrapped object directly. This approach simplifies extension
         of decorator classes.
         """
-        return f"ConcreteDecoratorA(" + str(self.component.operation()) + ")"
+        return f"ConcreteDecoratorA(" + str(super().operation()) + ")"
 
 
 class ConcreteDecoratorB(Decorator):
@@ -65,7 +65,7 @@ class ConcreteDecoratorB(Decorator):
     """
 
     def operation(self):
-        return f"ConcreteDecoratorB({self.component.operation()})"
+        return f"ConcreteDecoratorB({super().operation()})"
 
 
 def client_code(component):

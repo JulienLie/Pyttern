@@ -24,7 +24,8 @@ class Macro_Visitor(Python3ParserVisitor):
         vals = flatten(self.visitChildren(ctx))
         name, type, args = vals[0]
         args_order = list(args.keys())
-        self.current_macro = Macro(name, args, args_order, code=ctx.getText(), type=type)
+        alone = type == "NOT"
+        self.current_macro = Macro(name, args, args_order, code=ctx.getText(), type=type, alone=alone)
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation
@@ -37,7 +38,10 @@ class Macro_Visitor(Python3ParserVisitor):
 
     def visitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
         name = ctx.NAME().accept(self)
-        type = "AND" if ctx.getChild(1).getText().upper() == "&" else "OR"
+        type_str = ctx.getChild(1).getText().upper()
+        if type_str == "&": type = "AND"
+        elif type_str == "|": type = "OR"
+        elif type == "!": type = "NOT"
         arg_list = self.visitChildren(ctx.macro_args())
         args = {}
         for arg in arg_list:
