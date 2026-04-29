@@ -11,7 +11,7 @@ from ..simulator.pda import PDA
 def check_for_alone(tree: ParseTree):
     return False
     if isinstance(tree, Python3Parser.Macro_stmtsContext):
-        macro = loaded_macros[tree]
+        macro = loaded_subpatterns[tree]
         if macro is not None and macro.alone:
             return True
     if hasattr("children", tree):
@@ -28,14 +28,14 @@ def prune(tree: RuleContext, ctx: RuleContext | None):
 
 
 @dataclass
-class Macro:
+class SubPattern:
     """
-    Represents a macro with a name, arguments, and transformations.
+    Represents a subpattern with a name, arguments, and transformations.
 
     Attributes:
-        name (str): The name of the macro.
+        name (str): The name of the subpattern.
         args (dict[str, str]): A dictionary of argument names and their default values.
-        transformations (dict): A dictionary of transformations associated with the macro.
+        transformations (dict): A dictionary of transformations associated with the subpattern.
     """
 
     name: str
@@ -47,11 +47,11 @@ class Macro:
     alone: bool = False
 
     def __post_init__(self):
-        loaded_macros[self.name] = self
+        loaded_subpatterns[self.name] = self
 
     def add_transformation(self, name: str, transformation: ParseTree):
         """
-        Adds a transformation to the macro.
+        Adds a transformation to the subpattern.
 
         :param name: The name of the transformation.
         :param transformation: The transformation object of type PDA.
@@ -63,7 +63,7 @@ class Macro:
 
     def compile(self, ctx, body=None) -> dict[str, PDA]:
         """
-        :ctx: the current context in which the macro will be called, this help prune the tree to more precise match
+        :ctx: the current context in which the subpattern will be called, this help prune the tree to more precise match
         :body: WIP
         :return:
         """
@@ -77,4 +77,4 @@ class Macro:
 
         return ret
 
-loaded_macros: dict[str, Macro] = {}
+loaded_subpatterns: dict[str, SubPattern] = {}

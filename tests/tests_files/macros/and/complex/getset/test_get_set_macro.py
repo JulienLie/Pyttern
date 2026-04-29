@@ -4,20 +4,20 @@ from loguru import logger
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 #@pytest.mark.timeout(1)
-def test_getter_setter_macro():
+def test_getter_setter_subpattern():
     logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "getset.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    macro = ret[0]
-    assert macro.name == "GetSet", f"Expected macro name 'GetSet', got {macro.name}"
-    assert len(macro.transformations) == 3, f"Expected 3 transformations, got {len(macro.transformations)}"
-    assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
+    subpattern_file = Path(__file__).parent / "getset.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    subpattern = ret[0]
+    assert subpattern.name == "GetSet", f"Expected subpattern name 'GetSet', got {subpattern.name}"
+    assert len(subpattern.transformations) == 3, f"Expected 3 transformations, got {len(subpattern.transformations)}"
+    assert subpattern.type == "AND", f"Expected subpattern type 'AND', got {subpattern.type}"
 
     code_path = Path(__file__).parent / "getter_setter_ok.py"
     pattern_path = Path(__file__).parent / "getset.pyt"
@@ -38,16 +38,16 @@ def test_getter_setter_macro():
     res, det = match_files(pattern_path, code_path, match_details=True)
     assert not res, det
 
-def test_getter_setter_macro_2_match():
+def test_getter_setter_subpattern_2_match():
     logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "getset.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    macro = ret[0]
-    assert macro.name == "GetSet", f"Expected macro name 'GetSet', got {macro.name}"
-    assert len(macro.transformations) == 3, f"Expected 3 transformations, got {len(macro.transformations)}"
-    assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
+    subpattern_file = Path(__file__).parent / "getset.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    subpattern = ret[0]
+    assert subpattern.name == "GetSet", f"Expected subpattern name 'GetSet', got {subpattern.name}"
+    assert len(subpattern.transformations) == 3, f"Expected 3 transformations, got {len(subpattern.transformations)}"
+    assert subpattern.type == "AND", f"Expected subpattern type 'AND', got {subpattern.type}"
 
     code_path = Path(__file__).parent / "getter_setter_2_ok.py"
     pattern_path = Path(__file__).parent / "getset.pyt"

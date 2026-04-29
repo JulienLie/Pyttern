@@ -4,23 +4,23 @@ import pytest
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 @pytest.mark.timeout(1)
-def test_loop_macro():
-    macro_file = Path(__file__).parent / "loop.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    assert ret[0].name == "Loop", f"Expected macro name 'Incr', got {ret[0].name}"
+def test_loop_subpattern():
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    assert ret[0].name == "Loop", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 2, f"Expected 2 transformations, got {len(ret[0].transformations)}"
 
 @pytest.mark.timeout(1)
-def test_loop_macro_for():
+def test_loop_subpattern_for():
     #logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "for_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
@@ -44,11 +44,11 @@ def test_loop_macro_for():
 
 
 @pytest.mark.timeout(1)
-def test_loop_macro_while():
+def test_loop_subpattern_while():
     #logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "while_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"

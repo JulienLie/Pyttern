@@ -5,7 +5,7 @@ from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...macro.Macro import loaded_macros, Macro
+from ...subpattern.SubPattern import loaded_subpatterns, SubPattern
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -334,10 +334,10 @@ class Python_to_PDA(Python3ParserVisitor):
 
 
     def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
-        macro_name = ctx.NAME().getText()
-        logger.debug(f"Calling macro {macro_name}")
-        if macro_name not in loaded_macros:
-            raise ValueError(f"Macro {macro_name} is not defined. Available macros: {list(loaded_macros.keys())}")
+        subpattern_name = ctx.NAME().getText()
+        logger.debug(f"Calling subpattern {subpattern_name}")
+        if subpattern_name not in loaded_subpatterns:
+            raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
         # TODO: change handling of macro args
         # Should be able to handle 3 types -> maybe check types from macro?
@@ -352,50 +352,50 @@ class Python_to_PDA(Python3ParserVisitor):
 
         body = ctx.block()
 
-        macro = loaded_macros[macro_name]
+        subpattern = loaded_subpatterns[subpattern_name]
 
         # TODO: same as before, change compilation in relation to macro args 
-        transformations = macro.compile(ctx.parentCtx, body)
+        transformations = subpattern.compile(ctx.parentCtx, body)
         self.__dict_pda.update(transformations)
-        n_args_req = sum(1 for key in macro.args if macro.args[key] is None)
+        n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
         # TODO: Probably no change but should be checked
-        if macro.type == "OR":
-            self.__visit_or_macro(macro, args_names)
-        elif macro.type == "AND":
-            self.__visit_and_macro(macro, args_names)
+        if subpattern.type == "OR":
+            self.__visit_or_subpattern(subpattern, args_names)
+        elif subpattern.type == "AND":
+            self.__visit_and_subpattern(subpattern, args_names)
         else:
-            logger.error(f"Unknown macro type {macro.type} for macro {macro_name}")
+            logger.error(f"Unknown subpattern type {subpattern.type} for subpattern {subpattern_name}")
 
         return self._add_up_transition(ctx)
 
-    def __visit_or_macro(self, macro: Macro, args):
+    def __visit_or_subpattern(self, subpattern: SubPattern, args):
         next_state = self.pda.new_state()
-        macro_name = macro.name
+        subpattern_name = subpattern.name
 
-        for transformation in macro.transformations:
-            logger.debug(f"Adding transformation {transformation} for OR macro {macro_name}")
-            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args), [],
+        for transformation in subpattern.transformations:
+            logger.debug(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
+            transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
                                     next_state, '')
             self.pda.add_transition(transition)
 
         self.current_state = next_state
         return self.current_state
 
-    def __visit_and_macro(self, macro: Macro, args):
-        transformations = list(macro.transformations.keys())
+    def __visit_and_subpattern(self, subpattern: SubPattern, args):
+        transformations = list(subpattern.transformations.keys())
         n = len(transformations)
-        macro_name = macro.name
+        subpattern_name = subpattern.name
 
         if n == 0:
             return self.current_state
 
         if n > 10:
             logger.warning(
-                f"Macro {macro_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
             )
 
         # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
@@ -433,7 +433,7 @@ class Python_to_PDA(Python3ParserVisitor):
                     match_transition = Transition(
                         current_pda_state,
                         "",
-                        CallTransition(macro_name, trans_name, args),
+                        CallTransition(subpattern_name, trans_name, args),
                         [],
                         next_pda_state,
                         "",

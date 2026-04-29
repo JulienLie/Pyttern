@@ -6,7 +6,7 @@ import time
 from loguru import logger
 from tqdm import tqdm
 
-from .macro.macro_parser import parse_macro_from_file
+from .subpattern.subpattern_parser import parse_subpattern_from_file
 from .language_processors import get_processor, Languages
 from .simulator.Matcher import Matcher
 

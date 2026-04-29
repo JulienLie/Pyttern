@@ -2,39 +2,39 @@ from pathlib import Path
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
-def test_subcall_macro_parse():
-    incr_macro_file = Path(__file__).parent / "incr.myt"
-    ret = parse_macro_from_file(str(incr_macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    assert ret[0].name == "Incr", f"Expected macro name 'Incr', got {ret[0].name}"
+def test_subcall_subpattern_parse():
+    incr_subpattern_file = Path(__file__).parent / "incr.myt"
+    ret = parse_subpattern_from_file(str(incr_subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    assert ret[0].name == "Incr", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 3, f"Expected 3 transformations, got {len(ret[0].transformations)}"
 
-    comp_macro_file = Path(__file__).parent / "comp.myt"
-    ret = parse_macro_from_file(str(comp_macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    assert ret[0].name == "Comp", f"Expected macro name 'Comp', got {ret[0].name}"
+    comp_subpattern_file = Path(__file__).parent / "comp.myt"
+    ret = parse_subpattern_from_file(str(comp_subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    assert ret[0].name == "Comp", f"Expected subpattern name 'Comp', got {ret[0].name}"
     assert len(ret[0].transformations) == 6, f"Expected 6 transformations, got {len(ret[0].transformations)}"
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    assert ret[0].name == "Loop", f"Expected macro name 'Incr', got {ret[0].name}"
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    assert ret[0].name == "Loop", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 2, f"Expected 2 transformations, got {len(ret[0].transformations)}"
 
-def test_subcall_macro_for():
+def test_subcall_subpattern_for():
     #logger.enable("pyttern")
 
-    incr_macro_file = Path(__file__).parent / "incr.myt"
-    parse_macro_from_file(str(incr_macro_file), Languages.PYTHON)
+    incr_subpattern_file = Path(__file__).parent / "incr.myt"
+    parse_subpattern_from_file(str(incr_subpattern_file), Languages.PYTHON)
 
-    comp_macro_file = Path(__file__).parent / "comp.myt"
-    parse_macro_from_file(str(comp_macro_file), Languages.PYTHON)
+    comp_subpattern_file = Path(__file__).parent / "comp.myt"
+    parse_subpattern_from_file(str(comp_subpattern_file), Languages.PYTHON)
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "for_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
@@ -57,17 +57,17 @@ def test_subcall_macro_for():
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
 
-def test_subcall_macro_while():
+def test_subcall_subpattern_while():
     #logger.enable("pyttern")
 
-    incr_macro_file = Path(__file__).parent / "incr.myt"
-    parse_macro_from_file(str(incr_macro_file), Languages.PYTHON)
+    incr_subpattern_file = Path(__file__).parent / "incr.myt"
+    parse_subpattern_from_file(str(incr_subpattern_file), Languages.PYTHON)
 
-    comp_macro_file = Path(__file__).parent / "comp.myt"
-    parse_macro_from_file(str(comp_macro_file), Languages.PYTHON)
+    comp_subpattern_file = Path(__file__).parent / "comp.myt"
+    parse_subpattern_from_file(str(comp_subpattern_file), Languages.PYTHON)
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "while_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"

@@ -4,27 +4,27 @@ from loguru import logger
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 def compare_binding(bindings, name, value):
     assert bindings[name] is not None
     assert bindings[name].getText() == value, f"Expected {name} to be '{value}' but was '{bindings[name].getText()}'"
 
-def test_compile_macro():
-    macro_file = Path(__file__).parent / "factory_method.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 2, f"Expected 2 macro, got {len(ret)}"
-    macro = ret[0]
-    assert macro.name == "FactoryMethod", f"Expected macro name 'FactoryMethod', got {macro.name}"
-    assert len(macro.transformations) == 6, f"Expected 6 transformations, got {len(macro.transformations)}"
-    assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
+def test_compile_subpattern():
+    subpattern_file = Path(__file__).parent / "factory_method.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 2, f"Expected 2 subpattern, got {len(ret)}"
+    subpattern = ret[0]
+    assert subpattern.name == "FactoryMethod", f"Expected subpattern name 'FactoryMethod', got {subpattern.name}"
+    assert len(subpattern.transformations) == 6, f"Expected 6 transformations, got {len(subpattern.transformations)}"
+    assert subpattern.type == "AND", f"Expected subpattern type 'AND', got {subpattern.type}"
 
 
 #@pytest.mark.timeout(1)
-def test_factory_method_macro():
+def test_factory_method_subpattern():
     #logger.enable("pyttern")
-    macro_file = Path(__file__).parent / "factory_method.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON, True)
+    subpattern_file = Path(__file__).parent / "factory_method.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON, True)
     
     code_path = Path(__file__).parent / "factory_method.py"
     pattern_path = Path(__file__).parent / "factory_method.pyt"
@@ -45,8 +45,8 @@ def test_factory_method_macro():
 
 
 def test_creator():
-    macro_file = Path(__file__).parent / "factory_method.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "factory_method.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "factory_method.py"
     pattern_path = Path(__file__).parent / "creator_body.pyt"

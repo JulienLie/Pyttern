@@ -5,28 +5,28 @@ import pytest
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 def compare_binding(bindings, name, value):
     assert bindings[name] is not None
     assert bindings[name].getText() == value, f"Expected {name} to be '{value}' but was '{bindings[name].getText()}'"
 
-def test_builder_macro():
+def test_builder_subpattern():
     logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "builder.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 2, f"Expected 2 macro, got {len(ret)}"
-    macro = ret[0]
-    assert macro.name == "Builder", f"Expected macro name 'Builder', got {macro.name}"
-    assert len(macro.transformations) == 4, f"Expected 4 transformations, got {len(macro.transformations)}"
-    assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
+    subpattern_file = Path(__file__).parent / "builder.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 2, f"Expected 2 subpattern, got {len(ret)}"
+    subpattern = ret[0]
+    assert subpattern.name == "Builder", f"Expected subpattern name 'Builder', got {subpattern.name}"
+    assert len(subpattern.transformations) == 4, f"Expected 4 transformations, got {len(subpattern.transformations)}"
+    assert subpattern.type == "AND", f"Expected subpattern type 'AND', got {subpattern.type}"
 
-    macro = ret[1]
-    assert macro.name == "BuildSteps", f"Expected macro name 'BuildSteps', got {macro.name}"
-    assert len(macro.transformations) == 3, f"Expected 3 transformations, got {len(macro.transformations)}"
-    assert macro.type == "AND", f"Expected macro type 'AND', got {macro.type}"
+    subpattern = ret[1]
+    assert subpattern.name == "BuildSteps", f"Expected subpattern name 'BuildSteps', got {subpattern.name}"
+    assert len(subpattern.transformations) == 3, f"Expected 3 transformations, got {len(subpattern.transformations)}"
+    assert subpattern.type == "AND", f"Expected subpattern type 'AND', got {subpattern.type}"
 
     code_path = Path(__file__).parent / "builder.py"
     pattern_path = Path(__file__).parent / "builder.pyt"

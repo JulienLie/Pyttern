@@ -3,29 +3,29 @@ from pathlib import Path
 import pytest
 
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 from pyttern import match_files
 
 
-def test_multiple_define_macro_parse():
-    macro_file = Path(__file__).parent / "loop.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 3, f"Expected 3 macro, got {len(ret)}"
+def test_multiple_define_subpattern_parse():
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 3, f"Expected 3 subpattern, got {len(ret)}"
 
-    assert ret[0].name == "Incr", f"Expected macro name 'Incr', got {ret[0].name}"
+    assert ret[0].name == "Incr", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 3, f"Expected 3 transformations, got {len(ret[0].transformations)}"
 
-    assert ret[1].name == "Comp", f"Expected macro name 'Comp', got {ret[1].name}"
+    assert ret[1].name == "Comp", f"Expected subpattern name 'Comp', got {ret[1].name}"
     assert len(ret[1].transformations) == 6, f"Expected 6 transformations, got {len(ret[1].transformations)}"
 
-    assert ret[2].name == "Loop", f"Expected macro name 'loop', got {ret[2].name}"
+    assert ret[2].name == "Loop", f"Expected subpattern name 'loop', got {ret[2].name}"
     assert len(ret[2].transformations) == 2, f"Expected 2 transformations, got {len(ret[2].transformations)}"
 
-def test_multiple_define_macro_for():
+def test_multiple_define_subpattern_for():
     #logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "for_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
@@ -48,11 +48,11 @@ def test_multiple_define_macro_for():
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
 
-def test_multiple_define_macro_while():
+def test_multiple_define_subpattern_while():
     #logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     code_path = Path(__file__).parent / "while_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
@@ -76,9 +76,9 @@ def test_multiple_define_macro_while():
 
 @pytest.mark.parametrize("name", ["augasssign", "var_first", "incr_first"])
 @pytest.mark.parametrize("code", ["x = 0\nx += 1\n", "x = 0\nx = x + 1\n", "x = 0\nx = 1 + x\n"])
-def test_incr_macro(name, code, tmp_path):
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+def test_incr_subpattern(name, code, tmp_path):
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     pattern_path = tmp_path / "incr.myt"
     pattern_path.write_text("?$Incr(?i, ?v)\n")
@@ -105,9 +105,9 @@ def test_incr_macro(name, code, tmp_path):
 
 @pytest.mark.parametrize("name", ["eq", "ne", "lt", "le", "gt", "ge"])
 @pytest.mark.parametrize("code", ["x == 1", "x != 1", "x < 1", "x <= 1", "x > 1", "x >= 1"])
-def test_comp_macro(name, code, tmp_path):
-    macro_file = Path(__file__).parent / "loop.myt"
-    parse_macro_from_file(str(macro_file), Languages.PYTHON)
+def test_comp_subpattern(name, code, tmp_path):
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     pattern_path = tmp_path / "comp.myt"
     pattern_path.write_text("while ?$Comp(?i, ?v):\n\t?\n")

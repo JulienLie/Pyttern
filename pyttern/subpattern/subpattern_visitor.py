@@ -1,7 +1,7 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 from loguru import logger
 
-from .Macro import Macro
+from .SubPattern import SubPattern
 from ..antlr.python import Python3ParserVisitor, Python3Parser
 from ..pytternfsm.python.python_to_pda import Python_to_PDA
 
@@ -13,7 +13,7 @@ def flatten(lst: list) -> list:
         flat_list += flatten_el
     return flat_list
 
-class Macro_Visitor(Python3ParserVisitor):
+class SubPattern_Visitor(Python3ParserVisitor):
     def __init__(self):
         self.current_macro = None
 
@@ -25,7 +25,7 @@ class Macro_Visitor(Python3ParserVisitor):
         name, type, args = vals[0]
         args_order = list(args.keys())
         alone = type == "NOT"
-        self.current_macro = Macro(name, args, args_order, code=ctx.getText(), type=type, alone=alone)
+        self.current_macro = SubPattern(name, args, args_order, code=ctx.getText(), type=type, alone=alone)
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation

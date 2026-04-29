@@ -5,7 +5,7 @@ from loguru import logger
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
 from .pda.transition import NodeTransition, NamedTransition, CallTransition
-from ..macro.Macro import loaded_macros
+from ..subpattern.SubPattern import loaded_subpatterns
 from ..pytternfsm.python.match_set import MatchSet, Match
 
 
@@ -26,7 +26,7 @@ def join_dicts(m_a: dict, m_b: dict) -> dict:
 
 def mapping(params: list, args: list) -> dict:
     """
-    Create the mapping m_(i->j) from the macro parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
+    Create the mapping m_(i->j) from the subpattern parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
     m_(i->j) = {u_p -> t_p | 1 <= p <= k}
     :param params: parameters of the PDA called (P_j)
     :param args: Variables of the PDA calling (P_i)
@@ -163,15 +163,15 @@ class Matcher:
                     continue
                 new_vars.append(new_var)
 
-            # Handle Macros
+            # Handle subpatterns
             elif isinstance(A, CallTransition):
-                macro_name = A.macro_name
+                subpattern_name = A.subpattern_name
                 trnsf_name = A.transformation_name
                 args = A.args
 
-                logger.trace(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
+                logger.trace(f"Handling subpattern: {subpattern_name} with transformation {trnsf_name} and args {args}")
 
-                possible_bindings = self.call_macro(macro_name, trnsf_name, args, current_node, new_var)
+                possible_bindings = self.call_subpattern(subpattern_name, trnsf_name, args, current_node, new_var)
                 if len(possible_bindings) < 1:
                     continue
                 new_vars += possible_bindings
@@ -198,45 +198,45 @@ class Matcher:
         self.n_step += 1
         return self
 
-    def call_macro(self, macro_name, trnsf_name, args, current_node, bindings):
+    def call_subpattern(self, subpattern_name, trnsf_name, args, current_node, bindings):
         """
-        Calls a macro with the given name and transformation name, matching it against the current node.
+        Calls a subpattern with the given name and transformation name, matching it against the current node.
 
         :param args:
-        :param macro_name: The name of the macro to call.
-        :param trnsf_name: The name of the transformation within the macro.
+        :param subpattern_name: The name of the subpattern to call.
+        :param trnsf_name: The name of the transformation within the subpattern.
         :param current_node: The current node in the parse tree.
         :param bindings: The current variable bindings.
-        :return: A MatchSet containing the results of the macro call.
+        :return: A MatchSet containing the results of the subpattern call.
         """
-        macro = loaded_macros[macro_name]
-        to_call = f"{macro_name}::{trnsf_name}"
-        if to_call not in self.callable or not macro:
-            logger.warning(f"Macro or transformation not found: {macro_name}:{trnsf_name}")
+        subpattern = loaded_subpatterns[subpattern_name]
+        to_call = f"{subpattern_name}::{trnsf_name}"
+        if to_call not in self.callable or not subpattern:
+            logger.warning(f"subpattern or transformation not found: {subpattern_name}:{trnsf_name}")
             return []
 
-        macro_pdas = self.callable[to_call]
-        macro_pda = macro_pdas["__main__"]
+        subpattern_pdas = self.callable[to_call]
+        subpattern_pda = subpattern_pdas["__main__"]
 
-        m_j_to_i = mapping(macro.args_order, args)
+        m_j_to_i = mapping(subpattern.args_order, args)
         comp = composition(m_j_to_i, bindings)
-        m_j_epsilon = {u: None for u in macro_pda.named_wildcards}
-        macro_params = join_dicts(m_j_epsilon, comp)
+        m_j_epsilon = {u: None for u in subpattern_pda.named_wildcards}
+        subpattern_params = join_dicts(m_j_epsilon, comp)
 
-        logger.trace(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
+        logger.trace(f"Calling subpattern {subpattern_name}:{trnsf_name} on node {current_node} with bindings {subpattern_params}")
 
-        match_set = Matcher.match(macro_pdas, current_node, stop_at_first=False, bindings=macro_params)
+        match_set = Matcher.match(subpattern_pdas, current_node, stop_at_first=False, bindings=subpattern_params)
         if match_set.count() == 0:
-            logger.trace(f"Macro {macro_name}:{trnsf_name} did not match")
+            logger.trace(f"subpattern {subpattern_name}:{trnsf_name} did not match")
             return []
 
         new_bindings = []
         for match in match_set.matches:
             pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
             v in match.bindings.items()}
-            logger.debug(f"Macro {macro_name}:{trnsf_name} matched with bindings {pretty_bindings}")
+            logger.debug(f"subpattern {subpattern_name}:{trnsf_name} matched with bindings {pretty_bindings}")
             sub_bindings = match.bindings
-            m_i_to_j = mapping(args, macro.args_order)
+            m_i_to_j = mapping(args, subpattern.args_order)
             comp = composition(m_i_to_j, sub_bindings)
             new_binding = bindings.copy()
             new_binding.update(comp)

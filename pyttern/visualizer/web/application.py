@@ -10,8 +10,8 @@ from loguru import logger
 
 from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
-from ...macro.Macro import loaded_macros
-from ...macro.macro_parser import parse_macro_from_string
+from ...subpattern.SubPattern import loaded_subpatterns
+from ...subpattern.subpattern_parser import parse_subpattern_from_string
 from ...main import parse_json_pattern, match_pyttern
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
@@ -760,9 +760,9 @@ def parse_macro():
 def remove_macro():
     macro_name = request.json["name"]
     logger.debug(f"Removing macro {macro_name}")
-    if loaded_macros[macro_name] is None:
+    if loaded_subpatterns[macro_name] is None:
         return json.dumps({"status": "error", "message": f"No sub pattern called {macro_name}"})
-    del loaded_macros[macro_name]
+    del loaded_subpatterns[macro_name]
     return json.dumps({"status": "ok"})
 
 @app.route("/api/macro", methods=['GET'])
@@ -774,7 +774,7 @@ def loaded_macro():
         '200':
             description: Loaded macros
     """
-    macro_names = [macro for macro in loaded_macros]
+    macro_names = [macro for macro in loaded_subpatterns]
 
     return json.dumps({
         "status": "ok",

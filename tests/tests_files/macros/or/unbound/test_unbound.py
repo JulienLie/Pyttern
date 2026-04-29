@@ -4,13 +4,13 @@ import pytest
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 @pytest.mark.timeout(1)
 def test_unbound_assign():
-    macro_path = Path(__file__).parent / "unbound.myt"
-    parse_macro_from_file(str(macro_path), language=Languages.PYTHON, override=True)
+    subpattern_path = Path(__file__).parent / "unbound.myt"
+    parse_subpattern_from_file(str(subpattern_path), language=Languages.PYTHON, override=True)
 
     pattern_path = Path(__file__).parent / "unbound.pyt"
     code_path = Path(__file__).parent / "unbound_assign_ok.py"

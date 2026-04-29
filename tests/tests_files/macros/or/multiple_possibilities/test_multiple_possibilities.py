@@ -2,16 +2,16 @@ from pathlib import Path
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
-from pyttern.macro.macro_parser import parse_macro_from_file
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
-def test_incr_macro():
+def test_incr_subpattern():
     #logger.enable("pyttern")
 
-    macro_file = Path(__file__).parent / "macro.myt"
-    ret = parse_macro_from_file(str(macro_file), Languages.PYTHON)
-    assert len(ret) == 1, f"Expected 1 macro, got {len(ret)}"
-    assert ret[0].name == "Assign", f"Expected macro name 'Assign', got {ret[0].name}"
+    subpattern_file = Path(__file__).parent / "macro.myt"
+    ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
+    assert ret[0].name == "Assign", f"Expected subpattern name 'Assign', got {ret[0].name}"
     assert len(ret[0].transformations) == 1, f"Expected 1 transformations, got {len(ret[0].transformations)}"
 
     code_path = Path(__file__).parent / "assign.py"
