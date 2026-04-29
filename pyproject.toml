@@ -17,7 +17,6 @@ loguru="^0.7.2"
 pymemcache="^4.0.0"
 tqdm="^4.66.5"
 flasgger="0.9.7b2"
-pygraphviz = "^1.14"
 
 [tool.poetry.group.test.dependencies]
 pytest="^8.2.2"
