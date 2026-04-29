@@ -1,19 +1,18 @@
 from pathlib import Path
 
-from pyttern import match_wildcards
+from pyttern import match_files
 
 BASE = Path(__file__).parent
 
 
 def test_var_wildcard_in_arg():
     pattern_path = BASE / "overwritten_arg.pyt"
-    code_path = BASE / "arg_*.py"
+    code_path = BASE / "arg_ok.py"
 
-    matches = match_wildcards(pattern_path, code_path)
+    res = match_files(pattern_path, code_path)
+    assert res, f"{pattern_path} on {code_path} should match"
 
-    for code, match in matches.items():
-        for pattern, result in match.items():
-            if "nok" in str(code):
-                assert not result, f"{pattern} on {code} should not match"
-            else:
-                assert result, f"{pattern} on {code} should match"
+    code_path = BASE / "arg_nok.py"
+
+    res = match_files(pattern_path, code_path)
+    assert not res, f"{pattern_path} on {code_path} should not match"

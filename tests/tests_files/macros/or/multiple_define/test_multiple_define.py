@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from loguru import logger
 import pytest
 
 from pyttern.language_processors.languages import Languages
@@ -77,15 +78,18 @@ def test_multiple_define_subpattern_while():
 @pytest.mark.parametrize("name", ["augasssign", "var_first", "incr_first"])
 @pytest.mark.parametrize("code", ["x = 0\nx += 1\n", "x = 0\nx = x + 1\n", "x = 0\nx = 1 + x\n"])
 def test_incr_subpattern(name, code, tmp_path):
+    logger.disable("pyttern")
+
     subpattern_file = Path(__file__).parent / "loop.myt"
     parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
-    pattern_path = tmp_path / "incr.myt"
+    pattern_path = tmp_path / "incr.pyt"
     pattern_path.write_text("?$Incr(?i, ?v)\n")
     code_path = tmp_path / f"{name}.py"
     code_path.write_text(code)
 
     res, det = match_files(pattern_path, code_path, match_details=True)
+    print(f'res: {res}, det: {det}')
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"
@@ -109,7 +113,7 @@ def test_comp_subpattern(name, code, tmp_path):
     subpattern_file = Path(__file__).parent / "loop.myt"
     parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
-    pattern_path = tmp_path / "comp.myt"
+    pattern_path = tmp_path / "comp.pyt"
     pattern_path.write_text("while ?$Comp(?i, ?v):\n\t?\n")
     code_path = tmp_path / f"{name}.py"
     code_path.write_text(f"while {code}:\n\tpass\n")

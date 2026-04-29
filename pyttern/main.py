@@ -4,8 +4,7 @@ import os
 
 from loguru import logger
 
-from .subpattern.subpattern_parser import parse_subpattern_from_file
-from .language_processors import get_processor, Languages
+from .language_processors import determine_language, get_processor, Languages
 from .simulator.Matcher import Matcher
 
 
@@ -198,6 +197,19 @@ class PytternMatcher:
                     ret[code_filepath] = {}
                 ret[code_filepath][pattern_filepath] = result
         return ret
+    
+def match_files(pattern_path, code_path, lang=None, match_details=False, stop_at_first=True):
+    if lang is None:
+        pattern_lang = determine_language(pattern_path)
+        code_lang = determine_language(code_path)
+        if code_lang != pattern_lang:
+            raise ValueError(f"Pattern language ({pattern_lang}) and Code language ({code_lang}) should be the same.")
+        lang = pattern_lang
+    matcher = PytternMatcher(match_details, stop_at_first)
+    if match_details:
+        res, det = matcher.match(pattern_path, code_path, lang)
+        return res, det["matches"]
+    return matcher.match(pattern_path, code_path, lang)
 
 
 def run_application(host="0.0.0.0", port=5000):

@@ -17,7 +17,7 @@ def test_incr_subpattern():
     code_path = Path(__file__).parent / "assign.py"
     pattern_path = Path(__file__).parent / "pattern.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, stop_at_first=False)
     assert res, det
 
     assert len(det.matches) == 3, f"Expected 3 match, got {len(det.matches)}"

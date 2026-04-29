@@ -10,8 +10,8 @@ from loguru import logger
 
 from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
-from ...macro.Macro import loaded_macros
-from ...macro.macro_parser import parse_macro_from_string
+from ...subpattern.SubPattern import loaded_subpatterns
+from ...subpattern.subpattern_parser import parse_subpattern_from_string
 from ...main import PytternMatcher
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
@@ -744,7 +744,7 @@ def parse_macro():
     macro_code = request.json["code"]
     lang = Languages.PYTHON
     try:
-        macros = parse_macro_from_string(macro_code, lang)
+        macros = parse_subpattern_from_string(macro_code, lang)
         logger.debug(f"Parsed macros: {macros}")
     except Exception as e:
         logger.error(f"Error parsing macro: {e}")
@@ -777,5 +777,5 @@ def loaded_macro():
 
     return json.dumps({
         "status": "ok",
-        "macros": macros
+        "macros": macro_names
     })
