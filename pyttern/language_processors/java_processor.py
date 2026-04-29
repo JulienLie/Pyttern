@@ -4,7 +4,7 @@ from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
-from ..PytternListener import ConsolePytternListener
+from ..Pyttern_listener import ConsolePytternListener
 from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener

@@ -1,1 +1,1 @@
-from .main import PytternMatcher
+from .main import PytternMatcher, match_files

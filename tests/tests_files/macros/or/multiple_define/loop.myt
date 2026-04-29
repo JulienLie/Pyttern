@@ -1,0 +1,43 @@
+$|Incr(?var, ?incr)
+
+$# augassign
+?var += ?incr
+
+$# var_first
+?var = ?var + ?incr
+
+$# incr_first
+?var = ?incr + ?var
+
+
+$|Comp(?left, ?right)
+
+$# eq
+?left == ?right
+
+$# ne
+?left != ?right
+
+$# lt
+?left < ?right
+
+$# le
+?left <= ?right
+
+$# gt
+?left > ?right
+
+$# ge
+?left >= ?right
+
+
+$|Loop(?i, ?n)
+
+$# for_loop
+for ?i in ?range(?n):
+    ?
+
+$# while_loop
+while ?$Comp(?i, ?n):
+    ?
+    ?$Incr(?i, 1)

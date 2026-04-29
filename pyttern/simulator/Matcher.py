@@ -5,7 +5,7 @@ from loguru import logger
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
 from .pda.transition import NodeTransition, NamedTransition, CallTransition
-from ..macro.Macro import loaded_macros
+from ..subpattern.SubPattern import loaded_subpatterns
 from ..pytternfsm.python.match_set import MatchSet, Match
 
 
@@ -26,7 +26,7 @@ def join_dicts(m_a: dict, m_b: dict) -> dict:
 
 def mapping(params: list, args: list) -> dict:
     """
-    Create the mapping m_(i->j) from the macro parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
+    Create the mapping m_(i->j) from the subpattern parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
     m_(i->j) = {u_p -> t_p | 1 <= p <= k}
     :param params: parameters of the PDA called (P_j)
     :param args: Variables of the PDA calling (P_i)
@@ -55,8 +55,9 @@ def composition(mapping, bindings):
     return result
 
 class Matcher:
-    def __init__(self, pda: PDA, parse_tree: Tree):
-        self.pda = pda
+    def __init__(self, pdas: dict[str, PDA], parse_tree: Tree):
+        self.pda = pdas["__main__"]
+        self.callable = pdas
         self.parse_tree = parse_tree
         self.match_set = MatchSet()
         self.configurations = []
@@ -73,7 +74,7 @@ class Matcher:
         self._listeners.clear()
 
     @staticmethod
-    def match(pda: PDA, parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
+    def match(pda: dict[str, PDA], parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
         """
         Matches a given parse tree against a Pushdown Automaton (PDA) and returns the resulting matches.
 
@@ -116,10 +117,10 @@ class Matcher:
 
         if current_state == self.pda.final_states:
             logger.info("Match found")
-            match = Match(self.n_step, var.copy())
+            match = Match(self.n_step, var.copy(), matches)
             self.match_set.record(match)
             for listener in self._listeners:
-                listener.on_match(self)
+                listener.on_match(self, match)
             return self
 
 
@@ -139,6 +140,7 @@ class Matcher:
             class_name = current_node.__class__.__name__
 
             new_var = var.copy()
+            new_vars = []
 
             # Default terminal node
             if isinstance(A, NodeTransition):
@@ -148,6 +150,7 @@ class Matcher:
                     else:
                         logger.trace(f"Wrong input: expecting {A.name} but was {class_name}")
                     continue
+                new_vars.append(new_var)
 
             # Handle Variables
             elif isinstance(A, NamedTransition):
@@ -158,18 +161,20 @@ class Matcher:
                 elif not self._match_tree(new_var[name], current_node):
                     logger.trace(f"Wrong variable: {name} expecting {new_var[name]} but was {current_node}")
                     continue
+                new_vars.append(new_var)
 
-            # Handle Macros
+            # Handle subpatterns
             elif isinstance(A, CallTransition):
-                macro_name = A.macro_name
+                subpattern_name = A.subpattern_name
                 trnsf_name = A.transformation_name
                 args = A.args
 
-                logger.trace(f"Handling macro: {macro_name} with transformation {trnsf_name} and args {args}")
+                logger.trace(f"Handling subpattern: {subpattern_name} with transformation {trnsf_name} and args {args}")
 
-                macro_match = self.call_macro(macro_name, trnsf_name, args, current_node, new_var)
-                if macro_match is None or macro_match.count() == 0:
+                possible_bindings = self.call_subpattern(subpattern_name, trnsf_name, args, current_node, new_var)
+                if len(possible_bindings) < 1:
                     continue
+                new_vars += possible_bindings
 
             else:
                 logger.error(f"Unknown transition type: {A}")
@@ -184,50 +189,60 @@ class Matcher:
             logger.trace(f"Taking {transition}")
 
             new_stack += beta
-            new_matches = matches + [(transition, current_node.__class__.__name__)]
+            new_matches = matches + [(transition, current_node)]
 
-            new_config = (q_prime, next_node, new_stack, new_var.copy(), new_matches)
-            self.configurations.append(new_config)
+            for variables in new_vars:
+                new_config = (q_prime, next_node, new_stack, variables.copy(), new_matches)
+                self.configurations.append(new_config)
 
         self.n_step += 1
         return self
 
-    def call_macro(self, macro_name, trnsf_name, args, current_node, bindings):
+    def call_subpattern(self, subpattern_name, trnsf_name, args, current_node, bindings):
         """
-        Calls a macro with the given name and transformation name, matching it against the current node.
+        Calls a subpattern with the given name and transformation name, matching it against the current node.
 
         :param args:
-        :param macro_name: The name of the macro to call.
-        :param trnsf_name: The name of the transformation within the macro.
+        :param subpattern_name: The name of the subpattern to call.
+        :param trnsf_name: The name of the transformation within the subpattern.
         :param current_node: The current node in the parse tree.
         :param bindings: The current variable bindings.
-        :return: A MatchSet containing the results of the macro call.
+        :return: A MatchSet containing the results of the subpattern call.
         """
-        macro = loaded_macros.get(macro_name)
-        if not macro or trnsf_name not in macro.transformations:
-            logger.warning(f"Macro or transformation not found: {macro_name}:{trnsf_name}")
-            return MatchSet()
+        subpattern = loaded_subpatterns[subpattern_name]
+        to_call = f"{subpattern_name}::{trnsf_name}"
+        if to_call not in self.callable or not subpattern:
+            logger.warning(f"subpattern or transformation not found: {subpattern_name}:{trnsf_name}")
+            return []
 
-        macro_pda = macro.transformations[trnsf_name]
+        subpattern_pdas = self.callable[to_call]
+        subpattern_pda = subpattern_pdas["__main__"]
 
-        m_j_to_i = mapping(macro.args_order, args)
+        m_j_to_i = mapping(subpattern.args_order, args)
         comp = composition(m_j_to_i, bindings)
-        m_j_epsilon = {u: None for u in macro_pda.named_wildcards}
-        macro_params = join_dicts(m_j_epsilon, comp)
+        m_j_epsilon = {u: None for u in subpattern_pda.named_wildcards}
+        subpattern_params = join_dicts(m_j_epsilon, comp)
 
-        logger.trace(f"Calling macro {macro_name}:{trnsf_name} on node {current_node} with bindings {macro_params}")
+        logger.trace(f"Calling subpattern {subpattern_name}:{trnsf_name} on node {current_node} with bindings {subpattern_params}")
 
-        match_set = Matcher.match(macro_pda, current_node, stop_at_first=True, bindings=macro_params)
+        match_set = Matcher.match(subpattern_pdas, current_node, stop_at_first=False, bindings=subpattern_params)
         if match_set.count() == 0:
-            logger.trace(f"Macro {macro_name}:{trnsf_name} did not match")
-            return None
+            logger.trace(f"subpattern {subpattern_name}:{trnsf_name} did not match")
+            return []
 
-        sub_bindings = match_set.matches[0].bindings
-        m_i_to_j = mapping(args, macro.args_order)
-        comp = composition(m_i_to_j, sub_bindings)
-        bindings.update(comp)
+        new_bindings = []
+        for match in match_set.matches:
+            pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
+            v in match.bindings.items()}
+            logger.debug(f"subpattern {subpattern_name}:{trnsf_name} matched with bindings {pretty_bindings}")
+            sub_bindings = match.bindings
+            m_i_to_j = mapping(args, subpattern.args_order)
+            comp = composition(m_i_to_j, sub_bindings)
+            new_binding = bindings.copy()
+            new_binding.update(comp)
+            new_bindings.append(new_binding)
 
-        return match_set
+        return new_bindings
 
 
     def _get_next_node(self, node, directions):
@@ -235,6 +250,8 @@ class Matcher:
         for direction in directions:
             match direction:
                 case NavigationAlphabet.RIGHT_SIBLING:
+                    if current_node == self.parse_tree:
+                        return None
                     try:
                         parent = current_node.parentCtx
                         if parent is None:

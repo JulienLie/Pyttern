@@ -5,7 +5,7 @@ from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...macro.Macro import loaded_macros
+from ...subpattern.SubPattern import loaded_subpatterns, SubPattern
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -31,16 +31,19 @@ class Python_to_PDA(Python3ParserVisitor):
         self.__var_names = {}
         self.__last_node = None
         self.__is_last_branch = True
+        self.__dict_pda = {}
 
-    def visit(self, tree):
+    def visit(self, tree) -> dict[str, PDA]:
         logger.debug(f"Visiting tree: {tree}")
+        self.__dict_pda = {}
         self.__var_names = {}
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
-        return self.pda
+        self.__dict_pda["__main__"] = self.pda
+        return self.__dict_pda
 
     def visitChildren(self, node):
         logger.debug(f"Visiting {node}")
@@ -234,7 +237,7 @@ class Python_to_PDA(Python3ParserVisitor):
         return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
-        # Handle a case when double wildcard is the only statement
+        # Handle a case when the double wildcard is the only statement
         parent_block = self.lookbehind(ctx, Python3Parser.BlockContext)
         if parent_block is None:
             logger.error("Double wildcard not in a block")
@@ -295,7 +298,7 @@ class Python_to_PDA(Python3ParserVisitor):
         # Explore
         ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
-        skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
+        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
         self.pda.add_transition(skip_transition)
 
         return ret
@@ -329,36 +332,117 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return dummy_state
 
-    def visitMacro(self, ctx: Python3Parser.MacroContext):
-        return ctx.getChild(0).accept(self)
 
-    def visitSimple_macro(self, ctx: Python3Parser.Simple_macroContext):
-        macro_name = ctx.getChild(0).getText()[1:]  # Remove the leading '?'
-        if macro_name not in loaded_macros:
-            raise ValueError(f"Macro {macro_name} is not defined. Available macros: {list(loaded_macros.keys())}")
+    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+        subpattern_name = ctx.NAME().getText()
+        logger.debug(f"Calling subpattern {subpattern_name}")
+        if subpattern_name not in loaded_subpatterns:
+            raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
-        args_nodes = ctx.macro_arg()
-        args_names = [arg_node.atom_wildcard().getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        # TODO: change handling of macro args
+        # Should be able to handle 3 types -> maybe check types from macro?
+        # 1: simple var wildcard -> can stay the same
+        # 2: expr -> change all var in expr then compile
+        # 3: stmts -> change all var in stmts then compile
+        args_nodes = ctx.macro_args().macro_arg()
+        if args_nodes is not None:
+            args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        else:
+            args_names = []
 
-        macro = loaded_macros[macro_name]
-        n_args_req = list(macro.args.keys()).count(lambda key: macro.args[key] is None)
+        body = ctx.block()
+
+        subpattern = loaded_subpatterns[subpattern_name]
+
+        # TODO: same as before, change compilation in relation to macro args 
+        transformations = subpattern.compile(ctx.parentCtx, body)
+        self.__dict_pda.update(transformations)
+        n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
+        # TODO: Probably no change but should be checked
+        if subpattern.type == "OR":
+            self.__visit_or_subpattern(subpattern, args_names)
+        elif subpattern.type == "AND":
+            self.__visit_and_subpattern(subpattern, args_names)
+        else:
+            logger.error(f"Unknown subpattern type {subpattern.type} for subpattern {subpattern_name}")
+
+        return self._add_up_transition(ctx)
+
+    def __visit_or_subpattern(self, subpattern: SubPattern, args):
         next_state = self.pda.new_state()
+        subpattern_name = subpattern.name
 
-        for transformation in macro.transformations:
-            logger.debug(f"Adding transformation {transformation} for macro {macro_name}")
-            #args = ','.join(args_names)
-            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args_names),
-                                    [], next_state, '')
+        for transformation in subpattern.transformations:
+            logger.debug(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
+            transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
+                                    next_state, '')
             self.pda.add_transition(transition)
 
         self.current_state = next_state
-        return self._add_up_transition(ctx)
+        return self.current_state
 
+    def __visit_and_subpattern(self, subpattern: SubPattern, args):
+        transformations = list(subpattern.transformations.keys())
+        n = len(transformations)
+        subpattern_name = subpattern.name
 
+        if n == 0:
+            return self.current_state
+
+        if n > 10:
+            logger.warning(
+                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+            )
+
+        # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
+        pda_states = {mask: self.pda.new_state() for mask in range(1, 1 << n)}
+        pda_states[0] = self.current_state
+
+        for mask in range(1 << n):
+            current_pda_state = pda_states[mask]
+
+            # Add a self-loop to navigate/skip statements that do not match any required transformations.
+            # This allows matching transformations in any order, interspersed with other statements.
+            # The navigation path is based on the original implementation's logic.
+            if mask != (1 << n) - 1:
+                nav_loop_transition = Transition(
+                    current_pda_state,
+                    "",
+                    NodeTransition(""),
+                    [
+                        NavigationAlphabet.PARENT,
+                        NavigationAlphabet.RIGHT_SIBLING,
+                        NavigationAlphabet.LEFT_CHILD,
+                    ],
+                    current_pda_state,
+                    "",
+                )
+                self.pda.add_transition(nav_loop_transition)
+
+            # For each transformation not yet matched in the current subset (mask)
+            for i, trans_name in enumerate(transformations):
+                if not ((mask >> i) & 1):  # Check if i-th bit is not set
+                    next_mask = mask | (1 << i)
+                    next_pda_state = pda_states[next_mask]
+
+                    # Add a transition to match the transformation and move to the next state (subset)
+                    match_transition = Transition(
+                        current_pda_state,
+                        "",
+                        CallTransition(subpattern_name, trans_name, args),
+                        [],
+                        next_pda_state,
+                        "",
+                    )
+                    self.pda.add_transition(match_transition)
+
+        # The final state is the one where all transformations have been matched
+        self.current_state = pda_states[(1 << n) - 1]
+        return self.current_state
 
     def _handle_empty_list(self, ctx):
         list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)
@@ -434,7 +518,7 @@ class Python_to_PDA(Python3ParserVisitor):
         :param ctx:
         :param clazz:
         :param predicate:
-        :return: The first instance of clazz found in the descendant of ctx or None if not found.
+        :return: True if the first instance of @clazz is found in the descendant of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx
@@ -449,10 +533,10 @@ class Python_to_PDA(Python3ParserVisitor):
     @staticmethod
     def lookbehind(ctx, clazz):
         """
-        Check if one of the ancestors of ctx is instance of clazz.
+        Check if one of the ancestors of ctx is an instance of clazz.
         :param ctx:
         :param clazz:
-        :return: The first instance of clazz found in the ancestors of ctx or None if not found.
+        :return: True if the first instance of clazz is found in the ancestors of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx

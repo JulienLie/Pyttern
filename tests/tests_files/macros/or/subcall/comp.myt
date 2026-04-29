@@ -1,0 +1,19 @@
+$|Comp(?left, ?right)
+
+$# eq
+?left == ?right
+
+$# ne
+?left != ?right
+
+$# lt
+?left < ?right
+
+$# le
+?left <= ?right
+
+$# gt
+?left > ?right
+
+$# ge
+?left >= ?right

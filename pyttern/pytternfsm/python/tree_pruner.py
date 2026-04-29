@@ -2,6 +2,11 @@ from antlr4 import TerminalNode, Token
 
 from ...antlr.python import Python3ParserVisitor, Python3Parser
 
+TO_KEEP = (
+    TerminalNode,
+    Python3Parser.NameContext,
+    Python3Parser.Expr_wildcardContext
+)
 
 class TreePruner(Python3ParserVisitor):
 
@@ -19,11 +24,7 @@ class TreePruner(Python3ParserVisitor):
         new_child = self.visitChildren(node)
         while len(new_child.children) == 1:
             new_child = new_child.getChild(0)
-            if isinstance(new_child, TerminalNode):
-                return new_child
-            if isinstance(new_child, Python3Parser.NameContext):
-                return new_child
-            if isinstance(new_child, Python3Parser.Expr_wildcardContext):
+            if isinstance(new_child, TO_KEEP):
                 return new_child
         return new_child
 

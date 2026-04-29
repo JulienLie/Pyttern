@@ -24,6 +24,11 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by Python3Parser#macro_input.
+    def visitMacro_input(self, ctx:Python3Parser.Macro_inputContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by Python3Parser#decorator.
     def visitDecorator(self, ctx:Python3Parser.DecoratorContext):
         return self.visitChildren(ctx)
@@ -664,8 +669,28 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by Python3Parser#macro_call.
+    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#macro_stmts.
+    def visitMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#macro_def.
+    def visitMacro_def(self, ctx:Python3Parser.Macro_defContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by Python3Parser#macro.
     def visitMacro(self, ctx:Python3Parser.MacroContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#macro_args.
+    def visitMacro_args(self, ctx:Python3Parser.Macro_argsContext):
         return self.visitChildren(ctx)
 
 
@@ -681,6 +706,11 @@ class Python3ParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Python3Parser#compound_macro.
     def visitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#transformation.
+    def visitTransformation(self, ctx:Python3Parser.TransformationContext):
         return self.visitChildren(ctx)
 
 

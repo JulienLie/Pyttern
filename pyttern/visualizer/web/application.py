@@ -8,10 +8,10 @@ from flask import Flask, request, session, flash, get_flashed_messages, send_fro
 from flask_session import Session
 from loguru import logger
 
-from ...PytternListener import PytternListener
+from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
-from ...macro.Macro import loaded_macros
-from ...macro.macro_parser import parse_macro_from_string
+from ...subpattern.SubPattern import loaded_subpatterns
+from ...subpattern.subpattern_parser import parse_subpattern_from_string
 from ...main import PytternMatcher
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
@@ -106,7 +106,7 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
 
     return Matcher(pyttern_fsm, code_tree)
 
-class JsonListener(PytternListener):
+class JsonListener(Pyttern_listener):
     def __init__(self):
         self.data = []
 
@@ -133,7 +133,7 @@ class JsonListener(PytternListener):
             "code_pos": pos
         })
 
-    def on_match(self, _):
+    def on_match(self, _, __):
         self.data[-1]["match"] = True
 
 
@@ -605,6 +605,7 @@ def batch_validate():
                     symbol: "?"
                     msg: "syntax error"
     """
+    logger.debug(request.json)
     pattern_codes = request.json["codes"]
     pattern_lang = request.json['lang']
 
@@ -685,6 +686,8 @@ def step():
     if current_data["match"]:
         flash("New match found", "message")
 
+    logger.debug(json.dumps(current_data["variables"]))
+
     return json.dumps({
         "status": "ok",
         "state": state_info,
@@ -692,7 +695,7 @@ def step():
         "previous_matchings": previous_matchings,
         "messages": get_flashed_messages(),
         "match": current_data["match"],
-        "variables": current_data["variables"],
+        "variables": json.dumps(current_data["variables"]),
         "current_stack": current_stack,
         "previous_stack": previous_stack,
         "code_pos": code_pos
@@ -741,23 +744,25 @@ def parse_macro():
     macro_code = request.json["code"]
     lang = Languages.PYTHON
     try:
-        macros = parse_macro_from_string(macro_code, lang)
+        macros = parse_subpattern_from_string(macro_code, lang)
         logger.debug(f"Parsed macros: {macros}")
     except Exception as e:
         logger.error(f"Error parsing macro: {e}")
         return json.dumps({"status": "error", "message": str(e)})
-    macro = macros[0] if macros else None
-    if macro is None:
-        return json.dumps({"status": "error", "message": "No macro found"})
-    macro_json = {
-        "name": macro.name,
-        "code": macro_code,
-        "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-            pda in macro.transformations.items()}
-    }
-    logger.debug(f"Macro JSON: {macro_json}")
-    return json.dumps({"status": "ok", "macro": macro_json})
+    if len(macros) < 1:
+      return json.dumps({"status": "error", "message": "No macro found"})
 
+    macro_names = [macro.name for macro in macros]
+    return json.dumps({"status": "ok", "names": macro_names})
+
+@app.route("/api/macro", methods=['DELETE'])
+def remove_macro():
+    macro_name = request.json["name"]
+    logger.debug(f"Removing macro {macro_name}")
+    if loaded_subpatterns[macro_name] is None:
+        return json.dumps({"status": "error", "message": f"No sub pattern called {macro_name}"})
+    del loaded_subpatterns[macro_name]
+    return json.dumps({"status": "ok"})
 
 @app.route("/api/macro", methods=['GET'])
 def loaded_macro():
@@ -768,17 +773,9 @@ def loaded_macro():
         '200':
             description: Loaded macros
     """
-    macros = []
-    for macro in loaded_macros.values():
-        macro_json = {
-            "name": macro.name,
-            "code": macro.code,
-            "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-                pda in macro.transformations.items()}
-        }
-        macros.append(macro_json)
+    macro_names = [macro for macro in loaded_subpatterns]
 
     return json.dumps({
         "status": "ok",
-        "macros": macros
+        "macros": macro_names
     })

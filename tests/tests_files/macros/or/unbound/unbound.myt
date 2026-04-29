@@ -1,0 +1,10 @@
+$|Bound(?x)
+
+$# assign
+?x = ?
+
+$# use
+? = ?x
+
+$# call
+?x(?*)

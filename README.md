@@ -30,8 +30,6 @@ We extended the python syntax to create pattern files. Our new syntax includes t
 | ?:*      | Match the body of the wildcard in any indentation                         |
 | ?<...>   | Match if the inside of the wildcard is contained inside the matching node |
 
-In addition to these wildcards, we added some optional elements to allow more options:
-
 
 
 ## Usage
@@ -224,57 +222,6 @@ def sum(lst):
     return acc
 ```
 
-## Strict match / Soft match
-### Main difference
-In a soft match, there is flexibility in code structure and the possibility of including extra code, 
-as long as the main matching criteria are met. In contrast, in a strict match, precise adherence to the defined 
-code structure and syntax is necessary, and there is limited to no allowance for variations or 
-additional code outside the specified structure.
-
-### [DEPRECATED] ~~The syntax `?:[]`~~
-The wildcard `?![]` is a notation that allows for a combination of strict and soft matching in certain parts of a code pattern. It is useful when you want to perform a soft match but have a strict match requirement within a specific section of code.
-
-Let's consider an example to illustrate this. Suppose we have the following pattern:
-
-```python
-def foo(bar):
-    ?var = 0
-    for ? in range(?*):
-        ?![
-        if ?:
-           ?var += 1 
-        ]
-```
-In this pattern, the wildcard ? represents a placeholder for any valid Python identifier. The ?var = 0 statement assigns the value 0 to a variable, which we'll refer to as x. The for ? in range(?*) loop iterates over a range of values, which we'll refer to as y. Finally, ?![ ... ] represents a strict match requirement that enforces certain code within the if statement.
-
-Now, let's say we have the following code snippet:
-
-```python
-def foo(bar):
-    x = 0
-    y = len(bar)
-    for i in range(y):
-        z = bar[i]
-        if z:
-            x += 1
-    return x
-```
-We want to match this code snippet with the given pattern. Let's go through each line and see how the wildcard ?![] allows for matching.
-
-- In the pattern, `?var = 0` matches the code `x = 0` because the wildcard `?var` represents the variable named `x`.
-- The loop statement `for ? in range(?*)` in the pattern matches the code `for i in range(y)`. 
-- Here, `?` corresponds to the loop variable `i`, and `?*` corresponds to the length of the bar list, which is stored in `y`.
-- The strict match requirement `?![ ... ]` checks the code within the if statement. 
-- In the pattern, `?` represents the condition `z`, and `?var += 1` corresponds to `x += 1` within the if block.
-
-As a result, the code snippet matches the pattern because all the placeholders and the strict match requirements are satisfied. 
-However, if we have additional code within the if block, such as a print statement like `print("true")`, 
-the pattern won't match because the strict match requirement `?![ ... ]` doesn't accommodate that extra code.
-
-In summary, the wildcard `?![]` allows for a combination of soft and strict matching. 
-It provides flexibility by allowing soft matches for variables and loop structures while enforcing strict matches for 
-specific code sections. This helps in creating adaptable code patterns that can match similar code snippets with some variations.
-
 ## File structure
 To implement a system that allows to create logic with different patterns, we implemented a specific file structure.
 The file structure is composed as follows:
@@ -293,6 +240,39 @@ The `or` folder contains patterns that can match.
 The `not` folder contains patterns that must not match.
 This allows the creation of more complex patterns with different files.
 
+
+## Sub-patterns
+The sub-pattern paradigm allows you to define complex patterns in a single file by breaking them down into named blocks. This is more powerful because it allows to use logic operators (AND, OR). Compared to the compound pattern paradigm, the sub-pattern paradigm allows to share variables across different blocks, which is not possible in the compound pattern paradigm.
+
+### The *OR* operator
+To define an *OR* operator in a sub-pattern, you can use the `$|` operator. This will mean that the block can be satisfied by either of the two blocks defined after the `$|` operator. 
+
+```python
+$|Incr(?x)
+
+$# augAssign
+?x += 1
+
+$# add_v
+?x = ?x + 1
+
+$# add_x
+?x = 1 + ?x
+```
+
+### The *AND* operator
+To define an *AND* operator in a sub-pattern, you can use the `$&` operator. This will mean that the block must be satisfied by all of the blocks defined after the `$&` operator. 
+
+```python
+$&Assign(?var1, ?var2)
+
+$# assign_var_1
+?var1 = ?
+
+$# assign_var_2
+?var2 = ?
+```
+
 ## Visualization
 To visualize the matching algorithm, we implemented a web visualization tool. If you installed Pyttern, you can run it
 using the following command:
@@ -301,3 +281,6 @@ pytternweb
 ```
 You can then import your pyttern on the left part of the site and your code on the right side. You can control the
 matching algorithm using the buttons on the bottom of the site.
+
+## More examples
+You can find more examples of patterns using all the features of Pyttern in the `examples` folder of the repository.

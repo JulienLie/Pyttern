@@ -4,8 +4,9 @@ from functools import lru_cache
 from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
 
+from ..simulator.pda import PDA
 from .base_processor_interface import BaseProcessor
-from ..PytternListener import ConsolePytternListener
+from ..Pyttern_listener import ConsolePytternListener
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener
