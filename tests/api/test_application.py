@@ -21,5 +21,11 @@ def test_batch_match_success(client, data):
     assert response.status_code == 200
     result = json.loads(response.data)
     assert len(result) == 2
-    assert result[0]['match']
-    assert result[1]['match']
+
+    for r in result:
+        assert len(r['patternsMatchResults']) == 2
+        print(r)
+        result_okreturn = r['patternsMatchResults']["okreturn.pyt"]
+        result_early_return = r['patternsMatchResults']['earlyreturn.pyt']
+        print(f"{r['match']} == (not {result_okreturn}) and {result_early_return}")
+        assert r['match'] == (not result_okreturn) and result_early_return

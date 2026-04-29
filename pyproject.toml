@@ -10,7 +10,7 @@ packages = [{include = "pyttern"}]
 python = ">3.10"
 antlr4-python3-runtime="4.13.2"
 cachelib="^0.13.0"
-Flask="^3.0.3"
+Flask="^3.1.3"
 Flask-Session="^0.8.0"
 Flask_Assets="^2.1.0"
 loguru="^0.7.2"
@@ -31,7 +31,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
+
 pyttern = "pyttern.main:main"
+
 pytternweb = "pyttern.main:run_application"
 pytterncompile = "pyttern.main:_compile_code"
 pytterngraph = "pyttern.main:generate_graph"

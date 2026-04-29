@@ -35,7 +35,7 @@ def mapping(params: list, args: list) -> dict:
 
     if len(params) != len(args):
         raise ValueError("Parameters and arguments must have the same length")
-    return {u: t for u, t in zip(params, args)}
+    return dict(zip(params, args))
 
 def composition(mapping, bindings):
     """

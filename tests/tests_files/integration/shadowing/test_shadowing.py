@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from pyttern import match_files
+from pyttern import PytternMatcher
 
 
 @pytest.mark.timeout(1)
@@ -10,5 +10,6 @@ def test_stmt():
     pattern_path = Path(__file__).parent / "shadowing.pyt"
     code_path = Path(__file__).parent / "shadowing.py"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    matcher = PytternMatcher(match_details=True)
+    res, det = matcher.match(pattern_path, code_path, lang="python")
     assert res, det

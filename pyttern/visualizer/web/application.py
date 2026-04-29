@@ -10,9 +10,9 @@ from loguru import logger
 
 from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
-from ...subpattern.SubPattern import loaded_subpatterns
-from ...subpattern.subpattern_parser import parse_subpattern_from_string
-from ...main import parse_json_pattern, match_pyttern
+from ...macro.Macro import loaded_macros
+from ...macro.macro_parser import parse_macro_from_string
+from ...main import PytternMatcher
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
 from ...simulator.pda.PDA import PDAEncoder
@@ -477,7 +477,8 @@ def batch_match():
 
     processor = get_processor(lang)
     logger.debug(processor)
-    pattern_tree = parse_json_pattern(patterns, processor)
+    matcher = PytternMatcher(match_details=True)
+    pattern_tree = matcher.parse_json_pattern(patterns, lang)
     logger.debug(pattern_tree)
 
     matches = {}
@@ -495,27 +496,25 @@ def batch_match():
 
         name = pattern_tree['name']
         pattern_tree['name'] = "and"
-        matches[filename] = match_pyttern(pattern_tree, code_tree, match_details=True)
+        matches[filename] = matcher.match_tree(pattern_tree, code_tree)
         pattern_tree['name'] = name
 
     results = []
     for filename in matches:
         match = matches[filename]
-        patterns = list(__get_pyt_files(match))
+        patterns = dict(__get_pyt_files(match))
         result = {
             'name': filename,
             'match': match['result'],
             'patternsMatchResults': patterns
         }
-        results.append(result)
-        
-    
+        results.append(result)            
     return json.dumps(results)
 
 def __get_pyt_files(data):
     name = data["name"]
     if name.endswith(".pyt"):
-        yield {name: {'match': data['result']}}
+        yield name, data['result']
     else:
         children = data['children']
         for child in children:
@@ -778,5 +777,5 @@ def loaded_macro():
 
     return json.dumps({
         "status": "ok",
-        "names": macro_names
+        "macros": macros
     })

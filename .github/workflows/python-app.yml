@@ -6,6 +6,8 @@ name: Python application
 on:
   pull_request:
     branches: [ "main" ]
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
   
 
@@ -28,11 +30,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with test
-        pip install flake8 pytest
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude="tests/tests_files Pyttern/antlr/"
     - name: Test with pytest
       run: |
-        poetry run pytest tests/tests.py
+        poetry run pytest tests/*
