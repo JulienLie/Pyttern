@@ -19,7 +19,7 @@ tqdm="^4.66.5"
 flasgger="0.9.7b2"
 
 [tool.poetry.group.test.dependencies]
-pytest="^8.2.2"
+pytest="^9.0.3"
 pylint="^3.2.2"
 pytest-subtests="^0.14.2"
 flake8 = "^7.3.0"
