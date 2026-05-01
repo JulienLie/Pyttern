@@ -221,7 +221,6 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._add_up_transition(ctx)
 
     def visitWildcard_number(self, ctx):
-        children = ctx.DECIMAL_LITERAL()
         low = int(ctx.DECIMAL_LITERAL(0).getText())
         high = int(ctx.DECIMAL_LITERAL(1).getText()) if ctx.DECIMAL_LITERAL(1) else math.inf
         if ctx.COMMA() is None:
@@ -233,38 +232,58 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return low, high
 
     def visitSimple_compound_wildcard(self, ctx):
-        """
-        # Go to children
-        child_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                             child_state, 'I')
-        self.pda.add_transition(child_transition)
-        self.current_state = child_state
-        self.depth += 1
-        """
-        # NOTE: the above is not necessary in jattern, only in pyttern 
-
         # Find body node
         self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                                                      self.current_state, '')
         self.pda.add_transition(self_transition)
 
-        # Here, we need to handle two different cases
-        # 1. Add empty transition to "commit" to exploring the body
-        next_state = self.pda.new_state()
+        # Here, we need to handle different cases: try/catch, switch/case, and block vs statement
+        inside_wildcard_state = self.pda.new_state()
 
-        empty_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(empty_transition)
+        # TRY/CATCH
+        # Add single left child transition in case it's a catchClause -> Block
+        catchclause_transition = Transition(self.current_state, "", NodeTransition("CatchClauseContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD], self.current_state, 'I')
+        self.pda.add_transition(catchclause_transition)
 
-        # 2. Add double left child transition in case it's a Statement -> Block -> blockStatement*
-        self_transition = Transition(self.current_state, "", NodeTransition("StatementContext", 0, math.inf), 
-                                     [NavigationAlphabet.LEFT_CHILD, NavigationAlphabet.LEFT_CHILD], next_state, 'II') # TODO: Are the "I" necessary here?
+        # Add single left child transition in case it's a finallyBlock -> Block
+        finally_transition = Transition(self.current_state, "", NodeTransition("FinallyBlockContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD], self.current_state, 'I')
+        self.pda.add_transition(finally_transition)
+
+        # SWITCH/CASE
+        # Add single left child transition in case it's a switchBlockStatementGroup -> Block
+        switch_state = self.pda.new_state()
+        switch_transition = Transition(self.current_state, "", NodeTransition("SwitchBlockStatementGroupContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD], switch_state, 'I')
+        self.pda.add_transition(switch_transition)
+        self_transition = Transition(switch_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING], switch_state, '')
         self.pda.add_transition(self_transition)
+        after_switch_transition = Transition(switch_state, "", NodeTransition(''), [], inside_wildcard_state, '')
+        self.pda.add_transition(after_switch_transition)
 
-        self.current_state = next_state
+        # BLOCK
+        # Add single left child transition in case it's directly a Block node
+        block_transition = Transition(self.current_state, "", NodeTransition("BlockContext", 0, math.inf), [NavigationAlphabet.LEFT_CHILD], inside_wildcard_state, 'I')
+        self.pda.add_transition(block_transition)
+
+        # STATEMENT
+        # Add double left child transition in case it's a Statement -> CompoundStatement -> Block
+        after_statement_state = self.pda.new_state()
+        statement_transition = Transition(self.current_state, "", NodeTransition("StatementContext"), [NavigationAlphabet.LEFT_CHILD], after_statement_state, 'I')
+        self.pda.add_transition(statement_transition)
+
+        after_compound_state = self.pda.new_state()
+        statement_transition = Transition(after_statement_state, "", NodeTransition("Compound_stmtContext"), [NavigationAlphabet.LEFT_CHILD], after_compound_state, 'I')
+        self.pda.add_transition(statement_transition)
+
+        statement_transition = Transition(after_compound_state, "", NodeTransition("BlockContext", 0, math.inf), [NavigationAlphabet.LEFT_CHILD], inside_wildcard_state, 'I')
+        self.pda.add_transition(statement_transition)
+
+        self.current_state = inside_wildcard_state
 
         # Explore body
-        return ctx.getChild(0, JavaParser.JavaParser.BlockContext).accept(self)
+        return ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext).accept(self)
 
     def visitDouble_wildcard(self, ctx):
         # Handle a case when double wildcard is the only statement
