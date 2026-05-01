@@ -570,7 +570,7 @@ switchBlockStatementGroup
     : switchLabel+ blockStatement+
     ;
 
-switchLabel// TODO: add wildcard here?
+switchLabel
     : CASE (
         constantExpression = expression
         | enumConstantName = IDENTIFIER
@@ -621,8 +621,6 @@ expression
         | NEW nonWildcardTypeArguments? innerCreator
         | SUPER superSuffix
         | explicitGenericInvocation
-        | var_wildcard
-        | simple_wildcard 
     )
     // Method calls and method references are part of primary, and hence level 16 precedence
     | methodCall
@@ -646,7 +644,7 @@ expression
     | expression bop = ('+' | '-') expression                 // Level 11, Additive operators
     | expression ('<' '<' | '>' '>' '>' | '>' '>') expression // Level 10, Shift operators
     | expression bop = ('<=' | '>=' | '>' | '<') expression   // Level 9, Relational operators
-    | expression bop = INSTANCEOF (simple_wildcard | var_wildcard | typeType | pattern)
+    | expression bop = INSTANCEOF (typeType | pattern)
     | expression bop = ('==' | '!=') expression                      // Level 8, Equality Operators
     | expression bop = '&' expression                                // Level 7, Bitwise AND
     | expression bop = '^' expression                                // Level 6, Bitwise XOR
@@ -690,8 +688,6 @@ lambdaParameters
     | '(' formalParameterList? ')'
     | '(' identifier (',' identifier)* ')'
     | '(' lambdaLVTIList? ')'
-    | simple_wildcard
-    | var_wildcard
     ;
 
 // Java8
@@ -815,7 +811,7 @@ explicitGenericInvocationSuffix
     ;
 
 arguments
-    : '(' (expressionList? | list_wildcard) ')'
+    : '(' (expressionList? | list_wildcard | number_wildcard) ')'
     ;
 
 // Syntax of wildcards
@@ -829,6 +825,6 @@ number_wildcard: WILDCARD wildcard_number;
 wildcard_number: '(' DECIMAL_LITERAL (',' | ',' DECIMAL_LITERAL)? ')';
 
 // Composite wildcards
-stmt_wildcard: (simple_wildcard | var_wildcard | contains_wildcard);
+stmt_wildcard: (simple_wildcard | var_wildcard | list_wildcard | contains_wildcard);
 expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
 compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;

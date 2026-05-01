@@ -285,21 +285,6 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         # Explore body
         return ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext).accept(self)
 
-    def visitDouble_wildcard(self, ctx):
-        # Handle a case when double wildcard is the only statement
-        parent_block = self.lookbehind(ctx, JavaParser.BlockContext)
-        if parent_block is None:
-            logger.error("Double wildcard not in a block")
-            return self.current_state
-
-        last_child = parent_block.getChild(parent_block.getChildCount() - 1)
-        maybe_this = self.lookahead(last_child, JavaParser.Double_wildcardContext)
-        if  maybe_this is not None and maybe_this == ctx:
-            # If the double wildcard is the last statement of the block, we need to add a transition to the end of the
-            # block
-            self._add_up_transition(ctx)
-        return self.current_state
-
     def visitList_wildcard(self, ctx):
         # Adding self-transition to search for the next element
         self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
