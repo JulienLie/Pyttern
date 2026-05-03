@@ -521,7 +521,7 @@ statement
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
-    | stmt_wildcard
+    | stmt_wildcard ';'
     ;
 
 compound_stmt
