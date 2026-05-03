@@ -1,0 +1,12 @@
+class Compound {
+    public static void main() {
+        // any 3 combined levels of indentation
+        #{
+            #{
+                #{
+                    System.out.println("Hello, World!");
+                }
+            }
+        }
+    }
+}
