@@ -29,7 +29,7 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
         return new_child
     
     def visitIdentifier(self, ctx:JavaParser.JavaParser.IdentifierContext):
-        if isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+        if isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
 
