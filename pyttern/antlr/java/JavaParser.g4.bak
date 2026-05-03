@@ -263,7 +263,7 @@ variableInitializer
     ;
 
 arrayInitializer
-    : '{' (variableInitializer (',' variableInitializer)* ','?)? '}'
+    : '{' ((list_wildcard | number_wildcard | variableInitializer) (',' (list_wildcard | number_wildcard | variableInitializer))* ','?)? '}'
     ;
 
 classOrInterfaceType
