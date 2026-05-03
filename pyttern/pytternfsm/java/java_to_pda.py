@@ -283,7 +283,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.current_state = inside_wildcard_state
 
         # Explore body
-        return ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext).accept(self)
+        blockStatementChild = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext)
+        if blockStatementChild != None:
+            return blockStatementChild.accept(self)
 
     def visitList_wildcard(self, ctx):
         # Adding self-transition to search for the next element
@@ -330,7 +332,10 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         dummy_state = self.__add_body_transition()
 
         # Explore
-        ret = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext).accept(self)
+        ret = float('inf')
+        blockStatementChild = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext)
+        if blockStatementChild != None:
+            ret = blockStatementChild.accept(self)
 
         skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
         self.pda.add_transition(skip_transition)
