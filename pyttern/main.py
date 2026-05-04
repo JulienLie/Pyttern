@@ -224,6 +224,13 @@ def main():
     parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language for single file matching.")
     parser.add_argument("--details", action="store_true", help="Return detailed match information.")
     parser.add_argument("--stop-first", action="store_true", help="Stop at the first match found.")
+    parser.add_argument(
+        '-s', '--sub', 
+        action='append', 
+        dest='sub_patterns', 
+        help='Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).'
+    )
+
 
     parser.add_argument("pattern", nargs="?", help="Pattern file path or glob pattern.")
     parser.add_argument("code", nargs="?", help="Code file path or glob pattern.")
@@ -272,5 +279,5 @@ def main():
 
 
 if __name__ == "__main__":
-    logger.enable("pyttern")
+    #logger.enable("pyttern")
     main()
