@@ -283,4 +283,4 @@ You can then import your pyttern on the left part of the site and your code on t
 matching algorithm using the buttons on the bottom of the site.
 
 ## More examples
-You can find more examples of patterns using all the features of Pyttern in the `examples` folder of the repository.
+You can find more examples of patterns using all the features of Pyttern in the `tests` folder of the repository.
