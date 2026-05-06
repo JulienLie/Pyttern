@@ -232,9 +232,11 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return low, high
 
     def visitSimple_compound_wildcard(self, ctx):
+        # Transition to push B on the stack
+        dummy_state = self.__add_body_transition(False)
+
         # Find body node
-        self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                     self.current_state, '')
+        self_transition = Transition(dummy_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING], dummy_state, '')
         self.pda.add_transition(self_transition)
 
         # Here, we need to handle different cases: try/catch, switch/case, and block vs statement
@@ -242,19 +244,19 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         # TRY/CATCH
         # Add single left child transition in case it's a catchClause -> Block
-        catchclause_transition = Transition(self.current_state, "", NodeTransition("CatchClauseContext", 0, math.inf), 
-                                     [NavigationAlphabet.LEFT_CHILD], self.current_state, 'I')
+        catchclause_transition = Transition(dummy_state, "", NodeTransition("CatchClauseContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD], dummy_state, 'I')
         self.pda.add_transition(catchclause_transition)
 
         # Add single left child transition in case it's a finallyBlock -> Block
-        finally_transition = Transition(self.current_state, "", NodeTransition("FinallyBlockContext", 0, math.inf), 
-                                     [NavigationAlphabet.LEFT_CHILD], self.current_state, 'I')
+        finally_transition = Transition(dummy_state, "", NodeTransition("FinallyBlockContext", 0, math.inf), 
+                                     [NavigationAlphabet.LEFT_CHILD], dummy_state, 'I')
         self.pda.add_transition(finally_transition)
 
         # SWITCH/CASE
         # Add single left child transition in case it's a switchBlockStatementGroup -> Block
         switch_state = self.pda.new_state()
-        switch_transition = Transition(self.current_state, "", NodeTransition("SwitchBlockStatementGroupContext", 0, math.inf), 
+        switch_transition = Transition(dummy_state, "", NodeTransition("SwitchBlockStatementGroupContext", 0, math.inf), 
                                      [NavigationAlphabet.LEFT_CHILD], switch_state, 'I')
         self.pda.add_transition(switch_transition)
         self_transition = Transition(switch_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING], switch_state, '')
@@ -264,13 +266,13 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         # BLOCK
         # Add single left child transition in case it's directly a Block node
-        block_transition = Transition(self.current_state, "", NodeTransition("BlockContext", 0, math.inf), [NavigationAlphabet.LEFT_CHILD], inside_wildcard_state, 'I')
+        block_transition = Transition(dummy_state, "", NodeTransition("BlockContext", 0, math.inf), [NavigationAlphabet.LEFT_CHILD], inside_wildcard_state, 'I')
         self.pda.add_transition(block_transition)
 
         # STATEMENT
         # Add double left child transition in case it's a Statement -> CompoundStatement -> Block
         after_statement_state = self.pda.new_state()
-        statement_transition = Transition(self.current_state, "", NodeTransition("StatementContext"), [NavigationAlphabet.LEFT_CHILD], after_statement_state, 'I')
+        statement_transition = Transition(dummy_state, "", NodeTransition("StatementContext"), [NavigationAlphabet.LEFT_CHILD], after_statement_state, 'I')
         self.pda.add_transition(statement_transition)
 
         after_compound_state = self.pda.new_state()
@@ -350,7 +352,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         prune_tree = ctx
         return prune_tree.getChild(2).accept(self)
 
-    def __add_body_transition(self):
+    def __add_body_transition(self, allow_multiple_compound=True):
         dummy_state = self.pda.new_state()
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
         self.pda.add_transition(dummy_transition)
@@ -358,17 +360,18 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         self.move_to_B.append(self.depth)
 
-        next_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(child_transition)
+        if allow_multiple_compound:
+            next_state = self.pda.new_state()
+            child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
+            self.pda.add_transition(child_transition)
 
-        self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                    next_state, '')
-        self.pda.add_transition(self_transition)
-        back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                    self.current_state, 'I')
-        self.pda.add_transition(back_transition)
-        self.current_state = next_state
+            self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                                                        next_state, '')
+            self.pda.add_transition(self_transition)
+            back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
+                                                                        self.current_state, 'I')
+            self.pda.add_transition(back_transition)
+            self.current_state = next_state
 
         return dummy_state
 
