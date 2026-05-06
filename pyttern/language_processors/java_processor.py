@@ -17,7 +17,7 @@ class JavaProcessor(BaseProcessor):
         return self.generate_tree_from_stream(stream)
 
     def generate_tree_from_stream(self, stream):
-        logger.info("Generating tree")
+        logger.debug("Generating tree")
         lexer = JavaLexer(stream)
         stream = CommonTokenStream(lexer)
         java_parser = JavaParser(stream)

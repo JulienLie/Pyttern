@@ -1,2 +1,0 @@
-class ?:
-    ?$GetSet(?getter, ?setter, ?var)

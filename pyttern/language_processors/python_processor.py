@@ -25,7 +25,7 @@ class PythonProcessor(BaseProcessor):
 
     @lru_cache(maxsize=128)
     def generate_tree_from_stream(self, stream):
-        logger.info("Generating tree")
+        logger.debug("Generating tree")
         lexer = Python3Lexer(stream)
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)

@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import sys
 
 from loguru import logger
 
@@ -218,6 +219,43 @@ def run_application(host="0.0.0.0", port=5000):
     application.app.run(debug=True, host=host, port=port)
 
 
+def configure_logger(verbosity: int):
+    # Remove the default loguru handler
+    logger.remove()
+    
+    # Map verbosity count to Loguru levels and formats
+    if verbosity == 0:
+        # Default mode (no -v): Only INFO and above, clean format
+        log_level = "INFO"
+        log_format = (
+            "<green>{time:HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | "
+            "<level>{message}</level>"
+        )
+    elif verbosity == 1:
+        # -v passed: DEBUG level, more context like function and line number
+        log_level = "DEBUG"
+        log_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        )
+    else:
+        # -vv or more passed: TRACE level, maximum context including milliseconds
+        log_level = "TRACE"
+        log_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        )
+        
+    # Add the configured handler
+    logger.add(sys.stdout, format=log_format, level=log_level)
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Pyttern: A tool for pattern matching in code.")
     parser.add_argument("--web", action="store_true", help="Launch the web application.")
@@ -230,12 +268,20 @@ def main():
         dest='sub_patterns', 
         help='Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).'
     )
+    parser.add_argument(
+        '-v', '--verbose', 
+        action='count', 
+        default=0, 
+        help="Increase output verbosity (e.g., -v for DEBUG, -vv for TRACE)"
+    )
 
 
     parser.add_argument("pattern", nargs="?", help="Pattern file path or glob pattern.")
     parser.add_argument("code", nargs="?", help="Code file path or glob pattern.")
 
     args = parser.parse_args()
+
+    configure_logger(args.verbose)
 
     if args.web:
         run_application()
@@ -277,7 +323,6 @@ def main():
             else:
                 logger.warning("No match found.")
 
-
 if __name__ == "__main__":
-    #logger.enable("pyttern")
+    logger.enable("pyttern")
     main()

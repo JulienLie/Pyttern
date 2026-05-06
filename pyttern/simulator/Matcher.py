@@ -116,7 +116,7 @@ class Matcher:
             listener.step(self, current_state, current_node, stack, var, matches)
 
         if current_state == self.pda.final_states:
-            logger.info("Match found")
+            logger.debug("Match found")
             match = Match(self.n_step, var.copy(), matches)
             self.match_set.record(match)
             for listener in self._listeners:

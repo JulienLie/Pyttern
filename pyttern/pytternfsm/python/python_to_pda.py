@@ -46,7 +46,7 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.__dict_pda
 
     def visitChildren(self, node):
-        logger.debug(f"Visiting {node}")
+        logger.trace(f"Visiting {node}")
 
         children = node.children
         if len(children) == 0:
@@ -59,7 +59,7 @@ class Python_to_PDA(Python3ParserVisitor):
                 or self.lookahead(children[-1], Python3Parser.List_wildcardContext)
         ):
             children.pop()
-            logger.debug("Remove double wildcard")
+            logger.trace("Remove double wildcard")
 
 
         next_state = self.pda.new_state()
@@ -90,20 +90,20 @@ class Python_to_PDA(Python3ParserVisitor):
         :param ctx: The context to define boundaries for.
         :return: A tuple of (down, up) boundaries.
         """
-        logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
+        logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
         if isinstance(ctx, (Python3Parser.File_inputContext, Python3Parser.BlockContext)):
-            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
+            logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         elif isinstance(ctx, Python3Parser.If_stmtContext):
-            logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
+            logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
                 if self.lookahead(child, (Python3Parser.Double_wildcardContext, Python3Parser.List_wildcardContext)) is not None:
-                    logger.debug(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
+                    logger.trace(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
 
@@ -115,7 +115,7 @@ class Python_to_PDA(Python3ParserVisitor):
                 if simple_node is not None:
                     numbers_node = simple_node.getChild(0, Python3Parser.Wildcard_numberContext)
                     if numbers_node is not None:
-                        logger.debug(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
+                        logger.trace(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
                         up += max_n
                         down += min_n
@@ -127,7 +127,7 @@ class Python_to_PDA(Python3ParserVisitor):
 
     def visitStmt(self, ctx:Python3Parser.StmtContext):
         # Handle double wildcard as Stmt
-        logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
+        logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
         lookahead_double_wildcard = self.lookahead(ctx, Python3Parser.Double_wildcardContext)
         if lookahead_double_wildcard:
@@ -169,7 +169,7 @@ class Python_to_PDA(Python3ParserVisitor):
     def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
         numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
-        logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
+        logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
         if low > high:
             logger.error(f"Invalid simple wildcard: low={low} > high={high}")
@@ -213,7 +213,7 @@ class Python_to_PDA(Python3ParserVisitor):
         high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
         if ctx.COMMA() is None:
             high = low
-        logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")
+        logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
         if low > high:
             logger.error(f"Invalid wildcard number: low={low} > high={high}")
             return 1, 1
@@ -260,15 +260,15 @@ class Python_to_PDA(Python3ParserVisitor):
 
     def visitTerminal(self, node):
         if isinstance(node, TerminalNode):
-            logger.debug(f"Visiting terminal {node}")
+            logger.trace(f"Visiting terminal {node}")
             node_text = str(node).strip()
             node_transition = NodeTransition(node_text)
         else:
-            logger.debug(f"Visiting {node.__class__.__name__} as terminal")
+            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
             node_text = f"{node.__class__.__name__}/0,0"
             node_transition = NodeTransition(node.__class__.__name__, 0, 0)
 
-        logger.debug(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
+        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
 
         return self._add_up_transition(node, node_transition)
 
@@ -306,7 +306,7 @@ class Python_to_PDA(Python3ParserVisitor):
     def visitContains_wildcard(self, ctx:Python3Parser.Contains_wildcardContext):
         self.__add_body_transition()
 
-        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
+        logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
         prune_tree = TreePruner().visit(ctx)
         return prune_tree.getChild(2).accept(self)
 
@@ -377,7 +377,7 @@ class Python_to_PDA(Python3ParserVisitor):
         subpattern_name = subpattern.name
 
         for transformation in subpattern.transformations:
-            logger.debug(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
+            logger.trace(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
             transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
                                     next_state, '')
             self.pda.add_transition(transition)
@@ -448,7 +448,7 @@ class Python_to_PDA(Python3ParserVisitor):
         list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.debug("Handling empty list")
+            logger.trace("Handling empty list")
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
 
@@ -458,7 +458,7 @@ class Python_to_PDA(Python3ParserVisitor):
             label = NodeTransition('')
 
         if self._is_last_node():
-            logger.debug(f"Node {node} is the last node in the tree, adding transition to the end")
+            logger.trace(f"Node {node} is the last node in the tree, adding transition to the end")
             self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                          self.current_state, '')
             self.pda.add_transition(self_transition)
