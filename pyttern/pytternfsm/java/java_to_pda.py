@@ -332,10 +332,10 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         dummy_state = self.__add_body_transition()
 
         # Explore
-        ret = float('inf')
         blockStatementChild = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext)
-        if blockStatementChild != None:
-            ret = blockStatementChild.accept(self)
+        if blockStatementChild == None:
+            raise Exception("Body of multiple compound wildcard cannot be empty")
+        ret = blockStatementChild.accept(self)
 
         skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
         self.pda.add_transition(skip_transition)
