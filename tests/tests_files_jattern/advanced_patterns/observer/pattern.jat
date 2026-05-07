@@ -1,0 +1,19 @@
+class #name {
+    # #observerList;
+
+    // constructor method
+    #name(#*) {
+        #observerList = new ArrayList<>();
+    }
+
+    void attach(# #observer) {
+        #observerList.add(#observer);
+    }
+
+    void notify(#*) {
+        #{
+            #<#observerList>.update(#*);
+        }
+    }
+    
+}

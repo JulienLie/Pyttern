@@ -189,7 +189,11 @@ RSHIFT_ASSIGN  : '>>=';
 URSHIFT_ASSIGN : '>>>=';
 
 // Rules for wildcards
-WILDCARD : '#';
+fragment HASH: '#';
+
+WILDCARD_SPACE: HASH WS+;
+VAR_WILDCARD: HASH IDENTIFIER;
+WILDCARD : HASH;
 
 // Java 8 tokens
 

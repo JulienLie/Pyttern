@@ -1,0 +1,5 @@
+class A {
+    void main( #(2) ) { // only allow exactly 2 arguments
+
+    }
+}

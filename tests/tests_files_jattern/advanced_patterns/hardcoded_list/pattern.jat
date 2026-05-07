@@ -1,0 +1,6 @@
+// any class & method which defines a variable containing at least 3 elements
+class # {
+    # #(#*) {
+        # #[] = new #[]{ #(3,) };
+    }
+}

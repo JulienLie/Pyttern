@@ -434,6 +434,11 @@ class JavaParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by JavaParser#compound_stmt.
+    def visitCompound_stmt(self, ctx:JavaParser.Compound_stmtContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by JavaParser#catchClause.
     def visitCatchClause(self, ctx:JavaParser.CatchClauseContext):
         return self.visitChildren(ctx)
@@ -639,8 +644,58 @@ class JavaParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by JavaParser#simple_wildcard.
+    def visitSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by JavaParser#var_wildcard.
     def visitVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#list_wildcard.
+    def visitList_wildcard(self, ctx:JavaParser.List_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#contains_wildcard.
+    def visitContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#simple_compound_wildcard.
+    def visitSimple_compound_wildcard(self, ctx:JavaParser.Simple_compound_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#multiple_compound_wildcard.
+    def visitMultiple_compound_wildcard(self, ctx:JavaParser.Multiple_compound_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#number_wildcard.
+    def visitNumber_wildcard(self, ctx:JavaParser.Number_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#wildcard_number.
+    def visitWildcard_number(self, ctx:JavaParser.Wildcard_numberContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#stmt_wildcard.
+    def visitStmt_wildcard(self, ctx:JavaParser.Stmt_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#expr_wildcard.
+    def visitExpr_wildcard(self, ctx:JavaParser.Expr_wildcardContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by JavaParser#compound_wildcard.
+    def visitCompound_wildcard(self, ctx:JavaParser.Compound_wildcardContext):
         return self.visitChildren(ctx)
 
 

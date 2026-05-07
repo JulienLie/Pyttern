@@ -1,0 +1,14 @@
+// any class name, method name, method type and method arguments
+class # {
+    # #(#*) {
+
+        // at least one level of indentation
+        #{
+            #*{
+
+                // return statement inside
+                return #;
+            }
+        }
+    }
+}

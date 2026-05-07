@@ -773,6 +773,15 @@ class JavaParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by JavaParser#compound_stmt.
+    def enterCompound_stmt(self, ctx:JavaParser.Compound_stmtContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#compound_stmt.
+    def exitCompound_stmt(self, ctx:JavaParser.Compound_stmtContext):
+        pass
+
+
     # Enter a parse tree produced by JavaParser#catchClause.
     def enterCatchClause(self, ctx:JavaParser.CatchClauseContext):
         pass
@@ -1142,12 +1151,102 @@ class JavaParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by JavaParser#simple_wildcard.
+    def enterSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#simple_wildcard.
+    def exitSimple_wildcard(self, ctx:JavaParser.Simple_wildcardContext):
+        pass
+
+
     # Enter a parse tree produced by JavaParser#var_wildcard.
     def enterVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
         pass
 
     # Exit a parse tree produced by JavaParser#var_wildcard.
     def exitVar_wildcard(self, ctx:JavaParser.Var_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#list_wildcard.
+    def enterList_wildcard(self, ctx:JavaParser.List_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#list_wildcard.
+    def exitList_wildcard(self, ctx:JavaParser.List_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#contains_wildcard.
+    def enterContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#contains_wildcard.
+    def exitContains_wildcard(self, ctx:JavaParser.Contains_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#simple_compound_wildcard.
+    def enterSimple_compound_wildcard(self, ctx:JavaParser.Simple_compound_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#simple_compound_wildcard.
+    def exitSimple_compound_wildcard(self, ctx:JavaParser.Simple_compound_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#multiple_compound_wildcard.
+    def enterMultiple_compound_wildcard(self, ctx:JavaParser.Multiple_compound_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#multiple_compound_wildcard.
+    def exitMultiple_compound_wildcard(self, ctx:JavaParser.Multiple_compound_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#number_wildcard.
+    def enterNumber_wildcard(self, ctx:JavaParser.Number_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#number_wildcard.
+    def exitNumber_wildcard(self, ctx:JavaParser.Number_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#wildcard_number.
+    def enterWildcard_number(self, ctx:JavaParser.Wildcard_numberContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#wildcard_number.
+    def exitWildcard_number(self, ctx:JavaParser.Wildcard_numberContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#stmt_wildcard.
+    def enterStmt_wildcard(self, ctx:JavaParser.Stmt_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#stmt_wildcard.
+    def exitStmt_wildcard(self, ctx:JavaParser.Stmt_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#expr_wildcard.
+    def enterExpr_wildcard(self, ctx:JavaParser.Expr_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#expr_wildcard.
+    def exitExpr_wildcard(self, ctx:JavaParser.Expr_wildcardContext):
+        pass
+
+
+    # Enter a parse tree produced by JavaParser#compound_wildcard.
+    def enterCompound_wildcard(self, ctx:JavaParser.Compound_wildcardContext):
+        pass
+
+    # Exit a parse tree produced by JavaParser#compound_wildcard.
+    def exitCompound_wildcard(self, ctx:JavaParser.Compound_wildcardContext):
         pass
 
 
