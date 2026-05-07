@@ -19,16 +19,19 @@ class Java_to_PDA(JavaParserVisitor):
         self.__var_names = {}
         self.__last_node = None
         self.__is_last_branch = True
+        self.__dict_pda = {}
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
+        self.__dict_pda = {}
         self.__var_names = {}
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
-        return self.pda
+        self.__dict_pda["__main__"] = self.pda
+        return self.__dict_pda
 
     def visitChildren(self, node):
         logger.debug(f"Visiting {node}")
