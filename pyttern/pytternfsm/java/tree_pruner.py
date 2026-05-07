@@ -17,6 +17,7 @@ class TreePruner(JavaParserVisitor):
         return node
 
     def prune_single_child(self, node):
+        # As long as there is only one child, prune everything except the terminal node (last node) or important nodes (identifier & expression wildcard)
         new_child = self.visitChildren(node)
         while len(new_child.children) == 1:
             new_child = new_child.getChild(0)
@@ -29,12 +30,14 @@ class TreePruner(JavaParserVisitor):
         return new_child
     
     def visitIdentifier(self, ctx:JavaParser.IdentifierContext):
+        # Remove the intermediate "identifier" node iff its child is a wildcard
         # NB: the getChildCount will always be 1 for an identifier but keeping it for consistency
         if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
     
     def visitTypeType(self, ctx:JavaParser.TypeTypeContext):
+        # Remove the intermediate "typeType" node iff its child is a wildcard
         if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
@@ -49,6 +52,7 @@ class TreePruner(JavaParserVisitor):
         return ctx
 
     def visitTerminal(self, node):
+        # Remove syntactic nodes which carry no information (only useful in the parsing, not in the PDA)
         sym = node.getSymbol()
         if sym.type == Token.EOF:
             sym.text = "<EOF>"

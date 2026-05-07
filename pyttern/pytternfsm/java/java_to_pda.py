@@ -3,14 +3,14 @@ import math
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
-from ...antlr.java import JavaParserVisitor
+from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
 from ...pytternfsm.python.python_to_pda import rightmost_terminal
 
-class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
+class Java_to_PDA(JavaParserVisitor):
     def __init__(self):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
@@ -40,6 +40,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         down, up = self._define_boundaries(node)
 
+        # Handle the double wildcard case
         while len(children) > 1 and (
                 # self.lookahead(children[-1], JavaParser.Double_wildcardContext) or
                 self.lookahead(children[-1], JavaParser.List_wildcardContext)
@@ -47,6 +48,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             children.pop()
             logger.debug("Remove double wildcard")
 
+        # Add self-transition to be able to skip statements
         if node.__class__.__name__ in [
                 "BlockStatementContext",
                 "PackageDeclarationContext",
@@ -68,6 +70,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.pda.add_transition(transition)
         self.current_state = next_state
 
+        # Visit every child
         is_last_branch = self.__is_last_branch
         self.__is_last_branch = False
         old_move_to_B = self.move_to_B
@@ -135,23 +138,19 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return down, up
 
     def visitStatement(self, ctx):
-        # Handle double wildcard as Stmt
         logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
-        """
-        lookahead_double_wildcard = self.lookahead(ctx, JavaParser.Double_wildcardContext)
-        if lookahead_double_wildcard:
-            return self.visitDouble_wildcard(lookahead_double_wildcard)
-        """
-
+        # Handle multiple compound wildcard
         lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
 
+        # Handle simple compound wildcard
         lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.Simple_wildcardContext)
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
         
+        # Handle number wildcard
         lookahead_number_wildcard = self.lookahead(ctx, JavaParser.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
@@ -216,14 +215,18 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._add_up_transition(ctx)
 
     def visitWildcard_number(self, ctx):
+        # Return the low and high limits of the wildcard
         low = int(ctx.DECIMAL_LITERAL(0).getText())
         high = int(ctx.DECIMAL_LITERAL(1).getText()) if ctx.DECIMAL_LITERAL(1) else math.inf
+
         if ctx.COMMA() is None:
             high = low
+        
         logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")
         if low > high:
             logger.error(f"Invalid wildcard number: low={low} > high={high}")
             return 1, 1
+        
         return low, high
 
     def visitSimple_compound_wildcard(self, ctx):
@@ -343,11 +346,10 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.__add_body_transition()
 
         logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        # prune_tree = TreePruner().visit(ctx) # TODO: prune tree
-        prune_tree = ctx
-        return prune_tree.getChild(2).accept(self)
+        return ctx.getChild(2).accept(self)
 
     def __add_body_transition(self, allow_multiple_compound=True):
+        # Push B on the stack
         dummy_state = self.pda.new_state()
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
         self.pda.add_transition(dummy_transition)
@@ -355,6 +357,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
         self.move_to_B.append(self.depth)
 
+        # If we are in multiple compound mode, allow any combination of Right Sibling & Left Child transitions
         if allow_multiple_compound:
             next_state = self.pda.new_state()
             child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
@@ -417,15 +420,18 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         depth = self.move_to_B.pop()
         self.depth = depth
 
+        # Commit to an intermediate state
         match_state = self.pda.new_state()
         match_transition = Transition(self.current_state, '', label, [], match_state, '')
         self.pda.add_transition(match_transition)
         self.current_state = match_state
 
+        # Move up as many times as there I on the stack and consume them
         up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
                                                               self.current_state, '')
         self.pda.add_transition(up_transition)
 
+        # Consume the B from the stack
         next_state = self.pda.new_state()
         next_transition = Transition(self.current_state, 'B', NodeTransition(''), [], next_state, '')
         self.pda.add_transition(next_transition)
