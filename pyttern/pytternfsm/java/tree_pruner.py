@@ -1,10 +1,10 @@
 from antlr4 import TerminalNode, Token
 
-from ...antlr.java import JavaParserVisitor
+from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
 
 
-class TreePruner(JavaParserVisitor.JavaParserVisitor):
+class TreePruner(JavaParserVisitor):
 
     def visitChildren(self, node):
         result = super().visitChildren(node)

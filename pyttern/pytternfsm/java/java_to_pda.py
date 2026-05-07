@@ -7,19 +7,8 @@ from ...antlr.java import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
-from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
-
-
-def rightmost_terminal(root):
-    node = root
-    # Drill down the last child at each level until you hit a terminal
-    while not isinstance(node, TerminalNode) or "wildcard" in node.__class__.__name__:
-        # If you only have getChildren(), materialize once per level
-        children = list(node.getChildren())
-        if not children:
-            return None  # malformed/empty subtree
-        node = children[-1]
-    return node
+from ...simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
+from ...pytternfsm.python.python_to_pda import rightmost_terminal
 
 class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
     def __init__(self):
