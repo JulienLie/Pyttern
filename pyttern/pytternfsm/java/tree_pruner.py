@@ -1,6 +1,7 @@
 from antlr4 import TerminalNode, Token
 
-from ...antlr.java import JavaParserVisitor, JavaParser
+from ...antlr.java import JavaParserVisitor
+from ...antlr.java.JavaParser import JavaParser
 
 
 class TreePruner(JavaParserVisitor.JavaParserVisitor):
@@ -21,27 +22,27 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
             new_child = new_child.getChild(0)
             if isinstance(new_child, TerminalNode):
                 return new_child
-            if isinstance(new_child, JavaParser.JavaParser.IdentifierContext):
+            if isinstance(new_child, JavaParser.IdentifierContext):
                 return new_child
-            if isinstance(new_child, JavaParser.JavaParser.Expr_wildcardContext):
+            if isinstance(new_child, JavaParser.Expr_wildcardContext):
                 return new_child
         return new_child
     
-    def visitIdentifier(self, ctx:JavaParser.JavaParser.IdentifierContext):
+    def visitIdentifier(self, ctx:JavaParser.IdentifierContext):
         # NB: the getChildCount will always be 1 for an identifier but keeping it for consistency
-        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
     
-    def visitTypeType(self, ctx:JavaParser.JavaParser.TypeTypeContext):
-        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+    def visitTypeType(self, ctx:JavaParser.TypeTypeContext):
+        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
 
-    def visitExpression(self, ctx:JavaParser.JavaParser.ExpressionContext):
+    def visitExpression(self, ctx:JavaParser.ExpressionContext):
         return self.prune_single_child(ctx)
 
-    def visitPrimary(self, ctx:JavaParser.JavaParser.PrimaryContext):
+    def visitPrimary(self, ctx:JavaParser.PrimaryContext):
         return self.prune_single_child(ctx)
 
     def visitWildcard_number(self, ctx):

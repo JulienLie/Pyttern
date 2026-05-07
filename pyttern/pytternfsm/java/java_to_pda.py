@@ -3,7 +3,8 @@ import math
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
-from ...antlr.java import JavaParserVisitor, JavaParser
+from ...antlr.java import JavaParserVisitor
+from ...antlr.java.JavaParser import JavaParser
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -51,8 +52,8 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         down, up = self._define_boundaries(node)
 
         while len(children) > 1 and (
-                # self.lookahead(children[-1], JavaParser.JavaParser.Double_wildcardContext) or
-                self.lookahead(children[-1], JavaParser.JavaParser.List_wildcardContext)
+                # self.lookahead(children[-1], JavaParser.Double_wildcardContext) or
+                self.lookahead(children[-1], JavaParser.List_wildcardContext)
         ):
             children.pop()
             logger.debug("Remove double wildcard")
@@ -103,25 +104,25 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
 
-        if isinstance(ctx, (JavaParser.JavaParser.CompilationUnitContext, JavaParser.JavaParser.ClassBodyContext, JavaParser.JavaParser.BlockContext)):
+        if isinstance(ctx, (JavaParser.CompilationUnitContext, JavaParser.ClassBodyContext, JavaParser.BlockContext)):
             logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 0 and inf")
             down = 0
             up = math.inf
-        elif isinstance(ctx, (JavaParser.JavaParser.BlockStatementContext)):
+        elif isinstance(ctx, (JavaParser.BlockStatementContext)):
             # Special case for the simple wildcard: a block statement can have either 1 child (most cases) or 2 children (local variable definition)
             logger.debug(f"Context {ctx.__class__.__name__} is a block statement, setting boundaries to 1 and 2")
             down = 1
             up = 2
-        elif isinstance(ctx, JavaParser.JavaParser.VariableDeclaratorIdContext) and ctx.getChildCount() == 1 \
-            and (isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext)):
+        elif isinstance(ctx, JavaParser.VariableDeclaratorIdContext) and ctx.getChildCount() == 1 \
+            and (isinstance(ctx.getChild(0), JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.Var_wildcardContext)):
             # Special case for the variable declarator: it can have either 1 child (most cases) or 2n+1 children (if it is a list)
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (JavaParser.JavaParser.List_wildcardContext,
-                                          JavaParser.JavaParser.Simple_compound_wildcardContext,
-                                          JavaParser.JavaParser.Contains_wildcardContext)) is not None:
+                if self.lookahead(child, (JavaParser.List_wildcardContext,
+                                          JavaParser.Simple_compound_wildcardContext,
+                                          JavaParser.Contains_wildcardContext)) is not None:
                     logger.debug(f"Child {child.__class__.__name__} is a list or compound wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
@@ -130,9 +131,9 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
                 everything = lambda _: True
                 predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
 
-                simple_node = self.lookahead(child, JavaParser.JavaParser.Number_wildcardContext, predicate)
+                simple_node = self.lookahead(child, JavaParser.Number_wildcardContext, predicate)
                 if simple_node is not None:
-                    numbers_node = simple_node.getChild(0, JavaParser.JavaParser.Wildcard_numberContext)
+                    numbers_node = simple_node.getChild(0, JavaParser.Wildcard_numberContext)
                     if numbers_node is not None:
                         logger.debug(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
@@ -154,15 +155,15 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             return self.visitDouble_wildcard(lookahead_double_wildcard)
         """
 
-        lookahead_multiple_body = self.lookahead(ctx, JavaParser.JavaParser.Multiple_compound_wildcardContext)
+        lookahead_multiple_body = self.lookahead(ctx, JavaParser.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
 
-        lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.JavaParser.Simple_wildcardContext)
+        lookahead_simple_wildcard = self.lookahead(ctx, JavaParser.Simple_wildcardContext)
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
         
-        lookahead_number_wildcard = self.lookahead(ctx, JavaParser.JavaParser.Number_wildcardContext)
+        lookahead_number_wildcard = self.lookahead(ctx, JavaParser.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
 
@@ -184,7 +185,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         return self._add_up_transition(ctx)
 
     def visitNumber_wildcard(self, ctx):
-        numbers_node = ctx.getChild(0, JavaParser.JavaParser.Wildcard_numberContext)
+        numbers_node = ctx.getChild(0, JavaParser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
@@ -290,7 +291,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         self.current_state = inside_wildcard_state
 
         # Explore body
-        blockStatementChild = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext)
+        blockStatementChild = ctx.getChild(0, JavaParser.BlockContext).getChild(0, JavaParser.BlockStatementContext)
         if blockStatementChild != None:
             return blockStatementChild.accept(self)
 
@@ -339,7 +340,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
         dummy_state = self.__add_body_transition()
 
         # Explore
-        blockStatementChild = ctx.getChild(0, JavaParser.JavaParser.BlockContext).getChild(0, JavaParser.JavaParser.BlockStatementContext)
+        blockStatementChild = ctx.getChild(0, JavaParser.BlockContext).getChild(0, JavaParser.BlockStatementContext)
         if blockStatementChild == None:
             raise Exception("Body of multiple compound wildcard cannot be empty")
         ret = blockStatementChild.accept(self)
@@ -382,7 +383,7 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
 
 
     def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, JavaParser.JavaParser.List_wildcardContext)
+        list_wildcard = self.lookahead(ctx, JavaParser.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
             logger.debug("Handling empty list")
