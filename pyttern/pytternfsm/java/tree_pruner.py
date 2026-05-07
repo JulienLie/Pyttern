@@ -1,6 +1,5 @@
 from antlr4 import TerminalNode, Token
 
-from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ...antlr.java import JavaParserVisitor, JavaParser
 
 
@@ -29,7 +28,13 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
         return new_child
     
     def visitIdentifier(self, ctx:JavaParser.JavaParser.IdentifierContext):
-        if isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+        # NB: the getChildCount will always be 1 for an identifier but keeping it for consistency
+        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
+            return ctx.getChild(0)
+        return ctx
+    
+    def visitTypeType(self, ctx:JavaParser.JavaParser.TypeTypeContext):
+        if ctx.getChildCount() == 1 and isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext):
             return ctx.getChild(0)
         return ctx
 
@@ -39,7 +44,7 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
     def visitPrimary(self, ctx:JavaParser.JavaParser.PrimaryContext):
         return self.prune_single_child(ctx)
 
-    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
+    def visitWildcard_number(self, ctx):
         return ctx
 
     def visitTerminal(self, node):
@@ -55,10 +60,10 @@ class TreePruner(JavaParserVisitor.JavaParserVisitor):
     def visitErrorNode(self, node):
         return node
 
-    def defaultResult(self): # pas utilisé?
+    def defaultResult(self):
         return []
 
-    def aggregateResult(self, aggregate, nextResult): # pas utilisé?
+    def aggregateResult(self, aggregate, nextResult):
         if nextResult is None:
             return aggregate
         return aggregate + [nextResult]

@@ -60,6 +60,7 @@ typeDeclaration
         | annotationTypeDeclaration
         | recordDeclaration
     )
+    | multiple_compound_wildcard
     ;
 
 modifier
@@ -252,9 +253,9 @@ variableDeclarator
     ;
 
 variableDeclaratorId
-    : identifier ('[' ']')*
-    | simple_wildcard
+    : simple_wildcard
     | var_wildcard
+    | identifier ('[' ']')*
     ;
 
 variableInitializer
@@ -780,9 +781,9 @@ typeList
     ;
 
 typeType
-    : annotation* (classOrInterfaceType | primitiveType) (annotation* '[' ']')*
-    | simple_wildcard
+    : simple_wildcard
     | var_wildcard
+    | annotation* (classOrInterfaceType | primitiveType | simple_wildcard | var_wildcard) (annotation* '[' ']')*
     ;
 
 primitiveType

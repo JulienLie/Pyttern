@@ -112,6 +112,11 @@ class Java_to_PDA(JavaParserVisitor.JavaParserVisitor):
             logger.debug(f"Context {ctx.__class__.__name__} is a block statement, setting boundaries to 1 and 2")
             down = 1
             up = 2
+        elif isinstance(ctx, JavaParser.JavaParser.VariableDeclaratorIdContext) and ctx.getChildCount() == 1 \
+            and (isinstance(ctx.getChild(0), JavaParser.JavaParser.Simple_wildcardContext) or isinstance(ctx.getChild(0), JavaParser.JavaParser.Var_wildcardContext)):
+            # Special case for the variable declarator: it can have either 1 child (most cases) or 2n+1 children (if it is a list)
+            down = 1
+            up = math.inf
         else:
             for child in ctx.children:
                 if self.lookahead(child, (JavaParser.JavaParser.List_wildcardContext,

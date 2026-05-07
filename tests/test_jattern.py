@@ -31,7 +31,7 @@ def discover_dir(directory):
                 elif file.startswith("ko"):
                     yield (pattern_path, os.path.join(root, file), False)
                 else:
-                    raise f"File does not respect format (should be a pattern.jat or start with ko or ok) : {file}"
+                    raise Exception(f"File does not respect format (should be a pattern.jat or start with ko or ok) : {file}")
 
 class TestJattern():
     @pytest.mark.parametrize("test_data", discover_dir(get_test_file("")))
