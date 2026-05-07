@@ -1,0 +1,10 @@
+$|Loop(?i, ?n)
+
+$# for_loop
+for ?i in range(?n):
+    ?
+
+$# while_loop
+while ?$Comp(?i, ?n):
+    ?
+    ?$Incr(?i, 1)

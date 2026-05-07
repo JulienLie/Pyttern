@@ -8,10 +8,11 @@ from flask import Flask, request, session, flash, get_flashed_messages, send_fro
 from flask_session import Session
 from loguru import logger
 
-from ...PytternListener import PytternListener
+from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
-from ...macro.Macro import loaded_macros
-from ...macro.macro_parser import parse_macro_from_string
+from ...subpattern.SubPattern import loaded_subpatterns
+from ...subpattern.subpattern_parser import parse_subpattern_from_string
+from ...main import PytternMatcher
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
 from ...simulator.pda.PDA import PDAEncoder
@@ -105,7 +106,7 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
 
     return Matcher(pyttern_fsm, code_tree)
 
-class JsonListener(PytternListener):
+class JsonListener(Pyttern_listener):
     def __init__(self):
         self.data = []
 
@@ -132,7 +133,7 @@ class JsonListener(PytternListener):
             "code_pos": pos
         })
 
-    def on_match(self, _):
+    def on_match(self, _, __):
         self.data[-1]["match"] = True
 
 
@@ -142,7 +143,6 @@ def try_processors(code):
         try:
             processor = get_processor(lang)
             processor.generate_tree_from_code(code)
-            session["pattern_language"] = lang
             return json.dumps({"status": "ok"})
         except Exception as e:
             logger.error(f"Error with {lang}: {e}")
@@ -202,9 +202,7 @@ def validate():
         return try_processors(pattern_code)
     logger.info(f"Current lang: {pattern_lang}")
     try:
-        lang = determine_language(pattern_lang)
-        session['pattern_language'] = lang
-        current_language_processor = get_processor(lang)
+        current_language_processor = get_processor(pattern_lang)
         current_language_processor.generate_tree_from_code(pattern_code)
     except PytternSyntaxException as e:
         return json.dumps({"status": "error",
@@ -441,7 +439,7 @@ def batch_match():
                 example:
                     file1.py: "def foo(): pass"
                     file2.py: "def bar(): pass"
-              patterns:
+              compoundPattern:
                 type: object
                 description: The list of pattern files to match
                 $ref: '#/components/schemas/PatternTree'
@@ -450,7 +448,7 @@ def batch_match():
                 description: The language of the code/pattern (python/java). If empty, try to determine the language.
             required:
                 - codes
-                - pattern
+                - compoundPattern
     responses:
       '200':
         description: Match result
@@ -468,10 +466,59 @@ def batch_match():
     logger.info("Asking to start match")
     data = request.json
     codes = data["codes"]
-    patterns = data["patterns"]
+    patterns = data["compoundPattern"]
+    if "lang" in data and data["lang"]:
+        lang = data["lang"]
+    else:
+        if not codes:
+            return json.dumps({})
+        lang = determine_language_from_code(next(iter(codes.values())))
+    logger.debug(data)
 
-    # TODO: Change main file to handle compound patterns with json rather than files
-    return Response("Not implemented yet", status=501)
+    processor = get_processor(lang)
+    logger.debug(processor)
+    matcher = PytternMatcher(match_details=True)
+    pattern_tree = matcher.parse_json_pattern(patterns, lang)
+    logger.debug(pattern_tree)
+
+    matches = {}
+    logger.debug(f"Pattern tree: {pattern_tree}")
+    logger.debug(f"Codes Data {codes}")
+
+    for item in codes:
+        filename = item["filename"]
+        code = item["code"]
+        logger.debug(f"Processing {filename}")
+        logger.debug(f"Debug {code}")
+
+        code_tree = processor.generate_tree_from_code(code)
+        logger.debug(f"Code Tree {code_tree}")
+
+        name = pattern_tree['name']
+        pattern_tree['name'] = "and"
+        matches[filename] = matcher.match_tree(pattern_tree, code_tree)
+        pattern_tree['name'] = name
+
+    results = []
+    for filename in matches:
+        match = matches[filename]
+        patterns = dict(__get_pyt_files(match))
+        result = {
+            'name': filename,
+            'match': match['result'],
+            'patternsMatchResults': patterns
+        }
+        results.append(result)            
+    return json.dumps(results)
+
+def __get_pyt_files(data):
+    name = data["name"]
+    if name.endswith(".pyt"):
+        yield name, data['result']
+    else:
+        children = data['children']
+        for child in children:
+            yield from __get_pyt_files(child)
 
 @app.route("/api/batch_validate", methods=['POST'])
 def batch_validate():
@@ -486,19 +533,31 @@ def batch_validate():
             type: object
             properties:
               codes:
-                type: object
-                additionalProperties:
-                  type: string
+                type: array
+                items:
+                  type: object
+                  properties:
+                    filename:
+                      type: string
+                      description: The filename
+                    code:
+                      type: string
+                      description: The code content
+                  required:
+                    - filename
+                    - code
                 example:
-                  file1.py: "def foo(): pass"
-                  file2.py: "def ?(): ?"
+                  - filename: "file1.py"
+                    code: "def foo(): pass"
+                  - filename: "file2.py"
+                    code: "def ?(): ?"
                 description: The list of code/pattern files to validate
-                lang:
-                  type: string
-                  description: The language of the code/pattern (python/java). If empty, try to determine the language.
-                required:
-                  - codes
-                  - lang
+              lang:
+                type: string
+                description: The language of the code/pattern (python/java). If empty, try to determine the language.
+            required:
+              - codes
+              - lang
     responses:
       '200':
         description: Validation result
@@ -506,37 +565,73 @@ def batch_validate():
           application/json:
             schema:
               type: object
+              description: Object with file IDs as keys and validation results as values
               additionalProperties:
                 type: object
                 properties:
+                  filename:
+                    type: string
+                    description: The filename of the validated code
                   status:
                     type: string
                     enum: [ok, error]
+                    description: Validation status
                   message:
-                    type: string
-                    description: Error message if status is error
+                    type: object
+                    description: Error details if status is error, null otherwise
+                    nullable: true
+                    properties:
+                      line:
+                        type: integer
+                        description: Line number where the error occurred
+                      column:
+                        type: integer
+                        description: Column number where the error occurred
+                      symbol:
+                        type: string
+                        description: The symbol that caused the error
+                      msg:
+                        type: string
+                        description: Error message
+              example:
+                file1.py:
+                  status: "ok"
+                  message: null
+                file2.py:
+                  status: "error"
+                  message:
+                    line: 1
+                    column: 5
+                    symbol: "?"
+                    msg: "syntax error"
     """
+    logger.debug(request.json)
     pattern_codes = request.json["codes"]
     pattern_lang = request.json['lang']
+
     if pattern_lang == "":
-        return try_processors(pattern_codes[0].code)
+        return try_processors(pattern_codes[0]["code"])
     logger.info(f"Current lang: {pattern_lang}")
     res = {}
     try:
-        lang = determine_language(pattern_lang)
+        lang = pattern_lang
         current_language_processor = get_processor(lang)
-        for pattern_code in pattern_codes:
+        for item in pattern_codes:
+            filename = item["filename"]
+
             try:
-                current_language_processor.generate_tree_from_code(pattern_codes[pattern_code])
-                res[pattern_code] = {
-                    "status": "ok",
-                    "message": None
+                current_language_processor.generate_tree_from_code(item["code"])
+                res[filename] = {
+                  "status": "ok",
+                  "message": None
                 }
             except PytternSyntaxException as e:
-                res[pattern_code] = {
-                    "status": "error",
-                    "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
+                res[filename] = {
+                  "status": "error",
+                  "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
                 }
+    except ValueError as e:
+        return Response(f"Error: {e}", status=400)
     except Exception as e:
         return Response(f"Error: {e}", status=500)
     return json.dumps(res)
@@ -591,6 +686,8 @@ def step():
     if current_data["match"]:
         flash("New match found", "message")
 
+    logger.debug(json.dumps(current_data["variables"]))
+
     return json.dumps({
         "status": "ok",
         "state": state_info,
@@ -598,7 +695,7 @@ def step():
         "previous_matchings": previous_matchings,
         "messages": get_flashed_messages(),
         "match": current_data["match"],
-        "variables": current_data["variables"],
+        "variables": json.dumps(current_data["variables"]),
         "current_stack": current_stack,
         "previous_stack": previous_stack,
         "code_pos": code_pos
@@ -647,23 +744,25 @@ def parse_macro():
     macro_code = request.json["code"]
     lang = Languages.PYTHON
     try:
-        macros = parse_macro_from_string(macro_code, lang)
+        macros = parse_subpattern_from_string(macro_code, lang)
         logger.debug(f"Parsed macros: {macros}")
     except Exception as e:
         logger.error(f"Error parsing macro: {e}")
         return json.dumps({"status": "error", "message": str(e)})
-    macro = macros[0] if macros else None
-    if macro is None:
-        return json.dumps({"status": "error", "message": "No macro found"})
-    macro_json = {
-        "name": macro.name,
-        "code": macro_code,
-        "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-            pda in macro.transformations.items()}
-    }
-    logger.debug(f"Macro JSON: {macro_json}")
-    return json.dumps({"status": "ok", "macro": macro_json})
+    if len(macros) < 1:
+      return json.dumps({"status": "error", "message": "No macro found"})
 
+    macro_names = [macro.name for macro in macros]
+    return json.dumps({"status": "ok", "names": macro_names})
+
+@app.route("/api/macro", methods=['DELETE'])
+def remove_macro():
+    macro_name = request.json["name"]
+    logger.debug(f"Removing macro {macro_name}")
+    if loaded_subpatterns[macro_name] is None:
+        return json.dumps({"status": "error", "message": f"No sub pattern called {macro_name}"})
+    del loaded_subpatterns[macro_name]
+    return json.dumps({"status": "ok"})
 
 @app.route("/api/macro", methods=['GET'])
 def loaded_macro():
@@ -674,17 +773,9 @@ def loaded_macro():
         '200':
             description: Loaded macros
     """
-    macros = []
-    for macro in loaded_macros.values():
-        macro_json = {
-            "name": macro.name,
-            "code": macro.code,
-            "transformations": {name: json.loads(json.dumps(pda, cls=PDAEncoder)) for name,
-                pda in macro.transformations.items()}
-        }
-        macros.append(macro_json)
+    macro_names = [macro for macro in loaded_subpatterns]
 
     return json.dumps({
         "status": "ok",
-        "macros": macros
+        "macros": macro_names
     })

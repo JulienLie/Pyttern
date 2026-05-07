@@ -10,7 +10,7 @@ class Python3ErrorListener(ErrorListener):
     Python3ErrorListener class is responsible for handling syntax errors in the input pyttern file.
     """
     def __init__(self, input):
-       self.input = input
+        self.input = input
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         """

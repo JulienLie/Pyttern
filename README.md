@@ -23,44 +23,44 @@ We extended the python syntax to create pattern files. Our new syntax includes t
 | Wildcard | Description                                                               |
 |----------|---------------------------------------------------------------------------|
 | ?        | Match 1 element                                                           |
+| ?{n, m}  | Match between ``n`` and ``m`` elements                                    |
 | ?*       | Match 0 or more elements                                                  |
 | ?name    | Match 1 element and bind it to ``name``                                   |
 | ?:       | Match 1 element with a body                                               |
 | ?:*      | Match the body of the wildcard in any indentation                         |
 | ?<...>   | Match if the inside of the wildcard is contained inside the matching node |
 
-In addition to these wildcards, we added some optional elements to allow more options:
-
-| Option       | Description                            |
-|--------------|----------------------------------------|
-| ?[Type, ...] | Match 1 element of type ``Type``       |
-| ?{n, m}      | Match between ``n`` and ``m`` elements |
-
 
 
 ## Usage
 
 ```python
-
-import Matcher
+from pyttern import PytternMatcher
 
 code = "code_file.py"
 pattern = "pattern_file.py"
-match = Matcher.match_files(pattern, code, strict_match=False, match_details=False)
+
+# Instantiate the matcher with desired options
+matcher = PytternMatcher(match_details=False)
+
+# Perform the match
+match = matcher.match_files(pattern, code, lang="python")
+
 if match:
     print("We found a match")
 else:
     print("No match")
 ```
-The `match_files` function takes 4 arguments:
+The `PytternMatcher` class is the main entry point for matching. The `match_files` method takes 3 arguments:
 1. `pattern_file: string` The path to the file describing the pattern
 2. `code_file: string` The path to the python code file
-3. `strict_match: boolean` (optional) When strict_match is set to True, a strict match is performed. 
-A strict match requires an exact match between the code file and the pattern file, including code structure and syntax. 
-If strict_match is set to False, a "soft" match is performed, which allows for flexibility in code sections using wildcards.
-4. `match_details: boolean` (optional) If match_details is set to True, the function returns a tuple (result, details), 
-where result is a boolean value indicating whether the code matches the pattern. 
-If result is True, details contains the match details. If result is False, details contains the error that prevented the match.
+3. `lang: string` The language of the code file (e.g., "python" or "java")
+
+The `PytternMatcher` constructor takes optional arguments:
+1. `match_details: boolean` (optional) If `match_details` is set to `True`, the `match_files` method returns a tuple `(result, details)`,
+where `result` is a boolean value indicating whether the code matches the pattern.
+If `result` is `True`, `details` contains the match details. If `result` is `False`, `details` may contain information about the mismatch.
+2. `stop_at_first: boolean` (optional) If `stop_at_first` is `True`, the matching process will stop as soon as the first match is found.
 
 ## Examples
 ### Wildcard: ``?``
@@ -79,6 +79,22 @@ def foo():
     x = 0
     return "bar"
 ```
+
+### Wildcard: ``?{n, m}``
+The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
+
+#### Pyttern
+```python
+def foo():
+    lst = [?{3, 5}]
+```
+
+#### Code
+```python
+def foo():
+    lst = [1, 2, 3, 4]
+```
+
 ### Wildcard: ``?*``
 The `?*` wildcard matches zero or more elements in the code. For example, the pattern `?*` will match any sequence of elements.
 
@@ -206,112 +222,6 @@ def sum(lst):
     return acc
 ```
 
-## Strict match / Soft match
-### Main difference
-In a soft match, there is flexibility in code structure and the possibility of including extra code, 
-as long as the main matching criteria are met. In contrast, in a strict match, precise adherence to the defined 
-code structure and syntax is necessary, and there is limited to no allowance for variations or 
-additional code outside the specified structure.
-
-### The syntax `?:[]`
-The wildcard `?![]` is a notation that allows for a combination of strict and soft matching in certain parts of a code pattern. It is useful when you want to perform a soft match but have a strict match requirement within a specific section of code.
-
-Let's consider an example to illustrate this. Suppose we have the following pattern:
-
-```python
-def foo(bar):
-    ?var = 0
-    for ? in range(?*):
-        ?![
-        if ?:
-           ?var += 1 
-        ]
-```
-In this pattern, the wildcard ? represents a placeholder for any valid Python identifier. The ?var = 0 statement assigns the value 0 to a variable, which we'll refer to as x. The for ? in range(?*) loop iterates over a range of values, which we'll refer to as y. Finally, ?![ ... ] represents a strict match requirement that enforces certain code within the if statement.
-
-Now, let's say we have the following code snippet:
-
-```python
-def foo(bar):
-    x = 0
-    y = len(bar)
-    for i in range(y):
-        z = bar[i]
-        if z:
-            x += 1
-    return x
-```
-We want to match this code snippet with the given pattern. Let's go through each line and see how the wildcard ?![] allows for matching.
-
-- In the pattern, `?var = 0` matches the code `x = 0` because the wildcard `?var` represents the variable named `x`.
-- The loop statement `for ? in range(?*)` in the pattern matches the code `for i in range(y)`. 
-- Here, `?` corresponds to the loop variable `i`, and `?*` corresponds to the length of the bar list, which is stored in `y`.
-- The strict match requirement `?![ ... ]` checks the code within the if statement. 
-- In the pattern, `?` represents the condition `z`, and `?var += 1` corresponds to `x += 1` within the if block.
-
-As a result, the code snippet matches the pattern because all the placeholders and the strict match requirements are satisfied. 
-However, if we have additional code within the if block, such as a print statement like `print("true")`, 
-the pattern won't match because the strict match requirement `?![ ... ]` doesn't accommodate that extra code.
-
-In summary, the wildcard `?![]` allows for a combination of soft and strict matching. 
-It provides flexibility by allowing soft matches for variables and loop structures while enforcing strict matches for 
-specific code sections. This helps in creating adaptable code patterns that can match similar code snippets with some variations.
-
-# Flexibility
-To add some flexibility to our pattern we implemented different features.
-
-## Wildcards Options
-We added some options to put on the wildcards:
-1. `?[Type1, Type2, ...]` allows to specify the type of the element to match.
-2. `?{n, m}` allows to specify the number of elements to match. It can be used with or without the type option.
-This option can be used in five different ways:
-    1. `?{n, m}`: Match between `n` and `m` elements
-    2. `?{n, }`: Match at least `n` elements
-    3. `?{, m}`: Match at most `m` elements
-    4. `?{n}`: Match exactly `n` elements
-[//]: # (5. `?{0}`: Create a `not` wildcard. For example: `?:{0}` will ensure that the current element does not have a body.)
-
-### Wildcard Option: ``?[Type, ...]``
-The `?[Type, ...]` option allows you to specify the type of the element to match. For example, the pattern `?[For]` will match any integer value.
-
-#### Pyttern
-```python
-def foo():
-    ?[For]:
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    for i in range(10):
-        x = 0
-    return x
-```
-
-### Wildcard Option: ``?{n, m}``
-The `?{n, m}` option allows you to specify the number of elements to match. For example, the pattern `?{1, 2}` will match between 1 and 2 elements.
-
-#### Pyttern
-```python
-def foo():
-    ?:{3} # I want to match exactly 3 level of indentation
-        x = 0
-    return x
-```
-
-#### Code
-```python
-def foo():
-    if True:
-        if True:
-            if True:
-                x = 0
-    return x
-```
-
-
 ## File structure
 To implement a system that allows to create logic with different patterns, we implemented a specific file structure.
 The file structure is composed as follows:
@@ -330,6 +240,39 @@ The `or` folder contains patterns that can match.
 The `not` folder contains patterns that must not match.
 This allows the creation of more complex patterns with different files.
 
+
+## Sub-patterns
+The sub-pattern paradigm allows you to define complex patterns in a single file by breaking them down into named blocks. This is more powerful because it allows to use logic operators (AND, OR). Compared to the compound pattern paradigm, the sub-pattern paradigm allows to share variables across different blocks, which is not possible in the compound pattern paradigm.
+
+### The *OR* operator
+To define an *OR* operator in a sub-pattern, you can use the `$|` operator. This will mean that the block can be satisfied by either of the two blocks defined after the `$|` operator. 
+
+```python
+$|Incr(?x)
+
+$# augAssign
+?x += 1
+
+$# add_v
+?x = ?x + 1
+
+$# add_x
+?x = 1 + ?x
+```
+
+### The *AND* operator
+To define an *AND* operator in a sub-pattern, you can use the `$&` operator. This will mean that the block must be satisfied by all of the blocks defined after the `$&` operator. 
+
+```python
+$&Assign(?var1, ?var2)
+
+$# assign_var_1
+?var1 = ?
+
+$# assign_var_2
+?var2 = ?
+```
+
 ## Visualization
 To visualize the matching algorithm, we implemented a web visualization tool. If you installed Pyttern, you can run it
 using the following command:
@@ -338,3 +281,6 @@ pytternweb
 ```
 You can then import your pyttern on the left part of the site and your code on the right side. You can control the
 matching algorithm using the buttons on the bottom of the site.
+
+## More examples
+You can find more examples of patterns using all the features of Pyttern in the `tests` folder of the repository.

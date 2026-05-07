@@ -1,0 +1,7 @@
+$&Assign(?var1, ?var2)
+
+$# assign_var_1
+?var1 = ?
+
+$# assign_var_2
+?var2 = ?

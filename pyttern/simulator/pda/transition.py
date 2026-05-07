@@ -37,17 +37,20 @@ class NamedTransition(TransitionCondition):
 
 @dataclass
 class CallTransition(TransitionCondition):
-    macro_name: str
+    subpattern_name: str
     transformation_name: str
     args: list[str]
 
     def to_json(self):
         return {
             "type": "CallTransition",
-            "macro_name": self.macro_name,
+            "macro_name": self.subpattern_name,
             "transformation_name": self.transformation_name,
             "args": self.args
         }
+    
+    def __str__(self):
+        return f"{self.subpattern_name}:{self.transformation_name}({self.args})"
 
 
 @dataclass(frozen=True)

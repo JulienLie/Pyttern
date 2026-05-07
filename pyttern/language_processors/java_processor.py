@@ -4,7 +4,7 @@ from antlr4 import FileStream, CommonTokenStream, InputStream
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
-from ..PytternListener import ConsolePytternListener
+from ..Pyttern_listener import ConsolePytternListener
 from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
@@ -20,7 +20,7 @@ class JavaProcessor(BaseProcessor):
         return self.generate_tree_from_stream(stream)
 
     def generate_tree_from_stream(self, stream):
-        logger.info("Generating tree")
+        logger.debug("Generating tree")
         lexer = JavaLexer(stream)
         stream = CommonTokenStream(lexer)
         java_parser = JavaParser(stream)

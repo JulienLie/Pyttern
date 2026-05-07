@@ -1,0 +1,46 @@
+{
+    "compoundPattern": {
+        "name": "EarlyReturn",
+        "children": [
+            {
+                "name": "and",
+                "children": [
+                    {
+                        "name": "not",
+                        "children": [
+                            {
+                                "filename": "okreturn.pyt",
+                                "code": "def ?(?*):\n    return ?",
+                                "status": "validated",
+                                "lang": "python",
+                                "isSelected": false,
+                                "isUnderNot": true,
+                                "validationError": null
+                            }
+                        ]
+                    },
+                    {
+                        "filename": "earlyreturn.pyt",
+                        "code": "def ?(?*):\n    ?:\n        return ?",
+                        "status": "validated",
+                        "lang": "python",
+                        "isSelected": false,
+                        "isUnderNot": false,
+                        "validationError": null
+                    }
+                ]
+            }
+        ]
+    },
+    "codes": [
+        {
+            "filename": "match_conditional_return_01.py",
+            "code": "# EarlyReturn MATCH: conditional return (early return pattern)\ndef get(x):\n    if x is None:\n        return 0\n    return x\n"
+        },
+        {
+            "filename": "not_match_elif_return.py",
+            "code": "# EarlyReturn: multiple branches with return - has conditional return (may match)\ndef choose(a, b):\n    if a:\n        return 1\n    elif b:\n        return 2\n    return 3\n"
+        }
+    ],
+    "lang": "python"
+}
