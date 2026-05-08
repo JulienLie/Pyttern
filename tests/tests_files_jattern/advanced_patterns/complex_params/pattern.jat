@@ -1,0 +1,6 @@
+// any class name, method name, method type, method arguments which calls another method with at least 3 elements
+class # {
+    # #(#*) {
+        #(#(3,));
+    }
+}

@@ -1,0 +1,6 @@
+// any class name & method with at least one argument that gets overwritten
+class # {
+    # #(#*, # #arg, #*) {
+        #arg = #;
+    }
+}

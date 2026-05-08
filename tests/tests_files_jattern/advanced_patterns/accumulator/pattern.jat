@@ -1,0 +1,10 @@
+// any class & method that initialise a variable, update in an indent then use it in the return statement
+class # {
+    # #(#*) {
+        # #accumulator = #;
+        #{
+            #accumulator = #< #accumulator >;
+        }
+        return #< #accumulator >;
+    }
+}
