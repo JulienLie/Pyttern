@@ -1,0 +1,5 @@
+class Plushie {
+    public static void main() {
+        int # = 0;
+    }
+}

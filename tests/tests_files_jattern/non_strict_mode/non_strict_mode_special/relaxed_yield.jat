@@ -1,0 +1,15 @@
+class Main {
+    public static void main() {
+        hello_world();
+    }
+
+    public static void hello_world() {
+        int a = switch ("a") {
+            case "b":
+                yield 1;
+            default:
+                yield 2;
+        };
+        System.out.println("Hello, world!");
+    }
+}

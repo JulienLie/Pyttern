@@ -1,0 +1,3 @@
+class A {
+    # #[]; // any type that is a list
+}

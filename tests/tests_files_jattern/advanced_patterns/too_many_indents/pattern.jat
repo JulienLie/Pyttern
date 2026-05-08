@@ -1,0 +1,11 @@
+class # {
+    # #(#*) {
+        #{
+            #{
+                #{
+                    #; // at least one statement within 3 indentation levels
+                }
+            }
+        }
+    }
+}

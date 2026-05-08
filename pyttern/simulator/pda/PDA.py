@@ -1,6 +1,8 @@
 import json
 from dataclasses import dataclass, field
 
+from loguru import logger
+
 from .PDA_alphabets import NavigationAlphabet
 from .transition import Transition, TransitionCondition
 
@@ -51,7 +53,10 @@ class PDA:
         current_state = transition.q
         if current_state not in self.states:
             raise ValueError("State not in the PDA")
-        self.transitions[current_state].append(transition)
+        if transition not in self.transitions[current_state]:
+            self.transitions[current_state].append(transition)
+        else:
+            logger.warning(f"Transition {transition} already exists in state {current_state}")
 
 
     def get_transitions(self, state: int | None = None) -> list[Transition]:

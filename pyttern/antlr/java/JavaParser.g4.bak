@@ -60,6 +60,7 @@ typeDeclaration
         | annotationTypeDeclaration
         | recordDeclaration
     )
+    | multiple_compound_wildcard
     ;
 
 modifier
@@ -89,7 +90,7 @@ variableModifier
     ;
 
 classDeclaration
-    : CLASS (var_wildcard | identifier) typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
+    : CLASS identifier typeParameters? (EXTENDS typeType)? (IMPLEMENTS typeList)? (
         PERMITS typeList
     )? // Java17
     classBody
@@ -252,8 +253,9 @@ variableDeclarator
     ;
 
 variableDeclaratorId
-    : identifier ('[' ']')*
+    : simple_wildcard
     | var_wildcard
+    | identifier ('[' ']')*
     ;
 
 variableInitializer
@@ -262,7 +264,7 @@ variableInitializer
     ;
 
 arrayInitializer
-    : '{' (variableInitializer (',' variableInitializer)* ','?)? '}'
+    : '{' ((list_wildcard | number_wildcard | variableInitializer) (',' (list_wildcard | number_wildcard | variableInitializer))* ','?)? '}'
     ;
 
 classOrInterfaceType
@@ -291,7 +293,7 @@ receiverParameter
     ;
 
 formalParameterList
-    : formalParameter (',' formalParameter)* (',' lastFormalParameter)?
+    : (list_wildcard | number_wildcard | formalParameter) (',' (list_wildcard | number_wildcard | formalParameter))* (',' lastFormalParameter)?
     | lastFormalParameter
     ;
 
@@ -484,6 +486,8 @@ identifier
     | PERMITS
     | RECORD
     | VAR
+    | simple_wildcard
+    | var_wildcard
     ;
 
 typeIdentifier // Identifiers that are not restricted for type declarations
@@ -508,16 +512,8 @@ localTypeDeclaration
     ;
 
 statement
-    : blockLabel = block
+    : compound_stmt
     | ASSERT expression (':' expression)? ';'
-    | IF parExpression statement (ELSE statement)?
-    | FOR '(' forControl ')' statement
-    | WHILE parExpression statement
-    | DO statement WHILE parExpression ';'
-    | TRY block (catchClause+ finallyBlock? | finallyBlock)
-    | TRY resourceSpecification block catchClause* finallyBlock?
-    | SWITCH parExpression '{' switchBlockStatementGroup* switchLabel* '}'
-    | SYNCHRONIZED parExpression block
     | RETURN expression? ';'
     | THROW expression ';'
     | BREAK identifier? ';'
@@ -526,6 +522,20 @@ statement
     | SEMI
     | statementExpression = expression ';'
     | switchExpression ';'? // Java17
+    | stmt_wildcard ';'
+    ;
+
+compound_stmt
+    : compound_wildcard
+    | blockLabel = block
+    | IF parExpression statement (ELSE statement)?
+    | FOR '(' forControl ')' statement
+    | WHILE parExpression statement
+    | DO statement WHILE parExpression ';'
+    | TRY block (catchClause+ finallyBlock? | finallyBlock)
+    | TRY resourceSpecification block catchClause* finallyBlock?
+    | SWITCH parExpression '{' switchBlockStatementGroup* switchLabel* '}'
+    | SYNCHRONIZED parExpression block
     | identifierLabel = identifier ':' statement
     ;
 
@@ -591,17 +601,19 @@ parExpression
     ;
 
 expressionList
-    : expression (',' expression)*
+    : (list_wildcard | number_wildcard | expression) (',' (list_wildcard | number_wildcard | expression))*
     ;
 
 methodCall
-    : (identifier | THIS | SUPER) arguments
+    : (identifier | THIS | SUPER) arguments // TODO: test
     ;
 
 expression
+    : expr_wildcard
+    | number_wildcard
     // Expression order in accordance with https://introcs.cs.princeton.edu/java/11precedence/
     // Level 16, Primary, array and member access
-    : primary
+    | primary
     | expression '[' expression ']'
     | expression bop = '.' (
         identifier
@@ -769,7 +781,9 @@ typeList
     ;
 
 typeType
-    : annotation* (classOrInterfaceType | primitiveType) (annotation* '[' ']')*
+    : simple_wildcard
+    | var_wildcard
+    | annotation* (classOrInterfaceType | primitiveType | simple_wildcard | var_wildcard) (annotation* '[' ']')*
     ;
 
 primitiveType
@@ -798,8 +812,20 @@ explicitGenericInvocationSuffix
     ;
 
 arguments
-    : '(' expressionList? ')'
+    : '(' (expressionList? | list_wildcard | number_wildcard) ')'
     ;
 
 // Syntax of wildcards
-var_wildcard: '#' identifier;
+simple_wildcard: WILDCARD | WILDCARD_SPACE;
+var_wildcard: VAR_WILDCARD;
+list_wildcard: WILDCARD '*';
+contains_wildcard: WILDCARD '<' (simple_wildcard | var_wildcard | contains_wildcard | expression) '>';
+simple_compound_wildcard: WILDCARD wildcard_number? block;
+multiple_compound_wildcard: WILDCARD '*' block;
+number_wildcard: WILDCARD wildcard_number;
+wildcard_number: '(' DECIMAL_LITERAL (',' | ',' DECIMAL_LITERAL)? ')';
+
+// Composite wildcards
+stmt_wildcard: (simple_wildcard | var_wildcard | list_wildcard | contains_wildcard);
+expr_wildcard:  var_wildcard | contains_wildcard | simple_wildcard;
+compound_wildcard: simple_compound_wildcard | multiple_compound_wildcard;

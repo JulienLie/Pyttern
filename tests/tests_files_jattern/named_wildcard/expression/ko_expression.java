@@ -1,0 +1,5 @@
+class Calculator {
+    public static int compute(int a, int b) {
+        return a - b;
+    }
+}

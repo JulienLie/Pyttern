@@ -1,0 +1,5 @@
+class Calculator {
+    public static void calculate(int x, int y) {
+        x = 1;
+    }
+}

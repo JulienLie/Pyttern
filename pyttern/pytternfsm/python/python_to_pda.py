@@ -5,7 +5,7 @@ from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...macro.Macro import loaded_macros
+from ...subpattern.SubPattern import loaded_subpatterns, SubPattern
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -31,19 +31,22 @@ class Python_to_PDA(Python3ParserVisitor):
         self.__var_names = {}
         self.__last_node = None
         self.__is_last_branch = True
+        self.__dict_pda = {}
 
-    def visit(self, tree):
+    def visit(self, tree) -> dict[str, PDA]:
         logger.debug(f"Visiting tree: {tree}")
+        self.__dict_pda = {}
         self.__var_names = {}
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
-        return self.pda
+        self.__dict_pda["__main__"] = self.pda
+        return self.__dict_pda
 
     def visitChildren(self, node):
-        logger.debug(f"Visiting {node}")
+        logger.trace(f"Visiting {node}")
 
         children = node.children
         if len(children) == 0:
@@ -56,7 +59,7 @@ class Python_to_PDA(Python3ParserVisitor):
                 or self.lookahead(children[-1], Python3Parser.List_wildcardContext)
         ):
             children.pop()
-            logger.debug("Remove double wildcard")
+            logger.trace("Remove double wildcard")
 
 
         next_state = self.pda.new_state()
@@ -87,20 +90,20 @@ class Python_to_PDA(Python3ParserVisitor):
         :param ctx: The context to define boundaries for.
         :return: A tuple of (down, up) boundaries.
         """
-        logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
+        logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
         if isinstance(ctx, (Python3Parser.File_inputContext, Python3Parser.BlockContext)):
-            logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
+            logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         elif isinstance(ctx, Python3Parser.If_stmtContext):
-            logger.debug(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
+            logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
                 if self.lookahead(child, (Python3Parser.Double_wildcardContext, Python3Parser.List_wildcardContext)) is not None:
-                    logger.debug(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
+                    logger.trace(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
 
@@ -112,7 +115,7 @@ class Python_to_PDA(Python3ParserVisitor):
                 if simple_node is not None:
                     numbers_node = simple_node.getChild(0, Python3Parser.Wildcard_numberContext)
                     if numbers_node is not None:
-                        logger.debug(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
+                        logger.trace(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
                         up += max_n
                         down += min_n
@@ -124,7 +127,7 @@ class Python_to_PDA(Python3ParserVisitor):
 
     def visitStmt(self, ctx:Python3Parser.StmtContext):
         # Handle double wildcard as Stmt
-        logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
+        logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
         lookahead_double_wildcard = self.lookahead(ctx, Python3Parser.Double_wildcardContext)
         if lookahead_double_wildcard:
@@ -166,7 +169,7 @@ class Python_to_PDA(Python3ParserVisitor):
     def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
         numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
-        logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
+        logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
         if low > high:
             logger.error(f"Invalid simple wildcard: low={low} > high={high}")
@@ -188,7 +191,7 @@ class Python_to_PDA(Python3ParserVisitor):
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, '')
         self.pda.add_transition(dummy_transition)
 
-        for i in range(low, high):
+        for _ in range(low, high):
             # Add transitions for high - low
             next_state = self.pda.new_state()
 
@@ -210,7 +213,7 @@ class Python_to_PDA(Python3ParserVisitor):
         high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
         if ctx.COMMA() is None:
             high = low
-        logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")
+        logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
         if low > high:
             logger.error(f"Invalid wildcard number: low={low} > high={high}")
             return 1, 1
@@ -234,7 +237,7 @@ class Python_to_PDA(Python3ParserVisitor):
         return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
-        # Handle a case when double wildcard is the only statement
+        # Handle a case when the double wildcard is the only statement
         parent_block = self.lookbehind(ctx, Python3Parser.BlockContext)
         if parent_block is None:
             logger.error("Double wildcard not in a block")
@@ -257,15 +260,15 @@ class Python_to_PDA(Python3ParserVisitor):
 
     def visitTerminal(self, node):
         if isinstance(node, TerminalNode):
-            logger.debug(f"Visiting terminal {node}")
+            logger.trace(f"Visiting terminal {node}")
             node_text = str(node).strip()
             node_transition = NodeTransition(node_text)
         else:
-            logger.debug(f"Visiting {node.__class__.__name__} as terminal")
+            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
             node_text = f"{node.__class__.__name__}/0,0"
             node_transition = NodeTransition(node.__class__.__name__, 0, 0)
 
-        logger.debug(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
+        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
 
         return self._add_up_transition(node, node_transition)
 
@@ -295,7 +298,7 @@ class Python_to_PDA(Python3ParserVisitor):
         # Explore
         ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
 
-        skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
+        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
         self.pda.add_transition(skip_transition)
 
         return ret
@@ -303,7 +306,7 @@ class Python_to_PDA(Python3ParserVisitor):
     def visitContains_wildcard(self, ctx:Python3Parser.Contains_wildcardContext):
         self.__add_body_transition()
 
-        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
+        logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
         prune_tree = TreePruner().visit(ctx)
         return prune_tree.getChild(2).accept(self)
 
@@ -329,42 +332,123 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return dummy_state
 
-    def visitMacro(self, ctx: Python3Parser.MacroContext):
-        return ctx.getChild(0).accept(self)
 
-    def visitSimple_macro(self, ctx: Python3Parser.Simple_macroContext):
-        macro_name = ctx.getChild(0).getText()[1:]  # Remove the leading '?'
-        if macro_name not in loaded_macros:
-            raise ValueError(f"Macro {macro_name} is not defined. Available macros: {list(loaded_macros.keys())}")
+    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+        subpattern_name = ctx.NAME().getText()
+        logger.debug(f"Calling subpattern {subpattern_name}")
+        if subpattern_name not in loaded_subpatterns:
+            raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
-        args_nodes = ctx.macro_arg()
-        args_names = [arg_node.atom_wildcard().getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        # TODO: change handling of macro args
+        # Should be able to handle 3 types -> maybe check types from macro?
+        # 1: simple var wildcard -> can stay the same
+        # 2: expr -> change all var in expr then compile
+        # 3: stmts -> change all var in stmts then compile
+        args_nodes = ctx.macro_args().macro_arg()
+        if args_nodes is not None:
+            args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+        else:
+            args_names = []
 
-        macro = loaded_macros[macro_name]
-        n_args_req = list(macro.args.keys()).count(lambda key: macro.args[key] is None)
+        body = ctx.block()
+
+        subpattern = loaded_subpatterns[subpattern_name]
+
+        # TODO: same as before, change compilation in relation to macro args 
+        transformations = subpattern.compile(ctx.parentCtx, body)
+        self.__dict_pda.update(transformations)
+        n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Macro {macro_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
+        # TODO: Probably no change but should be checked
+        if subpattern.type == "OR":
+            self.__visit_or_subpattern(subpattern, args_names)
+        elif subpattern.type == "AND":
+            self.__visit_and_subpattern(subpattern, args_names)
+        else:
+            logger.error(f"Unknown subpattern type {subpattern.type} for subpattern {subpattern_name}")
+
+        return self._add_up_transition(ctx)
+
+    def __visit_or_subpattern(self, subpattern: SubPattern, args):
         next_state = self.pda.new_state()
+        subpattern_name = subpattern.name
 
-        for transformation in macro.transformations:
-            logger.debug(f"Adding transformation {transformation} for macro {macro_name}")
-            #args = ','.join(args_names)
-            transition = Transition(self.current_state, '', CallTransition(macro_name, transformation, args_names),
-                                    [], next_state, '')
+        for transformation in subpattern.transformations:
+            logger.trace(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
+            transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
+                                    next_state, '')
             self.pda.add_transition(transition)
 
         self.current_state = next_state
-        return self._add_up_transition(ctx)
+        return self.current_state
 
+    def __visit_and_subpattern(self, subpattern: SubPattern, args):
+        transformations = list(subpattern.transformations.keys())
+        n = len(transformations)
+        subpattern_name = subpattern.name
 
+        if n == 0:
+            return self.current_state
+
+        if n > 10:
+            logger.warning(
+                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+            )
+
+        # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
+        pda_states = {mask: self.pda.new_state() for mask in range(1, 1 << n)}
+        pda_states[0] = self.current_state
+
+        for mask in range(1 << n):
+            current_pda_state = pda_states[mask]
+
+            # Add a self-loop to navigate/skip statements that do not match any required transformations.
+            # This allows matching transformations in any order, interspersed with other statements.
+            # The navigation path is based on the original implementation's logic.
+            if mask != (1 << n) - 1:
+                nav_loop_transition = Transition(
+                    current_pda_state,
+                    "",
+                    NodeTransition(""),
+                    [
+                        NavigationAlphabet.PARENT,
+                        NavigationAlphabet.RIGHT_SIBLING,
+                        NavigationAlphabet.LEFT_CHILD,
+                    ],
+                    current_pda_state,
+                    "",
+                )
+                self.pda.add_transition(nav_loop_transition)
+
+            # For each transformation not yet matched in the current subset (mask)
+            for i, trans_name in enumerate(transformations):
+                if not ((mask >> i) & 1):  # Check if i-th bit is not set
+                    next_mask = mask | (1 << i)
+                    next_pda_state = pda_states[next_mask]
+
+                    # Add a transition to match the transformation and move to the next state (subset)
+                    match_transition = Transition(
+                        current_pda_state,
+                        "",
+                        CallTransition(subpattern_name, trans_name, args),
+                        [],
+                        next_pda_state,
+                        "",
+                    )
+                    self.pda.add_transition(match_transition)
+
+        # The final state is the one where all transformations have been matched
+        self.current_state = pda_states[(1 << n) - 1]
+        return self.current_state
 
     def _handle_empty_list(self, ctx):
         list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.debug("Handling empty list")
+            logger.trace("Handling empty list")
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
 
@@ -374,7 +458,7 @@ class Python_to_PDA(Python3ParserVisitor):
             label = NodeTransition('')
 
         if self._is_last_node():
-            logger.debug(f"Node {node} is the last node in the tree, adding transition to the end")
+            logger.trace(f"Node {node} is the last node in the tree, adding transition to the end")
             self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                          self.current_state, '')
             self.pda.add_transition(self_transition)
@@ -434,7 +518,7 @@ class Python_to_PDA(Python3ParserVisitor):
         :param ctx:
         :param clazz:
         :param predicate:
-        :return: The first instance of clazz found in the descendant of ctx or None if not found.
+        :return: True if the first instance of @clazz is found in the descendant of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx
@@ -449,10 +533,10 @@ class Python_to_PDA(Python3ParserVisitor):
     @staticmethod
     def lookbehind(ctx, clazz):
         """
-        Check if one of the ancestors of ctx is instance of clazz.
+        Check if one of the ancestors of ctx is an instance of clazz.
         :param ctx:
         :param clazz:
-        :return: The first instance of clazz found in the ancestors of ctx or None if not found.
+        :return: True if the first instance of clazz is found in the ancestors of ctx or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx

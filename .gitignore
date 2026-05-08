@@ -5,3 +5,7 @@ venv/
 **/__pycache__/
 bin/
 /pyttern/Pyttern.egg-info/
+.vscode/
+.pytest_cache/
+**/.antlr/
+.agents/

@@ -1,0 +1,6 @@
+// any class name, method name, method type with at least one int argument and any amount of statements
+class # {
+    # #(#*, int #, #*) {
+        #*;
+    }
+}
