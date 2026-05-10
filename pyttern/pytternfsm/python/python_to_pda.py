@@ -9,20 +9,9 @@ from ...subpattern.SubPattern import loaded_subpatterns, SubPattern
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
+from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
 
-
-def rightmost_terminal(root):
-    node = root
-    # Drill down the last child at each level until you hit a terminal
-    while not isinstance(node, TerminalNode) or "wildcard" in node.__class__.__name__:
-        # If you only have getChildren(), materialize once per level
-        children = list(node.getChildren())
-        if not children:
-            return None  # malformed/empty subtree
-        node = children[-1]
-    return node
-
-class Python_to_PDA(Python3ParserVisitor):
+class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def __init__(self):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
@@ -151,62 +140,12 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return self.visitChildren(ctx)
 
-    def visitExpr_wildcard(self, ctx:Python3Parser.Expr_wildcardContext):
-        return ctx.getChild(0).accept(self)
-
-    def visitStmt_wildcard(self, ctx:Python3Parser.Stmt_wildcardContext):
-        return ctx.getChild(0).accept(self)
-
-    def visitCompound_wildcard(self, ctx:Python3Parser.Compound_wildcardContext):
-        return ctx.getChild(0).accept(self)
-
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
 
-    def visitSimple_wildcard(self, ctx:Python3Parser.Simple_wildcardContext):
-        return self._add_up_transition(ctx)
-
     def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
         numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
-        low, high = numbers_node.accept(self)
-        logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
-
-        if low > high:
-            logger.error(f"Invalid simple wildcard: low={low} > high={high}")
-            raise ValueError(f"Invalid simple wildcard: low={low} > high={high}")
-
-        for _ in range(1, low):
-            # Add transitions for low - 1
-            next_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
-            self.pda.add_transition(transition)
-            self.current_state = next_state
-
-        # We don't have optional nodes -> we fall back to basic behavior
-        if high <= low or high == math.inf:
-            return self._add_up_transition(ctx)
-
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, '')
-        self.pda.add_transition(dummy_transition)
-
-        for _ in range(low, high):
-            # Add transitions for high - low
-            next_state = self.pda.new_state()
-
-            # There is a sibling
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
-            self.pda.add_transition(transition)
-
-            # No more siblings
-            up_transition = Transition(next_state, '', NodeTransition(''), [], dummy_state, '')
-            self.pda.add_transition(up_transition)
-            self.current_state = next_state
-
-        self.current_state = dummy_state
-        return self._add_up_transition(ctx)
+        return Generic_to_PDA.visitGenericNumber_wildcard(self, ctx, numbers_node)
 
     def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
         low = int(ctx.NUMBER(0).getText())
@@ -251,26 +190,6 @@ class Python_to_PDA(Python3ParserVisitor):
             self._add_up_transition(ctx)
         return self.current_state
 
-    def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
-        # Adding self-transition to search for the next element
-        self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                               self.current_state, '')
-        self.pda.add_transition(self_transition)
-        return self.current_state
-
-    def visitTerminal(self, node):
-        if isinstance(node, TerminalNode):
-            logger.trace(f"Visiting terminal {node}")
-            node_text = str(node).strip()
-            node_transition = NodeTransition(node_text)
-        else:
-            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
-            node_text = f"{node.__class__.__name__}/0,0"
-            node_transition = NodeTransition(node.__class__.__name__, 0, 0)
-
-        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
-
-        return self._add_up_transition(node, node_transition)
 
     def visitParameters(self, ctx:Python3Parser.ParametersContext):
         return self._handle_empty_list(ctx)
@@ -453,93 +372,5 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.visitChildren(ctx)
 
 
-    def _add_up_transition(self, node, label:TransitionCondition=None):
-        if label is None:
-            label = NodeTransition('')
-
-        if self._is_last_node():
-            logger.trace(f"Node {node} is the last node in the tree, adding transition to the end")
-            self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                         self.current_state, '')
-            self.pda.add_transition(self_transition)
-
-            last_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', label, [], last_state, '')
-            self.pda.add_transition(transition)
-            self.current_state = last_state
-            return last_state
-
-
-        if len(self.move_to_B) > 0:
-            return self._add_up_to_B_transition(label)
-
-        return self._add_up_default_transition(label)
-
-    def _add_up_default_transition(self, label:TransitionCondition):
-        next_state = self.pda.new_state()
-        to_pop = 'I' * self.depth
-        to_up = [NavigationAlphabet.PARENT] * self.depth
-        self.depth = 0
-        transition = Transition(self.current_state, to_pop, label, to_up +
-                                [NavigationAlphabet.RIGHT_SIBLING], next_state, '')
-        self.pda.add_transition(transition)
-        self.current_state = next_state
-        return next_state
-
-    def _add_up_to_B_transition(self, label:TransitionCondition):
-        depth = self.move_to_B.pop()
-        self.depth = depth
-
-        match_state = self.pda.new_state()
-        match_transition = Transition(self.current_state, '', label, [], match_state, '')
-        self.pda.add_transition(match_transition)
-        self.current_state = match_state
-
-        up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
-                                                              self.current_state, '')
-        self.pda.add_transition(up_transition)
-
-        next_state = self.pda.new_state()
-        next_transition = Transition(self.current_state, 'B', NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(next_transition)
-        self.current_state = next_state
-
-        self._add_up_transition(None)
-
-        return match_state
-
     def _is_last_node(self):
         return self.__is_last_branch
-
-    @staticmethod
-    def lookahead(ctx, clazz, predicate=None):
-        """
-        Check if one of the descendants of ctx is an instance of clazz. Stop if ctx has more than one child.
-        :param ctx:
-        :param clazz:
-        :param predicate:
-        :return: True if the first instance of @clazz is found in the descendant of ctx or None if not found.
-        """
-        if isinstance(ctx, clazz):
-            return ctx
-        if not hasattr(ctx, 'children'):
-            return None
-        if len(ctx.children) != 1:
-            return None
-        if predicate is not None and not predicate(ctx):
-            return None
-        return Python_to_PDA.lookahead(ctx.children[0], clazz)
-
-    @staticmethod
-    def lookbehind(ctx, clazz):
-        """
-        Check if one of the ancestors of ctx is an instance of clazz.
-        :param ctx:
-        :param clazz:
-        :return: True if the first instance of clazz is found in the ancestors of ctx or None if not found.
-        """
-        if isinstance(ctx, clazz):
-            return ctx
-        if not hasattr(ctx, 'parentCtx'):
-            return None
-        return Python_to_PDA.lookbehind(ctx.parentCtx, clazz)
