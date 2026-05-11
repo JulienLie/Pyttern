@@ -46,7 +46,7 @@ options {
 single_input: NEWLINE | simple_stmts | compound_stmt NEWLINE;
 file_input: (NEWLINE | stmt)* EOF;
 eval_input: testlist NEWLINE* EOF;
-macro_input: (macro_stmts)+ EOF;
+macro_input: (NEWLINE | macro_stmts)+ EOF;
 
 decorator: '@' dotted_name ( '(' arglist? ')' )? NEWLINE;
 decorators: decorator+;

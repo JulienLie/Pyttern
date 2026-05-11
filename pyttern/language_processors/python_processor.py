@@ -44,8 +44,8 @@ class PythonProcessor(BaseProcessor):
 
     @lru_cache(maxsize=128)
     def generate_tree_from_file(self, file):
-        file_input = FileStream(file, encoding="utf-8")
-        return self.generate_tree_from_stream(file_input)
+        with open(file, 'r', encoding="utf-8") as f:
+            return self.generate_tree_from_code(f.read())
 
     @lru_cache(maxsize=128)
     def create_pda(self, pattern_tree):

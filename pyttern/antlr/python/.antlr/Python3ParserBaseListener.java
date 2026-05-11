@@ -1624,18 +1624,6 @@ public class Python3ParserBaseListener implements Python3ParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_def(Python3Parser.Macro_defContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitMacro_def(Python3Parser.Macro_defContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterMacro(Python3Parser.MacroContext ctx) { }
 	/**
 	 * {@inheritDoc}

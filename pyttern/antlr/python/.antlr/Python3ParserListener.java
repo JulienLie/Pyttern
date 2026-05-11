@@ -1347,16 +1347,6 @@ public interface Python3ParserListener extends ParseTreeListener {
 	 */
 	void exitMacro_stmts(Python3Parser.Macro_stmtsContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_def}.
-	 * @param ctx the parse tree
-	 */
-	void enterMacro_def(Python3Parser.Macro_defContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_def}.
-	 * @param ctx the parse tree
-	 */
-	void exitMacro_def(Python3Parser.Macro_defContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link Python3Parser#macro}.
 	 * @param ctx the parse tree
 	 */

@@ -1214,15 +1214,6 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#macro_def.
-    def enterMacro_def(self, ctx:Python3Parser.Macro_defContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#macro_def.
-    def exitMacro_def(self, ctx:Python3Parser.Macro_defContext):
-        pass
-
-
     # Enter a parse tree produced by Python3Parser#macro.
     def enterMacro(self, ctx:Python3Parser.MacroContext):
         pass
