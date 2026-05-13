@@ -520,6 +520,27 @@ def __get_pyt_files(data):
         for child in children:
             yield from __get_pyt_files(child)
 
+def _validate_codes(pattern_codes, lang):
+    """
+    Helper function to validate a list of pattern or code files in the given language.
+    """
+    res = {}
+    current_language_processor = get_processor(lang)
+    for item in pattern_codes:
+        filename = item["filename"]
+        try:
+            current_language_processor.generate_tree_from_code(item["code"])
+            res[filename] = {
+              "status": "ok",
+              "message": None
+            }
+        except PytternSyntaxException as e:
+            res[filename] = {
+              "status": "error",
+              "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
+            }
+    return res
+
 @app.route("/api/batch_validate", methods=['POST'])
 def batch_validate():
     """
@@ -612,24 +633,9 @@ def batch_validate():
     if pattern_lang == "":
         return try_processors(pattern_codes[0]["code"])
     logger.info(f"Current lang: {pattern_lang}")
-    res = {}
-    try:
-        lang = pattern_lang
-        current_language_processor = get_processor(lang)
-        for item in pattern_codes:
-            filename = item["filename"]
 
-            try:
-                current_language_processor.generate_tree_from_code(item["code"])
-                res[filename] = {
-                  "status": "ok",
-                  "message": None
-                }
-            except PytternSyntaxException as e:
-                res[filename] = {
-                  "status": "error",
-                  "message": {"line": e.line, "column": e.column, "symbol": e.symbol, "msg": e.msg}
-                }
+    try:
+        res = _validate_codes(pattern_codes, pattern_lang)
     except ValueError as e:
         return Response(f"Error: {e}", status=400)
     except Exception as e:
