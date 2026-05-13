@@ -1,0 +1,3 @@
+Benchmark 1: poetry run pytest
+  Time (mean ± σ):     80.957 s ±  1.482 s    [User: 75.788 s, System: 4.971 s]
+  Range (min … max):   79.110 s … 82.625 s    5 runs
