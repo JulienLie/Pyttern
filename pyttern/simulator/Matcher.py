@@ -252,22 +252,35 @@ class Matcher:
                 case NavigationAlphabet.RIGHT_SIBLING:
                     if current_node == self.parse_tree:
                         return None
+
+                    parent = current_node.parentCtx
+                    if parent is None:
+                        return None
+
                     try:
-                        parent = current_node.parentCtx
-                        if parent is None:
-                            return None
-                        siblings = list(parent.getChildren())
-                        index = siblings.index(current_node)
-                        current_node = siblings[index + 1]
-                    except IndexError:
+                        siblings = getattr(parent, "children", None)
+                        if siblings is not None:
+                            index = siblings.index(current_node)
+                            current_node = siblings[index + 1]
+                        else:
+                            siblings_iter = parent.getChildren()
+                            for sibling in siblings_iter:
+                                if sibling is current_node:
+                                    current_node = next(siblings_iter)
+                                    break
+                            else:
+                                return None
+                    except (IndexError, ValueError, StopIteration, TypeError, AttributeError):
                         return None
                 case NavigationAlphabet.LEFT_CHILD:
                     try:
-                        children = list(current_node.getChildren())
-                        current_node = children[0]
-                    except AttributeError:
-                        return None
-                    except IndexError:
+                        children = getattr(current_node, "children", None)
+                        if children is not None:
+                            current_node = children[0]
+                        else:
+                            children_iter = current_node.getChildren()
+                            current_node = next(children_iter)
+                    except (AttributeError, IndexError, StopIteration, TypeError):
                         return None
                 case NavigationAlphabet.PARENT:
                     if current_node == self.parse_tree:
