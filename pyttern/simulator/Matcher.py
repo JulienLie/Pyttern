@@ -232,9 +232,12 @@ class Matcher:
 
         new_bindings = []
         for match in match_set.matches:
-            pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
-            v in match.bindings.items()}
-            logger.debug(f"subpattern {subpattern_name}:{trnsf_name} matched with bindings {pretty_bindings}")
+            logger.opt(lazy=True).debug(
+                "subpattern {subpattern_name}:{trnsf_name} matched with bindings {pretty_bindings}",
+                subpattern_name=lambda subpattern_name=subpattern_name: subpattern_name,
+                trnsf_name=lambda trnsf_name=trnsf_name: trnsf_name,
+                pretty_bindings=lambda m=match: {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k, v in m.bindings.items()}
+            )
             sub_bindings = match.bindings
             m_i_to_j = mapping(args, subpattern.args_order)
             comp = composition(m_i_to_j, sub_bindings)
