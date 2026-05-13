@@ -40,8 +40,7 @@ Pyttern extends standard Python syntax with special wildcard characters (`?`) an
 | `?:` | Body | Matches a node that has a block/body (e.g., `if`, `for`). |
 | `?:*` | Deep Body | Matches a body at any level of indentation. |
 | `?<...>` | Contains | Matches if the inner pattern is found anywhere within the node. |
-
-> For detailed usage and snippets, see the [Wildcard Examples Guide](examples/wildcards.md).
+| `?$(...)` | Call | Calls a sub-pattern defined elsewhere. |
 
 ## Usage
 
