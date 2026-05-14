@@ -24,18 +24,6 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         
         super().__init__(grammar, skippable_nodes, remove_double_wildcard)
 
-    def visit(self, tree) -> dict[str, PDA]:
-        logger.debug(f"Visiting tree: {tree}")
-        self.__dict_pda = {}
-        self.__var_names = {}
-        self.__last_node = rightmost_terminal(tree)
-        super().visit(tree)
-        self.depth = 0
-        self.pda.final_states = self.current_state
-        logger.debug(f"var_names: {self.__var_names}")
-        self.__dict_pda["__main__"] = self.pda
-        return self.__dict_pda
-
     def define_boundaries(self, ctx):
         """
         Define the boundaries for the current context.
@@ -176,7 +164,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         # TODO: same as before, change compilation in relation to macro args 
         transformations = subpattern.compile(ctx.parentCtx, body)
-        self.__dict_pda.update(transformations)
+        self.dict_pda.update(transformations)
         n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
             logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")

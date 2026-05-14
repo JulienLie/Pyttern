@@ -30,18 +30,6 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
 
         super().__init__(grammar, skippable_nodes, remove_double_wildcard)
 
-    def visit(self, tree):
-        logger.debug(f"Visiting tree: {tree}")
-        self.__dict_pda = {}
-        self.__var_names = {}
-        self.__last_node = rightmost_terminal(tree)
-        super().visit(tree)
-        self.depth = 0
-        self.pda.final_states = self.current_state
-        logger.debug(f"var_names: {self.__var_names}")
-        self.__dict_pda["__main__"] = self.pda
-        return self.__dict_pda
-
     def define_boundaries(self, ctx):
         """
         Define the boundaries for the current context.

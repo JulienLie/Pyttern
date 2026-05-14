@@ -27,22 +27,22 @@ class Generic_to_PDA():
         self.__var_names = {}
         self.__last_node = None
         self.__is_last_branch = True
-        self.__dict_pda = {}
+        self.dict_pda = {}
         self.grammar = grammar
         self.skippable_nodes = skippable_nodes
         self.remove_double_wildcard = remove_double_wildcard
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
-        self.__dict_pda = {}
+        self.dict_pda = {}
         self.__var_names = {}
         self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
         logger.debug(f"var_names: {self.__var_names}")
-        self.__dict_pda["__main__"] = self.pda
-        return self.__dict_pda
+        self.dict_pda["__main__"] = self.pda
+        return self.dict_pda
     
 
     def visitChildren(self, node):
