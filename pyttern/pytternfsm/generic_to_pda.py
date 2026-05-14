@@ -151,15 +151,6 @@ class Generic_to_PDA():
 
         return self._add_up_transition(node, node_transition)
 
-    def visitFormalParameters(self, ctx):
-        return self._handle_empty_list(ctx)
-
-    def visitExpressionList(self, ctx):
-        return self._handle_empty_list(ctx)
-
-    def visitArguments(self, ctx):
-        return self._handle_empty_list(ctx)
-
     def visitVar_wildcard(self, ctx):
         label = ctx.getText()
         # if label not in self.__var_names:
