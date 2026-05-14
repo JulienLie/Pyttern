@@ -21,6 +21,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self.__last_node = None
         self.__is_last_branch = True
         self.__dict_pda = {}
+        self.grammar = Python3Parser
 
     def visit(self, tree) -> dict[str, PDA]:
         logger.debug(f"Visiting tree: {tree}")
@@ -44,8 +45,8 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         down, up = self._define_boundaries(node)
 
         while len(children) > 1 and (
-                self.lookahead(children[-1], Python3Parser.Double_wildcardContext)
-                or self.lookahead(children[-1], Python3Parser.List_wildcardContext)
+                self.lookahead(children[-1], self.grammar.Double_wildcardContext)
+                or self.lookahead(children[-1], self.grammar.List_wildcardContext)
         ):
             children.pop()
             logger.trace("Remove double wildcard")
@@ -81,17 +82,17 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         """
         logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
-        if isinstance(ctx, (Python3Parser.File_inputContext, Python3Parser.BlockContext)):
+        if isinstance(ctx, (self.grammar.File_inputContext, self.grammar.BlockContext)):
             logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif isinstance(ctx, Python3Parser.If_stmtContext):
+        elif isinstance(ctx, self.grammar.If_stmtContext):
             logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (Python3Parser.Double_wildcardContext, Python3Parser.List_wildcardContext)) is not None:
+                if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext)) is not None:
                     logger.trace(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
@@ -100,9 +101,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
                 everything = lambda _: True
                 predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
 
-                simple_node = self.lookahead(child, Python3Parser.Number_wildcardContext, predicate)
+                simple_node = self.lookahead(child, self.grammar.Number_wildcardContext, predicate)
                 if simple_node is not None:
-                    numbers_node = simple_node.getChild(0, Python3Parser.Wildcard_numberContext)
+                    numbers_node = simple_node.getChild(0, self.grammar.Wildcard_numberContext)
                     if numbers_node is not None:
                         logger.trace(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
@@ -118,7 +119,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         # Handle double wildcard as Stmt
         logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
-        lookahead_double_wildcard = self.lookahead(ctx, Python3Parser.Double_wildcardContext)
+        lookahead_double_wildcard = self.lookahead(ctx, self.grammar.Double_wildcardContext)
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
@@ -126,15 +127,15 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
                                       self.current_state, '')
         self.pda.add_transition(self_transition)
 
-        lookahead_multiple_body = self.lookahead(ctx, Python3Parser.Multiple_compound_wildcardContext)
+        lookahead_multiple_body = self.lookahead(ctx, self.grammar.Multiple_compound_wildcardContext)
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
 
-        lookahead_simple_wildcard = self.lookahead(ctx, Python3Parser.Simple_wildcardContext)
+        lookahead_simple_wildcard = self.lookahead(ctx, self.grammar.Simple_wildcardContext)
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
 
-        lookahead_number_wildcard = self.lookahead(ctx, Python3Parser.Number_wildcardContext)
+        lookahead_number_wildcard = self.lookahead(ctx, self.grammar.Number_wildcardContext)
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
 
@@ -142,10 +143,6 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
-
-    def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
-        numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
-        return Generic_to_PDA.visitGenericNumber_wildcard(self, ctx, numbers_node)
 
     def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
         low = int(ctx.NUMBER(0).getText())
@@ -173,17 +170,17 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self.pda.add_transition(self_transition)
 
         # Explore body
-        return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
+        return ctx.getChild(0, self.grammar.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
         # Handle a case when the double wildcard is the only statement
-        parent_block = self.lookbehind(ctx, Python3Parser.BlockContext)
+        parent_block = self.lookbehind(ctx, self.grammar.BlockContext)
         if parent_block is None:
             logger.error("Double wildcard not in a block")
             return self.current_state
 
         last_child = parent_block.getChild(parent_block.getChildCount() - 1)
-        maybe_this = self.lookahead(last_child, Python3Parser.Double_wildcardContext)
+        maybe_this = self.lookahead(last_child, self.grammar.Double_wildcardContext)
         if  maybe_this is not None and maybe_this == ctx:
             # If the double wildcard is the last statement of the block, we need to add a transition to the end of the
             # block
@@ -215,7 +212,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         dummy_state = Generic_to_PDA.add_body_transition(self)
 
         # Explore
-        ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
+        ret = ctx.getChild(0, self.grammar.BlockContext).accept(self)
 
         skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
         self.pda.add_transition(skip_transition)
@@ -335,7 +332,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return self.current_state
 
     def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)
+        list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
             logger.trace("Handling empty list")

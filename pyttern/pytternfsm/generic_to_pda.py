@@ -53,7 +53,8 @@ class Generic_to_PDA():
     def visitSimple_wildcard(self, ctx):
         return self._add_up_transition(ctx)
 
-    def visitGenericNumber_wildcard(self, ctx, numbers_node):
+    def visitNumber_wildcard(self, ctx):
+        numbers_node = ctx.getChild(0, self.grammar.Wildcard_numberContext)
         low, high = numbers_node.accept(self)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
