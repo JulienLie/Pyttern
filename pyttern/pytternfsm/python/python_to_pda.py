@@ -212,7 +212,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
     def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
         # Transition to push B on the stack
-        dummy_state = self.__add_body_transition()
+        dummy_state = Generic_to_PDA.add_body_transition(self)
 
         # Explore
         ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
@@ -221,35 +221,6 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self.pda.add_transition(skip_transition)
 
         return ret
-
-    def visitContains_wildcard(self, ctx:Python3Parser.Contains_wildcardContext):
-        self.__add_body_transition()
-
-        logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        prune_tree = TreePruner().visit(ctx)
-        return prune_tree.getChild(2).accept(self)
-
-    def __add_body_transition(self):
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
-        self.pda.add_transition(dummy_transition)
-        self.current_state = dummy_state
-
-        self.move_to_B.append(self.depth)
-
-        next_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(child_transition)
-
-        self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                    next_state, '')
-        self.pda.add_transition(self_transition)
-        back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                    self.current_state, 'I')
-        self.pda.add_transition(back_transition)
-        self.current_state = next_state
-
-        return dummy_state
 
 
     def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):

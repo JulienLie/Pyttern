@@ -150,12 +150,13 @@ class Generic_to_PDA():
         return self.current_state
 
     def visitContains_wildcard(self, ctx):
-        self.__add_body_transition()
+        self.add_body_transition()
 
-        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        return ctx.getChild(2).accept(self)
+        logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
+        prune_tree = ctx # TreePruner().visit(ctx) # TODO
+        return prune_tree.getChild(2).accept(self)
 
-    def __add_body_transition(self, allow_multiple_compound=True):
+    def add_body_transition(self, allow_multiple_compound=True):
         # Push B on the stack
         dummy_state = self.pda.new_state()
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')

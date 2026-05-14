@@ -181,7 +181,7 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
 
     def visitSimple_compound_wildcard(self, ctx):
         # Transition to push B on the stack
-        dummy_state = self.__add_body_transition(False)
+        dummy_state = Generic_to_PDA.add_body_transition(self, False)
 
         # Find body node
         self_transition = Transition(dummy_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING], dummy_state, '')
@@ -249,7 +249,7 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
 
     def visitMultiple_compound_wildcard(self, ctx):
         # Transition to push B on the stack
-        dummy_state = self.__add_body_transition()
+        dummy_state = Generic_to_PDA.add_body_transition(self)
 
         # Explore
         blockStatementChild = ctx.getChild(0, JavaParser.BlockContext).getChild(0, JavaParser.BlockStatementContext)
@@ -261,37 +261,6 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         self.pda.add_transition(skip_transition)
 
         return ret
-
-    def visitContains_wildcard(self, ctx):
-        self.__add_body_transition()
-
-        logger.debug(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        return ctx.getChild(2).accept(self)
-
-    def __add_body_transition(self, allow_multiple_compound=True):
-        # Push B on the stack
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
-        self.pda.add_transition(dummy_transition)
-        self.current_state = dummy_state
-
-        self.move_to_B.append(self.depth)
-
-        # If we are in multiple compound mode, allow any combination of Right Sibling & Left Child transitions
-        if allow_multiple_compound:
-            next_state = self.pda.new_state()
-            child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
-            self.pda.add_transition(child_transition)
-
-            self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                        next_state, '')
-            self.pda.add_transition(self_transition)
-            back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                        self.current_state, 'I')
-            self.pda.add_transition(back_transition)
-            self.current_state = next_state
-
-        return dummy_state
 
 
     def _handle_empty_list(self, ctx):
