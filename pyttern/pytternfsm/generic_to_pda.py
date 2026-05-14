@@ -168,6 +168,20 @@ class Generic_to_PDA():
         prune_tree = ctx # TreePruner().visit(ctx) # TODO
         return prune_tree.getChild(2).accept(self)
 
+    def visitGenericMultiple_compound_wildcard(self, ctx, blockChild):
+        # Transition to push B on the stack
+        dummy_state = Generic_to_PDA.add_body_transition(self)
+
+        # Explore
+        if blockChild == None:
+            raise Exception("Body of multiple compound wildcard cannot be empty")
+        ret = blockChild.accept(self)
+
+        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
+        self.pda.add_transition(skip_transition)
+
+        return ret
+
     def add_body_transition(self, allow_multiple_compound=True):
         # Push B on the stack
         dummy_state = self.pda.new_state()

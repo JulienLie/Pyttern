@@ -185,16 +185,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return self.current_state
 
     def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
-        # Transition to push B on the stack
-        dummy_state = Generic_to_PDA.add_body_transition(self)
-
-        # Explore
-        ret = ctx.getChild(0, self.grammar.BlockContext).accept(self)
-
-        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
-        self.pda.add_transition(skip_transition)
-
-        return ret
+        # Get the body of the compound wildcard, then let the superclass handle the rest
+        blockChild = ctx.getChild(0, self.grammar.BlockContext)
+        return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
 
     def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):

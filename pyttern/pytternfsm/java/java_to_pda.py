@@ -211,19 +211,10 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         return self._handle_empty_list(ctx)
 
     def visitMultiple_compound_wildcard(self, ctx):
-        # Transition to push B on the stack
-        dummy_state = Generic_to_PDA.add_body_transition(self)
-
-        # Explore
+        # Get the body of the compound wildcard, then let the superclass handle the rest
         blockStatementChild = ctx.getChild(0, self.grammar.BlockContext).getChild(0, self.grammar.BlockStatementContext)
-        if blockStatementChild == None:
-            raise Exception("Body of multiple compound wildcard cannot be empty")
-        ret = blockStatementChild.accept(self)
-
-        skip_transition = Transition(dummy_state, "", NodeTransition(''), [], ret, '')
-        self.pda.add_transition(skip_transition)
-
-        return ret
+        
+        return super().visitGenericMultiple_compound_wildcard(ctx, blockStatementChild)
 
 
     def _handle_empty_list(self, ctx):
