@@ -19,7 +19,7 @@ def rightmost_terminal(root):
     return node
 
 class Generic_to_PDA():
-    def __init__(self):
+    def __init__(self, grammar, skippable_nodes, remove_double_wildcard):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
         self.depth = 0
@@ -28,6 +28,9 @@ class Generic_to_PDA():
         self.__last_node = None
         self.__is_last_branch = True
         self.__dict_pda = {}
+        self.grammar = grammar
+        self.skippable_nodes = skippable_nodes
+        self.remove_double_wildcard = remove_double_wildcard
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
@@ -40,6 +43,61 @@ class Generic_to_PDA():
         logger.debug(f"var_names: {self.__var_names}")
         self.__dict_pda["__main__"] = self.pda
         return self.__dict_pda
+    
+
+    def visitChildren(self, node):
+        logger.debug(f"Visiting {node}")
+        logger.debug(f"Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
+
+        children = node.children
+        if len(children) == 0:
+            return self.visitTerminal(node)
+
+        down, up = self.define_boundaries(node)
+
+        # Handle the double wildcard case
+        predicate = False
+        for clazz in self.remove_double_wildcard:
+            if self.lookahead(children[-1], clazz):
+                predicate = True
+        
+        while len(children) > 1 and predicate:
+            children.pop()
+            logger.debug("Remove double wildcard")
+
+            predicate = False
+            for clazz in self.remove_double_wildcard:
+                if self.lookahead(children[-1], clazz):
+                    predicate = True
+
+        # Add self-transition to be able to skip statements
+        if node.__class__.__name__ in self.skippable_nodes:
+            self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                        self.current_state, '')
+            self.pda.add_transition(self_transition)
+
+        next_state = self.pda.new_state()
+        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
+                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
+        self.pda.add_transition(transition)
+        self.current_state = next_state
+
+        # Visit every child
+        is_last_branch = self.__is_last_branch
+        self.__is_last_branch = False
+        old_move_to_B = self.move_to_B
+        self.move_to_B = []
+
+        old_depth = self.depth
+        self.depth = 0
+        for i, child in enumerate(children):
+            if i == len(children) - 1:
+                self.depth = old_depth + 1
+                self.move_to_B = old_move_to_B
+                self.__is_last_branch = is_last_branch
+            child.accept(self)
+
+        return next_state
     
     def visitStatement(self, ctx):
         logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")

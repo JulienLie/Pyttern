@@ -13,15 +13,16 @@ from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
 
 class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def __init__(self):
-        self.pda = PDA()
-        self.current_state = self.pda.initial_state
-        self.depth = 0
-        self.move_to_B = []
-        self.__var_names = {}
-        self.__last_node = None
-        self.__is_last_branch = True
-        self.__dict_pda = {}
-        self.grammar = Python3Parser
+        grammar = Python3Parser
+        skippable_nodes = [
+                "StmtContext"
+            ]
+        remove_double_wildcard = [
+            grammar.List_wildcardContext,
+            grammar.Double_wildcardContext
+        ]
+        
+        super().__init__(grammar, skippable_nodes, remove_double_wildcard)
 
     def visit(self, tree) -> dict[str, PDA]:
         logger.debug(f"Visiting tree: {tree}")
@@ -35,46 +36,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self.__dict_pda["__main__"] = self.pda
         return self.__dict_pda
 
-    def visitChildren(self, node):
-        logger.trace(f"Visiting {node}")
-
-        children = node.children
-        if len(children) == 0:
-            return self.visitTerminal(node)
-
-        down, up = self._define_boundaries(node)
-
-        while len(children) > 1 and (
-                self.lookahead(children[-1], self.grammar.Double_wildcardContext)
-                or self.lookahead(children[-1], self.grammar.List_wildcardContext)
-        ):
-            children.pop()
-            logger.trace("Remove double wildcard")
-
-
-        next_state = self.pda.new_state()
-        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
-                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
-        self.pda.add_transition(transition)
-        self.current_state = next_state
-
-        is_last_branch = self.__is_last_branch
-        self.__is_last_branch = False
-        old_move_to_B = self.move_to_B
-        self.move_to_B = []
-
-        old_depth = self.depth
-        self.depth = 0
-        for i, child in enumerate(children):
-            if i == len(children) - 1:
-                self.depth = old_depth + 1
-                self.move_to_B = old_move_to_B
-                self.__is_last_branch = is_last_branch
-            child.accept(self)
-
-        return next_state
-
-    def _define_boundaries(self, ctx):
+    def define_boundaries(self, ctx):
         """
         Define the boundaries for the current context.
         :param ctx: The context to define boundaries for.
@@ -187,6 +149,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
         # Get the body of the compound wildcard, then let the superclass handle the rest
         blockChild = ctx.getChild(0, self.grammar.BlockContext)
+
         return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
 
@@ -308,7 +271,3 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             logger.trace("Handling empty list")
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
-
-
-    def _is_last_node(self):
-        return self.__is_last_branch

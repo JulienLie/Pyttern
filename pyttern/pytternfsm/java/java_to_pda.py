@@ -12,15 +12,23 @@ from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
 
 class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
     def __init__(self):
-        self.pda = PDA()
-        self.current_state = self.pda.initial_state
-        self.depth = 0
-        self.move_to_B = []
-        self.__var_names = {}
-        self.__last_node = None
-        self.__is_last_branch = True
-        self.__dict_pda = {}
-        self.grammar = JavaParser
+        grammar = JavaParser
+        skippable_nodes = [
+                "BlockStatementContext",
+                "PackageDeclarationContext",
+                "ImportDeclarationContext",
+                "TypeDeclarationContext",
+                "ClassBodyDeclarationContext",
+                "MemberDeclarationContext",
+                "InterfaceBodyDeclarationContext",
+                "RecordDeclarationContext",
+                "CompactConstructorDeclarationContext"
+            ]
+        remove_double_wildcard = [
+            grammar.List_wildcardContext,
+        ]
+
+        super().__init__(grammar, skippable_nodes, remove_double_wildcard)
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
@@ -34,64 +42,7 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         self.__dict_pda["__main__"] = self.pda
         return self.__dict_pda
 
-    def visitChildren(self, node):
-        logger.debug(f"Visiting {node}")
-        logger.debug(f"Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
-
-        children = node.children
-        if len(children) == 0:
-            return self.visitTerminal(node)
-
-        down, up = self._define_boundaries(node)
-
-        # Handle the double wildcard case
-        while len(children) > 1 and (
-                # self.lookahead(children[-1], self.grammar.Double_wildcardContext) or
-                self.lookahead(children[-1], self.grammar.List_wildcardContext)
-        ):
-            children.pop()
-            logger.debug("Remove double wildcard")
-
-        # Add self-transition to be able to skip statements
-        if node.__class__.__name__ in [
-                "BlockStatementContext",
-                "PackageDeclarationContext",
-                "ImportDeclarationContext",
-                "TypeDeclarationContext",
-                "ClassBodyDeclarationContext",
-                "MemberDeclarationContext",
-                "InterfaceBodyDeclarationContext",
-                "RecordDeclarationContext",
-                "CompactConstructorDeclarationContext"
-            ]:
-            self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                        self.current_state, '')
-            self.pda.add_transition(self_transition)
-
-        next_state = self.pda.new_state()
-        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
-                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
-        self.pda.add_transition(transition)
-        self.current_state = next_state
-
-        # Visit every child
-        is_last_branch = self.__is_last_branch
-        self.__is_last_branch = False
-        old_move_to_B = self.move_to_B
-        self.move_to_B = []
-
-        old_depth = self.depth
-        self.depth = 0
-        for i, child in enumerate(children):
-            if i == len(children) - 1:
-                self.depth = old_depth + 1
-                self.move_to_B = old_move_to_B
-                self.__is_last_branch = is_last_branch
-            child.accept(self)
-
-        return next_state
-
-    def _define_boundaries(self, ctx):
+    def define_boundaries(self, ctx):
         """
         Define the boundaries for the current context.
         :param ctx: The context to define boundaries for.
@@ -224,7 +175,3 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
             logger.debug("Handling empty list")
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
-
-
-    def _is_last_node(self):
-        return self.__is_last_branch
