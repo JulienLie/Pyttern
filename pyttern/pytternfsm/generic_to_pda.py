@@ -55,7 +55,7 @@ class Generic_to_PDA():
 
     def visitNumber_wildcard(self, ctx):
         numbers_node = ctx.getChild(0, self.grammar.Wildcard_numberContext)
-        low, high = numbers_node.accept(self)
+        low, high = self.visitWildcard_number(numbers_node)
         logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
         if low > high:
@@ -97,8 +97,8 @@ class Generic_to_PDA():
 
     def visitWildcard_number(self, ctx):
         # Return the low and high limits of the wildcard
-        low = int(ctx.DECIMAL_LITERAL(0).getText())
-        high = int(ctx.DECIMAL_LITERAL(1).getText()) if ctx.DECIMAL_LITERAL(1) else math.inf
+        low = int(ctx.getChild(1).getText())
+        high = int(ctx.getChild(3).getText()) if ctx.getChild(3) and ctx.getChild(3).getText().isdigit() else math.inf
 
         if ctx.COMMA() is None:
             high = low

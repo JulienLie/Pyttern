@@ -144,17 +144,6 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
 
-    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
-        low = int(ctx.NUMBER(0).getText())
-        high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
-        if ctx.COMMA() is None:
-            high = low
-        logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
-        if low > high:
-            logger.error(f"Invalid wildcard number: low={low} > high={high}")
-            return 1, 1
-        return low, high
-
     def visitSimple_compound_wildcard(self, ctx:Python3Parser.Simple_compound_wildcardContext):
         # Go to children
         child_state = self.pda.new_state()

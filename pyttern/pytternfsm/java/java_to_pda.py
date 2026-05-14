@@ -161,20 +161,6 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
 
         return self.visitChildren(ctx)
 
-    def visitWildcard_number(self, ctx):
-        # Return the low and high limits of the wildcard
-        low = int(ctx.DECIMAL_LITERAL(0).getText())
-        high = int(ctx.DECIMAL_LITERAL(1).getText()) if ctx.DECIMAL_LITERAL(1) else math.inf
-
-        if ctx.COMMA() is None:
-            high = low
-        
-        logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")
-        if low > high:
-            logger.error(f"Invalid wildcard number: low={low} > high={high}")
-            return 1, 1
-        
-        return low, high
 
     def visitSimple_compound_wildcard(self, ctx):
         # Transition to push B on the stack
