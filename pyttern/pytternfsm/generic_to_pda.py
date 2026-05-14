@@ -40,6 +40,26 @@ class Generic_to_PDA():
         logger.debug(f"var_names: {self.__var_names}")
         self.__dict_pda["__main__"] = self.pda
         return self.__dict_pda
+    
+    def visitStatement(self, ctx):
+        logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
+
+        # Handle multiple compound wildcard
+        lookahead_multiple_body = self.lookahead(ctx, self.grammar.Multiple_compound_wildcardContext)
+        if lookahead_multiple_body:
+            return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
+
+        # Handle simple compound wildcard
+        lookahead_simple_wildcard = self.lookahead(ctx, self.grammar.Simple_wildcardContext)
+        if lookahead_simple_wildcard:
+            return self.visitSimple_wildcard(lookahead_simple_wildcard)
+        
+        # Handle number wildcard
+        lookahead_number_wildcard = self.lookahead(ctx, self.grammar.Number_wildcardContext)
+        if lookahead_number_wildcard:
+            return self.visitNumber_wildcard(lookahead_number_wildcard)
+
+        return self.visitChildren(ctx)
 
     def visitExpr_wildcard(self, ctx):
         return ctx.getChild(0).accept(self)

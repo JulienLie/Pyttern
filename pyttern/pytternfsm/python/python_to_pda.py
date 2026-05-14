@@ -127,19 +127,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
                                       self.current_state, '')
         self.pda.add_transition(self_transition)
 
-        lookahead_multiple_body = self.lookahead(ctx, self.grammar.Multiple_compound_wildcardContext)
-        if lookahead_multiple_body:
-            return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
-
-        lookahead_simple_wildcard = self.lookahead(ctx, self.grammar.Simple_wildcardContext)
-        if lookahead_simple_wildcard:
-            return self.visitSimple_wildcard(lookahead_simple_wildcard)
-
-        lookahead_number_wildcard = self.lookahead(ctx, self.grammar.Number_wildcardContext)
-        if lookahead_number_wildcard:
-            return self.visitNumber_wildcard(lookahead_number_wildcard)
-
-        return self.visitChildren(ctx)
+        return super().visitStatement(ctx)
 
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
