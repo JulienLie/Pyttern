@@ -30,7 +30,7 @@ class Generic_to_PDA():
         self.dict_pda = {}
         self.grammar = grammar
         self.skippable_nodes = skippable_nodes
-        self.remove_double_wildcard = remove_double_wildcard
+        self.remove_double_wildcard = tuple(remove_double_wildcard)
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
@@ -56,19 +56,9 @@ class Generic_to_PDA():
         down, up = self.define_boundaries(node)
 
         # Handle the double wildcard case
-        predicate = False
-        for clazz in self.remove_double_wildcard:
-            if self.lookahead(children[-1], clazz):
-                predicate = True
-        
-        while len(children) > 1 and predicate:
+        while len(children) > 1 and self.lookahead(children[-1], self.remove_double_wildcard):
             children.pop()
             logger.debug("Remove double wildcard")
-
-            predicate = False
-            for clazz in self.remove_double_wildcard:
-                if self.lookahead(children[-1], clazz):
-                    predicate = True
 
         # Add self-transition to be able to skip statements
         if node.__class__.__name__ in self.skippable_nodes:
