@@ -327,6 +327,14 @@ class Generic_to_PDA():
     def _is_last_node(self):
         return self.__is_last_branch
 
+    def handle_empty_list(self, ctx):
+        list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
+        if list_wildcard is not None:
+            # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
+            logger.debug("Handling empty list")
+            return self._add_up_transition(ctx)
+        return self.visitChildren(ctx)
+
     @staticmethod
     def lookahead(ctx, clazz, predicate=None):
         """

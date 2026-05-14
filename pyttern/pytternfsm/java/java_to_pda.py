@@ -141,25 +141,16 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
 
 
     def visitFormalParameters(self, ctx):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitExpressionList(self, ctx):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitArguments(self, ctx):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitMultiple_compound_wildcard(self, ctx):
         # Get the body of the compound wildcard, then let the superclass handle the rest
         blockStatementChild = ctx.getChild(0, self.grammar.BlockContext).getChild(0, self.grammar.BlockStatementContext)
         
         return super().visitGenericMultiple_compound_wildcard(ctx, blockStatementChild)
-
-
-    def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
-        if list_wildcard is not None:
-            # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.debug("Handling empty list")
-            return self._add_up_transition(ctx)
-        return self.visitChildren(ctx)

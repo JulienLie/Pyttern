@@ -116,13 +116,13 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
 
     def visitParameters(self, ctx:Python3Parser.ParametersContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitVarargslist(self, ctx:Python3Parser.VarargslistContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitArgument(self, ctx:Python3Parser.ArgumentContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitVar_wildcard(self, ctx:Python3Parser.Var_wildcardContext):
         label = ctx.NAME().getText()
@@ -251,11 +251,3 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         # The final state is the one where all transformations have been matched
         self.current_state = pda_states[(1 << n) - 1]
         return self.current_state
-
-    def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
-        if list_wildcard is not None:
-            # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.trace("Handling empty list")
-            return self._add_up_transition(ctx)
-        return self.visitChildren(ctx)
