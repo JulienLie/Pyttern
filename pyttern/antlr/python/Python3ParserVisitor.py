@@ -679,11 +679,6 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_def.
-    def visitMacro_def(self, ctx:Python3Parser.Macro_defContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by Python3Parser#macro.
     def visitMacro(self, ctx:Python3Parser.MacroContext):
         return self.visitChildren(ctx)

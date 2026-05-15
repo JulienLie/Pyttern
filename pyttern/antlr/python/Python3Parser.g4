@@ -46,7 +46,7 @@ options {
 single_input: NEWLINE | simple_stmts | compound_stmt NEWLINE;
 file_input: (NEWLINE | stmt)* EOF;
 eval_input: testlist NEWLINE* EOF;
-macro_input: (macro_stmts)+ EOF;
+macro_input: (NEWLINE | macro_stmts)+ EOF;
 
 decorator: '@' dotted_name ( '(' arglist? ')' )? NEWLINE;
 decorators: decorator+;
@@ -220,7 +220,7 @@ subscriptlist: subscript_ (',' subscript_)* ','?;
 subscript_: test | test? ':' test? sliceop?;
 sliceop: ':' test?;
 exprlist: (expr|star_expr) (',' (expr|star_expr))* ','?;
-testlist: test (',' test)* ','?;
+testlist: (test | list_wildcard) (',' (test | list_wildcard))* ','?;
 dictorsetmaker: ( ((test ':' test | '**' expr)
                    (comp_for | (',' (test ':' test | '**' expr))* ','?)) |
                   ((test | star_expr)
@@ -262,7 +262,7 @@ strings: STRING+ ;
 // syntax of wildcards
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 stmt_wildcard: double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard;
-expr_wildcard:  macro_call | var_wildcard | contains_wildcard | simple_wildcard;
+expr_wildcard: macro_call | var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
 simple_wildcard: WILDCARD;
 number_wildcard: WILDCARD wildcard_number;

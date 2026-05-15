@@ -33,15 +33,12 @@ class SubPattern_Visitor(Python3ParserVisitor):
         logger.debug(self.current_macro)
         return self.current_macro
 
-    def visitMacro_def(self, ctx:Python3Parser.Macro_defContext):
-        return ctx.macro().accept(self)
-
     def visitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
         name = ctx.NAME().accept(self)
         type_str = ctx.getChild(1).getText().upper()
         if type_str == "&": type = "AND"
         elif type_str == "|": type = "OR"
-        elif type == "!": type = "NOT"
+        elif type_str == "!": type = "NOT"
         arg_list = self.visitChildren(ctx.macro_args())
         args = {}
         for arg in arg_list:

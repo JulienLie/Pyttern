@@ -5,6 +5,8 @@ import sys
 
 from loguru import logger
 
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
+
 from .language_processors import determine_language, get_processor, Languages
 from .simulator.Matcher import Matcher
 
@@ -290,6 +292,13 @@ def main():
     if not args.pattern or not args.code:
         parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
+    
+    for sub_pyttern in args.sub:
+        ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
+        if len(ret) > 0:
+            logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
+        else:
+            logger.warning(f"No sub pytterns found in {sub_pyttern}")
 
     matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first)
 
