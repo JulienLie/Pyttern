@@ -21,8 +21,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             grammar.List_wildcardContext,
             grammar.Double_wildcardContext
         ]
+        tree_pruner = TreePruner()
         
-        super().__init__(grammar, skippable_nodes, remove_double_wildcard)
+        super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
 
     def define_boundaries(self, ctx):
         """

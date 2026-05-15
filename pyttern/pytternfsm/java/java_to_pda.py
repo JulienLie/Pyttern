@@ -5,6 +5,7 @@ from loguru import logger
 
 from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
+from .tree_pruner import TreePruner
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
@@ -27,8 +28,9 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         remove_double_wildcard = [
             grammar.List_wildcardContext,
         ]
+        tree_pruner = TreePruner()
 
-        super().__init__(grammar, skippable_nodes, remove_double_wildcard)
+        super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
 
     def define_boundaries(self, ctx):
         """

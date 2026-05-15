@@ -19,7 +19,7 @@ def rightmost_terminal(root):
     return node
 
 class Generic_to_PDA():
-    def __init__(self, grammar, skippable_nodes, remove_double_wildcard):
+    def __init__(self, grammar, skippable_nodes, remove_double_wildcard, tree_pruner):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
         self.depth = 0
@@ -31,6 +31,7 @@ class Generic_to_PDA():
         self.grammar = grammar
         self.skippable_nodes = skippable_nodes
         self.remove_double_wildcard = tuple(remove_double_wildcard)
+        self.tree_pruner = tree_pruner
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
@@ -213,7 +214,7 @@ class Generic_to_PDA():
         self.add_body_transition()
 
         logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        prune_tree = ctx # TreePruner().visit(ctx) # TODO
+        prune_tree = self.tree_pruner.visit(ctx)
         return prune_tree.getChild(2).accept(self)
 
     def visitGenericMultiple_compound_wildcard(self, ctx, blockChild):
