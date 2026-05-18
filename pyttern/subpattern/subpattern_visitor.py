@@ -13,19 +13,26 @@ def flatten(lst: list) -> list:
         flat_list += flatten_el
     return flat_list
 
+def get_original_text(ctx):
+    if ctx is None:
+        return ""
+    token_source = ctx.start.source[1]
+    return token_source.getText(ctx.start.start, ctx.stop.stop)
+
 class SubPattern_Visitor(Python3ParserVisitor):
     def __init__(self):
         self.current_macro = None
 
     def visitMacro_input(self, ctx:Python3Parser.Macro_inputContext):
-        return self.visitChildren(ctx)[:-1]
+        results = self.visitChildren(ctx)
+        return [res for res in results if isinstance(res, SubPattern)]
 
     def visitMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
         vals = flatten(self.visitChildren(ctx))
         name, type, args = vals[0]
         args_order = list(args.keys())
         alone = type == "NOT"
-        self.current_macro = SubPattern(name, args, args_order, code=ctx.getText(), type=type, alone=alone)
+        self.current_macro = SubPattern(name, args, args_order, code=get_original_text(ctx).strip(), type=type, alone=alone)
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation
@@ -39,7 +46,12 @@ class SubPattern_Visitor(Python3ParserVisitor):
         if type_str == "&": type = "AND"
         elif type_str == "|": type = "OR"
         elif type_str == "!": type = "NOT"
-        arg_list = self.visitChildren(ctx.macro_args())
+        
+        if ctx.macro_args():
+            arg_list = self.visitChildren(ctx.macro_args())
+        else:
+            arg_list = []
+            
         args = {}
         for arg in arg_list:
             args.update(arg)
