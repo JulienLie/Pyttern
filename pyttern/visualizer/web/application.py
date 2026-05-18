@@ -773,7 +773,7 @@ def loaded_macro():
         '200':
             description: Loaded macros
     """
-    macro_names = [macro for macro in loaded_subpatterns]
+    macro_names = [{'name': macro.name, 'code': macro.code} for macro in loaded_subpatterns.values()]
 
     return json.dumps({
         "status": "ok",
