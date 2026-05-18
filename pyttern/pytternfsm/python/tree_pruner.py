@@ -1,32 +1,17 @@
 from antlr4 import TerminalNode, Token
 
 from ...antlr.python import Python3ParserVisitor, Python3Parser
+from ..generic_tree_pruner import GenericTreePruner
 
-TO_KEEP = (
-    TerminalNode,
-    Python3Parser.NameContext,
-    Python3Parser.Expr_wildcardContext
-)
-
-class TreePruner(Python3ParserVisitor):
-
-    def visitChildren(self, node):
-        result = super().visitChildren(node)
-
-        node.children = result
-        for child in result:
-            if child is not None:
-                child.parentCtx = node
-
-        return node
-
-    def prune_single_child(self, node):
-        new_child = self.visitChildren(node)
-        while len(new_child.children) == 1:
-            new_child = new_child.getChild(0)
-            if isinstance(new_child, TO_KEEP):
-                return new_child
-        return new_child
+class TreePruner(GenericTreePruner, Python3ParserVisitor):
+    def __init__(self):
+        TO_KEEP = (
+            TerminalNode,
+            Python3Parser.NameContext,
+            Python3Parser.Expr_wildcardContext
+        )
+        TO_REMOVE = "():,."
+        super().__init__(TO_KEEP, TO_REMOVE)
 
     def visitTest(self, ctx: Python3Parser.TestContext):
         return self.prune_single_child(ctx)
@@ -40,28 +25,8 @@ class TreePruner(Python3ParserVisitor):
     def visitExpr(self, ctx:Python3Parser.ExprContext):
         return self.prune_single_child(ctx)
 
-    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
-        return ctx
-
     def visitTerminal(self, node):
         sym = node.getSymbol()
         if sym.type in [Python3Parser.NEWLINE, Python3Parser.INDENT, Python3Parser.DEDENT]:
             return None
-        if sym.type == Token.EOF:
-            sym.text = "<EOF>"
-            return node
-        txt = node.getText().strip()
-        if txt in "():,.":
-            return None
-        return node
-
-    def visitErrorNode(self, node):
-        return node
-
-    def defaultResult(self):
-        return []
-
-    def aggregateResult(self, aggregate, nextResult):
-        if nextResult is None:
-            return aggregate
-        return aggregate + [nextResult]
+        return super().visitTerminal(node)
