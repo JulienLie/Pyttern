@@ -1,4 +1,5 @@
 import math
+import abc
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
@@ -18,7 +19,7 @@ def rightmost_terminal(root):
         node = children[-1]
     return node
 
-class Generic_to_PDA():
+class Generic_to_PDA(metaclass=abc.ABCMeta):
     def __init__(self, grammar, skippable_nodes, remove_double_wildcard, tree_pruner):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
@@ -45,6 +46,9 @@ class Generic_to_PDA():
         self.dict_pda["__main__"] = self.pda
         return self.dict_pda
     
+    @abc.abstractmethod
+    def define_boundaries(self, ctx):
+        pass
 
     def visitChildren(self, node):
         logger.debug(f"Visiting {node}")
@@ -216,6 +220,14 @@ class Generic_to_PDA():
         logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
         prune_tree = self.tree_pruner.visit(ctx)
         return prune_tree.getChild(2).accept(self)
+
+    @abc.abstractmethod
+    def visitSimple_compound_wildcard(self, ctx):
+        pass
+
+    @abc.abstractmethod
+    def visitMultiple_compound_wildcard(self, ctx):
+        pass
 
     def visitGenericMultiple_compound_wildcard(self, ctx, blockChild):
         # Transition to push B on the stack
