@@ -293,12 +293,13 @@ def main():
         parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
     
-    for sub_pyttern in args.sub:
-        ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
-        if len(ret) > 0:
-            logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
-        else:
-            logger.warning(f"No sub pytterns found in {sub_pyttern}")
+    if args.sub_patterns:
+        for sub_pyttern in args.sub_patterns:
+            ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
+            if len(ret) > 0:
+                logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
+            else:
+                logger.warning(f"No sub pytterns found in {sub_pyttern}")
 
     matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first)
 
