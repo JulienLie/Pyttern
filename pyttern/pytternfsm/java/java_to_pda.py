@@ -20,7 +20,6 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
                 "ImportDeclarationContext",
                 "TypeDeclarationContext",
                 "ClassBodyDeclarationContext",
-                "MemberDeclarationContext",
                 "InterfaceBodyDeclarationContext",
                 "RecordDeclarationContext",
                 "CompactConstructorDeclarationContext"
