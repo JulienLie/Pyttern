@@ -40,7 +40,12 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         logger.debug(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
 
-        if isinstance(ctx, (self.grammar.CompilationUnitContext, self.grammar.ClassBodyContext, self.grammar.BlockContext)):
+        if isinstance(ctx, (self.grammar.CompilationUnitContext, 
+                            self.grammar.ClassBodyContext,
+                            self.grammar.InterfaceBodyContext,
+                            self.grammar.RecordBodyContext,
+                            self.grammar.ClassBodyContext,
+                            self.grammar.BlockContext)):
             logger.debug(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 0 and inf")
             down = 0
             up = math.inf
