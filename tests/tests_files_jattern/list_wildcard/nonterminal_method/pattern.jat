@@ -1,0 +1,6 @@
+class AnyStatements {
+    public static void main() {
+        #*; // this will match on any method that contains any amount of statements
+        // see the "terminal method" folder under non-strict-mode test cases for why the list wildcard matters in this case
+    }
+}

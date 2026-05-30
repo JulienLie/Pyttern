@@ -1,0 +1,7 @@
+class NoStatements {
+    public static void main() {
+        // because there is no children and we prune the brackets, this will make the main() method a leaf/terminal node
+        // so the boundaries will be (0,0) and will only match on a method that has no children
+        // to match on a method that contains any amount of statements (including 0), include the list wildcard (see the "nonterminal_method" test folder for the list wildcard)
+    }
+}
