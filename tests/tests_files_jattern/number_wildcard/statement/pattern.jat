@@ -1,0 +1,5 @@
+class ManyStatements {
+    public static void main() {
+        #(3,5); // note: because of the non-strict mode, the upper bound is not really relevant
+    }
+}

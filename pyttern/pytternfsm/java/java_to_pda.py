@@ -145,6 +145,12 @@ class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
         if blockStatementChild != None:
             return blockStatementChild.accept(self)
 
+    def visitBlockStatement(self, ctx):
+        lookahead_list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
+        if lookahead_list_wildcard:
+            return self.visitList_wildcard(lookahead_list_wildcard)
+        
+        return super().visitStatement(ctx)
 
     def visitFormalParameters(self, ctx):
         return self.handle_empty_list(ctx)
