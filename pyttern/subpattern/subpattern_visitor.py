@@ -1,9 +1,8 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 from loguru import logger
 
-from .SubPattern import SubPattern
+from .SubPattern import AndSubPattern, BaseSubPattern, NotSubPattern, OrSubPattern
 from ..antlr.python import Python3ParserVisitor, Python3Parser
-from ..pytternfsm.python.python_to_pda import Python_to_PDA
 
 
 def flatten(lst: list) -> list:
@@ -25,14 +24,13 @@ class SubPattern_Visitor(Python3ParserVisitor):
 
     def visitMacro_input(self, ctx:Python3Parser.Macro_inputContext):
         results = self.visitChildren(ctx)
-        return [res for res in results if isinstance(res, SubPattern)]
+        return [res for res in results if isinstance(res, BaseSubPattern)]
 
     def visitMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
         vals = flatten(self.visitChildren(ctx))
         name, type, args = vals[0]
         args_order = list(args.keys())
-        alone = type == "NOT"
-        self.current_macro = SubPattern(name, args, args_order, code=get_original_text(ctx).strip(), type=type, alone=alone)
+        self.current_macro = type(name, args, args_order, code=get_original_text(ctx).strip(), alone=False)
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation
@@ -43,9 +41,9 @@ class SubPattern_Visitor(Python3ParserVisitor):
     def visitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
         name = ctx.NAME().accept(self)
         type_str = ctx.getChild(1).getText().upper()
-        if type_str == "&": type = "AND"
-        elif type_str == "|": type = "OR"
-        elif type_str == "!": type = "NOT"
+        if type_str == "&": type_cls = AndSubPattern
+        elif type_str == "|": type_cls = OrSubPattern
+        elif type_str == "!": type_cls = NotSubPattern
         
         if ctx.macro_args():
             arg_list = self.visitChildren(ctx.macro_args())
@@ -56,7 +54,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         for arg in arg_list:
             args.update(arg)
         logger.debug(f"Macro {name} with args {args}")
-        return name, type, args
+        return name, type_cls, args
 
     def visitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
         name = flatten(ctx.getChild(0).accept(self))

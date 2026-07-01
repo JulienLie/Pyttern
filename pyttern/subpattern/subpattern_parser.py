@@ -3,7 +3,7 @@ import io
 from antlr4 import InputStream, CommonTokenStream
 from loguru import logger
 
-from .SubPattern import SubPattern
+from .SubPattern import BaseSubPattern
 from .subpattern_visitor import SubPattern_Visitor
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
@@ -30,7 +30,7 @@ def string_to_subpattern_tree(subpattern_string):
 
     return pruned_tree
 
-def parse_subpattern_from_string(code: str, language: Languages, override: bool=False) -> list[SubPattern]:
+def parse_subpattern_from_string(code: str, language: Languages, override: bool=False) -> list[BaseSubPattern]:
     """
     Parses subpatterns from a string and returns the last parsed subpattern.
 
@@ -47,7 +47,7 @@ def parse_subpattern_from_string(code: str, language: Languages, override: bool=
 
     return subpatterns
 
-def parse_subpattern_from_file(file: str, language: Languages, override: bool=False) -> list[SubPattern]:
+def parse_subpattern_from_file(file: str, language: Languages, override: bool=False) -> list[BaseSubPattern]:
     """
     Parses subpatterns from a file and returns the last parsed subpattern.
 

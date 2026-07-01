@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file, parse_subpattern_from_string
-from pyttern.subpattern.SubPattern import SubPattern
+from pyttern.subpattern.SubPattern import BaseSubPattern
 
 def test_subpattern_code_isolation():
     """Test that multiple subpatterns in the same file have isolated code attributes."""
@@ -13,7 +13,7 @@ def test_subpattern_code_isolation():
     
     assert len(subpatterns) == 3
     for sp in subpatterns:
-        assert isinstance(sp, SubPattern)
+        assert isinstance(sp, BaseSubPattern)
     
     names = [s.name for s in subpatterns]
     assert "Incr" in names

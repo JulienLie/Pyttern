@@ -4,7 +4,7 @@ from loguru import logger
 
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
-from .pda.transition import NodeTransition, NamedTransition, CallTransition
+from .pda.transition import NodeTransition, NamedTransition, CallTransition, NotCallTransition
 from ..subpattern.SubPattern import loaded_subpatterns
 from ..pytternfsm.python.match_set import MatchSet, Match
 
@@ -173,6 +173,9 @@ class Matcher:
 
                 possible_bindings = self.call_subpattern(subpattern_name, trnsf_name, args, current_node, new_var)
                 if len(possible_bindings) < 1:
+                    if not isinstance(A, NotCallTransition):
+                        continue
+                elif isinstance(A, NotCallTransition):
                     continue
                 new_vars += possible_bindings
 
@@ -213,6 +216,7 @@ class Matcher:
         to_call = f"{subpattern_name}::{trnsf_name}"
         if to_call not in self.callable or not subpattern:
             logger.warning(f"subpattern or transformation not found: {subpattern_name}:{trnsf_name}")
+            logger.debug(f"Loaded subpatterns: {loaded_subpatterns.keys()}, callable subpatterns: {self.callable.keys()}")
             return []
 
         subpattern_pdas = self.callable[to_call]
@@ -226,6 +230,7 @@ class Matcher:
         logger.trace(f"Calling subpattern {subpattern_name}:{trnsf_name} on node {current_node} with bindings {subpattern_params}")
 
         match_set = Matcher.match(subpattern_pdas, current_node, stop_at_first=False, bindings=subpattern_params)
+
         if match_set.count() == 0:
             logger.trace(f"subpattern {subpattern_name}:{trnsf_name} did not match")
             return []
