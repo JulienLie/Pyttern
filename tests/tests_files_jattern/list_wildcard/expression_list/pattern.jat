@@ -1,0 +1,8 @@
+class A {
+    void main(int a) {
+        switch (a) {
+            case #* -> // note: at least one child is needed here in Java, so that's why we don't test the 0 arg case
+                break;
+        }
+    }
+}

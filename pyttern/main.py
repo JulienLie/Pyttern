@@ -266,8 +266,9 @@ def main():
     parser.add_argument("--stop-first", action="store_true", help="Stop at the first match found.")
     parser.add_argument(
         '-s', '--sub', 
-        action='append', 
-        dest='sub_patterns', 
+        action='append',
+        default=[],
+        dest='sub', 
         help='Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).'
     )
     parser.add_argument(
