@@ -605,7 +605,7 @@ expressionList
     ;
 
 methodCall
-    : (identifier | THIS | SUPER) arguments // TODO: test
+    : (identifier | THIS | SUPER) arguments
     ;
 
 expression

@@ -9,3 +9,4 @@ bin/
 .pytest_cache/
 **/.antlr/
 .agents/
+.vscode/

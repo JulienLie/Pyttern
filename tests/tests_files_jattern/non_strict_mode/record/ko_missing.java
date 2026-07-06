@@ -1,0 +1,2 @@
+record Book(int val) {
+}

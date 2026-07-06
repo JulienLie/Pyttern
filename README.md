@@ -40,8 +40,7 @@ Pyttern extends standard Python syntax with special wildcard characters (`?`) an
 | `?:` | Body | Matches a node that has a block/body (e.g., `if`, `for`). |
 | `?:*` | Deep Body | Matches a body at any level of indentation. |
 | `?<...>` | Contains | Matches if the inner pattern is found anywhere within the node. |
-
-> For detailed usage and snippets, see the [Wildcard Examples Guide](examples/wildcards.md).
+| `?$(...)` | Call | Calls a sub-pattern defined elsewhere. |
 
 ## Usage
 
@@ -79,6 +78,20 @@ Pyttern includes a web-based visualization tool to help you understand and debug
 pytternweb
 ```
 *Accessible at `http://localhost:5000`.*
+
+### Static Graph Generation
+
+You can also generate static PDF visualizations of PDAs or Parse Trees using the `pytterngraph` command.
+
+```bash
+# Visualize a pattern as a PDA
+pytterngraph pattern.pyt output_pda --type tpa --font-size 16
+
+# Visualize a Python file as a Parse Tree
+pytterngraph code.py output_pt --type pt --wrap-at 10
+```
+
+> **Learn more:** Check out the [Visualization Guide](examples/visualization.md) for details on highlighting nodes and formatting graphs.
 
 ---
 

@@ -211,5 +211,15 @@ check_logic/
 
 ---
 
+## Visualizing Patterns
+You can visualize any of these patterns as a Pushdown Automaton (PDA) to understand how Pyttern matches them:
+
+```bash
+# Save any pattern to a .pyt file, then:
+pytterngraph pattern.pyt output_pda --type tpa
+```
+
+Refer to the [Visualization Guide](visualization.md) for more details.
+
 ## More Examples
 You can find hundreds of integration and unit tests in the [tests/tests_files](../tests/tests_files) directory of this repository, covering edge cases and complex scenarios.
