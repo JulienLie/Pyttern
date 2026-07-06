@@ -125,18 +125,53 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return down, up
     
+    def _find_direct_macro_calls(self, node):
+        if isinstance(node, Python3Parser.Macro_callContext):
+            return [node]
+        if isinstance(node, Python3Parser.BlockContext):
+            return []
+        if not hasattr(node, 'children') or node.children is None:
+            return []
+        calls = []
+        for child in node.children:
+            calls.extend(self._find_direct_macro_calls(child))
+        return calls
+
     def visitBlock(self, ctx:Python3Parser.BlockContext):
-        # We have to catch Not subpattern here for now as we have to give the block to the supbattern
-        lookahead_macro = self.lookahead(ctx, Python3Parser.Macro_callContext)
-        if lookahead_macro:
-            subpattern_name = lookahead_macro.NAME().getText()
-            subpattern = loaded_subpatterns[subpattern_name]
+        # Scan for macro calls directly under this block (ignoring sub-blocks)
+        direct_macros = []
+        if ctx.children:
+            for child in ctx.children:
+                direct_macros.extend(self._find_direct_macro_calls(child))
+
+        not_macros = []
+        for macro in direct_macros:
+            name = macro.NAME().getText()
+            subpattern = loaded_subpatterns.get(name)
             if subpattern and subpattern.type == "NOT":
-                logger.trace("Handling Not transition at Block level")
-                new_state = subpattern.generate_pda(self.pda, [], self.current_state)
-                self.current_state = new_state
-                return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
-            
+                not_macros.append((macro, subpattern))
+
+        if not_macros:
+            # If a NOT subpattern is present, it must be the ONLY statement in the block.
+            if len(ctx.children) > 1:
+                logger.error("Using a NOT subpattern alongside another statement in a block is not allowed.")
+                raise ValueError("Using a NOT subpattern alongside another statement in a block is not allowed.")
+
+            macro_call, subpattern = not_macros[0]
+            logger.trace("Handling Not transition at Block level")
+            transformations = subpattern.compile(ctx.parentCtx)
+            self.__dict_pda.update(transformations)
+
+            args_nodes = macro_call.macro_args().macro_arg() if macro_call.macro_args() is not None else None
+            if args_nodes is not None:
+                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+            else:
+                args_names = []
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            self.current_state = new_state
+            return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
+
         return self.visitChildren(ctx)
 
     def visitStmt(self, ctx:Python3Parser.StmtContext):

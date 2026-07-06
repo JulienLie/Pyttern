@@ -1,2 +1,2 @@
 def foo():
-    return
+    return 42

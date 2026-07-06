@@ -165,17 +165,9 @@ class Matcher:
 
             # Handle subpatterns
             elif isinstance(A, CallTransition):
-                subpattern_name = A.subpattern_name
-                trnsf_name = A.transformation_name
-                args = A.args
-
-                logger.trace(f"Handling subpattern: {subpattern_name} with transformation {trnsf_name} and args {args}")
-
-                possible_bindings = self.call_subpattern(subpattern_name, trnsf_name, args, current_node, new_var)
+                logger.trace(f"Handling subpattern transition: {A}")
+                possible_bindings = self.call_subpattern(A, current_node, new_var)
                 if len(possible_bindings) < 1:
-                    if not isinstance(A, NotCallTransition):
-                        continue
-                elif isinstance(A, NotCallTransition):
                     continue
                 new_vars += possible_bindings
 
@@ -201,18 +193,20 @@ class Matcher:
         self.n_step += 1
         return self
 
-    def call_subpattern(self, subpattern_name, trnsf_name, args, current_node, bindings):
+    def call_subpattern(self, transition, current_node, bindings):
         """
-        Calls a subpattern with the given name and transformation name, matching it against the current node.
+        Calls a subpattern transition (CallTransition or NotCallTransition) against the current node.
 
-        :param args:
-        :param subpattern_name: The name of the subpattern to call.
-        :param trnsf_name: The name of the transformation within the subpattern.
+        :param transition: The transition object.
         :param current_node: The current node in the parse tree.
         :param bindings: The current variable bindings.
-        :return: A MatchSet containing the results of the subpattern call.
+        :return: A list of binding dicts.
         """
-        subpattern = loaded_subpatterns[subpattern_name]
+        subpattern_name = transition.subpattern_name
+        trnsf_name = transition.transformation_name
+        args = transition.args
+
+        subpattern = loaded_subpatterns.get(subpattern_name)
         to_call = f"{subpattern_name}::{trnsf_name}"
         if to_call not in self.callable or not subpattern:
             logger.warning(f"subpattern or transformation not found: {subpattern_name}:{trnsf_name}")
@@ -230,6 +224,14 @@ class Matcher:
         logger.trace(f"Calling subpattern {subpattern_name}:{trnsf_name} on node {current_node} with bindings {subpattern_params}")
 
         match_set = Matcher.match(subpattern_pdas, current_node, stop_at_first=False, bindings=subpattern_params)
+
+        if isinstance(transition, NotCallTransition):
+            if match_set.count() > 0:
+                logger.trace(f"NOT subpattern {subpattern_name}:{trnsf_name} failed (match found)")
+                return []
+            else:
+                logger.trace(f"NOT subpattern {subpattern_name}:{trnsf_name} succeeded (no match found)")
+                return [bindings.copy()]
 
         if match_set.count() == 0:
             logger.trace(f"subpattern {subpattern_name}:{trnsf_name} did not match")

@@ -25,4 +25,5 @@ def test_not_subpattern():
     assert res, det
 
     code_path = Path(__file__).parent / "no_return_ko.py"
+    res, det = match_files(pattern_path, code_path, match_details=True)
     assert not res, det

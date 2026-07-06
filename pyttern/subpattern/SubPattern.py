@@ -227,7 +227,18 @@ class NotSubPattern(BaseSubPattern):
         )
         pda.add_transition(self_transition)
 
-        return after_body
+        stmt_body_state = pda.new_state()
+        to_stmt_body = Transition(
+            after_body,
+            "",
+            NodeTransition(""),
+            [NavigationAlphabet.LEFT_CHILD],
+            stmt_body_state,
+            "I"
+        )
+        pda.add_transition(to_stmt_body)
+
+        return stmt_body_state
     
     def generate_pda(self, pda, args, starting_state) -> int:
         super().check_args_nbr(args)
