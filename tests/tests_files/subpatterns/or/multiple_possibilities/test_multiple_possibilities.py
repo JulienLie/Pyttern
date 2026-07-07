@@ -8,7 +8,7 @@ from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 def test_incr_subpattern():
     #logger.enable("pyttern")
 
-    subpattern_file = Path(__file__).parent / "macro.myt"
+    subpattern_file = Path(__file__).parent / "subpattern.myt"
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
     assert ret[0].name == "Assign", f"Expected subpattern name 'Assign', got {ret[0].name}"

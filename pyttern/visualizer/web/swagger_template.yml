@@ -30,7 +30,7 @@ components:
     CallTransition:
       type: object
       properties:
-        macro_name:
+        subpattern_name:
           type: string
         transformation_name:
           type: string
@@ -39,7 +39,7 @@ components:
           items:
             type: string
       required:
-        - macro_name
+        - subpattern_name
         - transformation_name
         - args
 

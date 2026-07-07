@@ -5,7 +5,7 @@ from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...subpattern.SubPattern import loaded_subpatterns, SubPattern
+from ...subpattern.SubPattern import BaseSubPattern, loaded_subpatterns
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
@@ -65,6 +65,55 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
                 up += 1
 
         return down, up
+    
+    def _find_direct_subpattern_calls(self, node):
+        if isinstance(node, Python3Parser.Subpattern_callContext):
+            return [node]
+        if isinstance(node, Python3Parser.BlockContext):
+            return []
+        if not hasattr(node, 'children') or node.children is None:
+            return []
+        calls = []
+        for child in node.children:
+            calls.extend(self._find_direct_subpattern_calls(child))
+        return calls
+
+    def visitBlock(self, ctx:Python3Parser.BlockContext):
+        # Scan for subpattern calls directly under this block (ignoring sub-blocks)
+        direct_subpatterns = []
+        if ctx.children:
+            for child in ctx.children:
+                direct_subpatterns.extend(self._find_direct_subpattern_calls(child))
+
+        not_subpatterns = []
+        for subpattern_call in direct_subpatterns:
+            name = subpattern_call.NAME().getText()
+            subpattern = loaded_subpatterns.get(name)
+            if subpattern and subpattern.type == "NOT":
+                not_subpatterns.append((subpattern_call, subpattern))
+
+        if not_subpatterns:
+            # If a NOT subpattern is present, it must be the ONLY statement in the block.
+            if len(ctx.children) > 1:
+                logger.error("Using a NOT subpattern alongside another statement in a block is not allowed.")
+                raise ValueError("Using a NOT subpattern alongside another statement in a block is not allowed.")
+
+            subpattern_call, subpattern = not_subpatterns[0]
+            logger.trace("Handling Not transition at Block level")
+            transformations = subpattern.compile(ctx.parentCtx)
+            self.dict_pda.update(transformations)
+
+            args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
+            if args_nodes is not None:
+                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+            else:
+                args_names = []
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            self.current_state = new_state
+            return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
+
+        return self.visitChildren(ctx)
 
     def visitStmt(self, ctx:Python3Parser.StmtContext):
         # Handle double wildcard as Stmt
@@ -142,18 +191,18 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
 
-    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+    def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         subpattern_name = ctx.NAME().getText()
         logger.debug(f"Calling subpattern {subpattern_name}")
         if subpattern_name not in loaded_subpatterns:
             raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
-        # TODO: change handling of macro args
-        # Should be able to handle 3 types -> maybe check types from macro?
+        # TODO: change handling of subpattern args
+        # Should be able to handle 3 types -> maybe check types from subpattern?
         # 1: simple var wildcard -> can stay the same
         # 2: expr -> change all var in expr then compile
         # 3: stmts -> change all var in stmts then compile
-        args_nodes = ctx.macro_args().macro_arg()
+        args_nodes = ctx.subpattern_args().subpattern_arg() if ctx.subpattern_args() is not None else None
         if args_nodes is not None:
             args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
         else:
@@ -163,92 +212,14 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         subpattern = loaded_subpatterns[subpattern_name]
 
-        # TODO: same as before, change compilation in relation to macro args 
+        # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(ctx.parentCtx, body)
         self.dict_pda.update(transformations)
         n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(f"Subpattern {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Subpattern {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
-        # TODO: Probably no change but should be checked
-        if subpattern.type == "OR":
-            self.__visit_or_subpattern(subpattern, args_names)
-        elif subpattern.type == "AND":
-            self.__visit_and_subpattern(subpattern, args_names)
-        else:
-            logger.error(f"Unknown subpattern type {subpattern.type} for subpattern {subpattern_name}")
 
+        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
         return self._add_up_transition(ctx)
-
-    def __visit_or_subpattern(self, subpattern: SubPattern, args):
-        next_state = self.pda.new_state()
-        subpattern_name = subpattern.name
-
-        for transformation in subpattern.transformations:
-            logger.trace(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
-            transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
-                                    next_state, '')
-            self.pda.add_transition(transition)
-
-        self.current_state = next_state
-        return self.current_state
-
-    def __visit_and_subpattern(self, subpattern: SubPattern, args):
-        transformations = list(subpattern.transformations.keys())
-        n = len(transformations)
-        subpattern_name = subpattern.name
-
-        if n == 0:
-            return self.current_state
-
-        if n > 10:
-            logger.warning(
-                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
-            )
-
-        # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
-        pda_states = {mask: self.pda.new_state() for mask in range(1, 1 << n)}
-        pda_states[0] = self.current_state
-
-        for mask in range(1 << n):
-            current_pda_state = pda_states[mask]
-
-            # Add a self-loop to navigate/skip statements that do not match any required transformations.
-            # This allows matching transformations in any order, interspersed with other statements.
-            # The navigation path is based on the original implementation's logic.
-            if mask != (1 << n) - 1:
-                nav_loop_transition = Transition(
-                    current_pda_state,
-                    "",
-                    NodeTransition(""),
-                    [
-                        NavigationAlphabet.PARENT,
-                        NavigationAlphabet.RIGHT_SIBLING,
-                        NavigationAlphabet.LEFT_CHILD,
-                    ],
-                    current_pda_state,
-                    "",
-                )
-                self.pda.add_transition(nav_loop_transition)
-
-            # For each transformation not yet matched in the current subset (mask)
-            for i, trans_name in enumerate(transformations):
-                if not ((mask >> i) & 1):  # Check if i-th bit is not set
-                    next_mask = mask | (1 << i)
-                    next_pda_state = pda_states[next_mask]
-
-                    # Add a transition to match the transformation and move to the next state (subset)
-                    match_transition = Transition(
-                        current_pda_state,
-                        "",
-                        CallTransition(subpattern_name, trans_name, args),
-                        [],
-                        next_pda_state,
-                        "",
-                    )
-                    self.pda.add_transition(match_transition)
-
-        # The final state is the one where all transformations have been matched
-        self.current_state = pda_states[(1 << n) - 1]
-        return self.current_state

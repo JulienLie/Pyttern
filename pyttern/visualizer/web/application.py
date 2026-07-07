@@ -153,6 +153,7 @@ def try_processors(code):
 
 @app.route("/")
 @app.route("/macros")
+@app.route("/subpatterns")
 def index():
     return send_from_directory("dist/", "index.html")
 
@@ -701,10 +702,11 @@ def step():
         "code_pos": code_pos
     })
 
+@app.route("/api/subpattern", methods=['POST'])
 @app.route("/api/macro", methods=['POST'])
-def parse_macro():
+def parse_subpattern():
     """
-    [WIP] Parse a macro and return its PDA representation.
+    [WIP] Parse a subpattern and return its PDA representation.
     ---
     requestBody:
         required: true
@@ -715,7 +717,7 @@ def parse_macro():
               additionalProperties: true
     responses:
       '200':
-        description: Macro parsing result
+        description: Subpattern parsing result
         content:
           application/json:
             schema:
@@ -727,55 +729,58 @@ def parse_macro():
                 message:
                   type: string
                   description: Error message if status is error
-                macro:
+                subpattern:
                   type: object
                   properties:
                     name:
                       type: string
-                      description: The name of the macro
+                      description: The name of the subpattern
                     code:
                       type: string
-                      description: The code of the macro
+                      description: The code of the subpattern
                     transformations:
                       type: object
                       additionalProperties:
                         $ref: '#/components/schemas/PDA'
     """
-    macro_code = request.json["code"]
+    subpattern_code = request.json["code"]
     lang = Languages.PYTHON
     try:
-        macros = parse_subpattern_from_string(macro_code, lang)
-        logger.debug(f"Parsed macros: {macros}")
+        subpatterns = parse_subpattern_from_string(subpattern_code, lang)
+        logger.debug(f"Parsed subpatterns: {subpatterns}")
     except Exception as e:
-        logger.error(f"Error parsing macro: {e}")
+        logger.error(f"Error parsing subpattern: {e}")
         return json.dumps({"status": "error", "message": str(e)})
-    if len(macros) < 1:
-      return json.dumps({"status": "error", "message": "No macro found"})
+    if len(subpatterns) < 1:
+      return json.dumps({"status": "error", "message": "No subpattern found"})
 
-    macro_names = [macro.name for macro in macros]
-    return json.dumps({"status": "ok", "names": macro_names})
+    subpattern_names = [subpattern.name for subpattern in subpatterns]
+    return json.dumps({"status": "ok", "names": subpattern_names})
 
+@app.route("/api/subpattern", methods=['DELETE'])
 @app.route("/api/macro", methods=['DELETE'])
-def remove_macro():
-    macro_name = request.json["name"]
-    logger.debug(f"Removing macro {macro_name}")
-    if loaded_subpatterns[macro_name] is None:
-        return json.dumps({"status": "error", "message": f"No sub pattern called {macro_name}"})
-    del loaded_subpatterns[macro_name]
+def remove_subpattern():
+    subpattern_name = request.json["name"]
+    logger.debug(f"Removing subpattern {subpattern_name}")
+    if loaded_subpatterns[subpattern_name] is None:
+        return json.dumps({"status": "error", "message": f"No sub pattern called {subpattern_name}"})
+    del loaded_subpatterns[subpattern_name]
     return json.dumps({"status": "ok"})
 
+@app.route("/api/subpattern", methods=['GET'])
 @app.route("/api/macro", methods=['GET'])
-def loaded_macro():
+def loaded_subpattern():
     """
-    [WIP] Returns the loaded macros in the session.
+    [WIP] Returns the loaded subpatterns in the session.
     ---
     responses:
         '200':
-            description: Loaded macros
+            description: Loaded subpatterns
     """
-    macro_names = [{'name': macro.name, 'code': macro.code} for macro in loaded_subpatterns.values()]
+    subpattern_names = [{'name': subpattern.name, 'code': subpattern.code} for subpattern in loaded_subpatterns.values()]
 
     return json.dumps({
         "status": "ok",
-        "macros": macro_names
+        "subpatterns": subpattern_names,
+        "macros": subpattern_names
     })

@@ -46,7 +46,7 @@ options {
 single_input: NEWLINE | simple_stmts | compound_stmt NEWLINE;
 file_input: (NEWLINE | stmt)* EOF;
 eval_input: testlist NEWLINE* EOF;
-macro_input: (NEWLINE | macro_stmts)+ EOF;
+subpattern_input: (NEWLINE | subpattern_stmts)+ EOF;
 
 decorator: '@' dotted_name ( '(' arglist? ')' )? NEWLINE;
 decorators: decorator+;
@@ -69,7 +69,7 @@ varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: (macro_call NEWLINE) | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
+stmt: (subpattern_call NEWLINE) | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -262,7 +262,7 @@ strings: STRING+ ;
 // syntax of wildcards
 wildcard_number: '{' NUMBER (',' | ',' NUMBER)? '}';
 stmt_wildcard: double_wildcard | contains_wildcard | simple_wildcard | number_wildcard | var_wildcard;
-expr_wildcard: macro_call | var_wildcard | contains_wildcard | simple_wildcard;
+expr_wildcard: subpattern_call | var_wildcard | contains_wildcard | simple_wildcard;
 atom_wildcard: simple_wildcard | var_wildcard;
 simple_wildcard: WILDCARD;
 number_wildcard: WILDCARD wildcard_number;
@@ -274,14 +274,14 @@ simple_compound_wildcard: WILDCARD ':' wildcard_number? block;
 multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 list_wildcard: WILDCARD '*';
 
-// syntax of macro
-macro_call: WILDCARD SUB_PATTERN NAME '(' macro_args? ')' (':' block)?;
+// syntax of subpattern
+subpattern_call: WILDCARD SUB_PATTERN NAME '(' subpattern_args? ')' (':' block)?;
 
-macro_stmts: macro transformation+;
-macro: compound_macro | (simple_macro NEWLINE);
-macro_args: macro_arg (',' macro_arg)*;
-macro_arg: (atom_wildcard | atom) ('=' test)?;
-simple_macro: SUB_PATTERN ('&'|'|'|'!') NAME '(' macro_args? ')';
-compound_macro: simple_macro ':' block;
+subpattern_stmts: subpattern transformation+;
+subpattern: compound_subpattern | (simple_subpattern NEWLINE);
+subpattern_args: subpattern_arg (',' subpattern_arg)*;
+subpattern_arg: (atom_wildcard | atom) ('=' test)?;
+simple_subpattern: SUB_PATTERN ('&'|'|'|'!') NAME '(' subpattern_args? ')';
+compound_subpattern: simple_subpattern ':' block;
 
 transformation: BALISE NAME NEWLINE stmt;

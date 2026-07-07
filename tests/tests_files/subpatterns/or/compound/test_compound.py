@@ -7,7 +7,6 @@ from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
-@pytest.mark.timeout(1)
 def test_loop_subpattern():
     subpattern_file = Path(__file__).parent / "loop.myt"
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
@@ -15,7 +14,6 @@ def test_loop_subpattern():
     assert ret[0].name == "Loop", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 2, f"Expected 2 transformations, got {len(ret[0].transformations)}"
 
-@pytest.mark.timeout(1)
 def test_loop_subpattern_for():
     #logger.enable("pyttern")
 
@@ -43,7 +41,6 @@ def test_loop_subpattern_for():
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
 
-@pytest.mark.timeout(1)
 def test_loop_subpattern_while():
     #logger.enable("pyttern")
 

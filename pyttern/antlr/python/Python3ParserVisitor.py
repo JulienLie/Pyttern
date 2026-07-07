@@ -24,8 +24,8 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_input.
-    def visitMacro_input(self, ctx:Python3Parser.Macro_inputContext):
+    # Visit a parse tree produced by Python3Parser#subpattern_input.
+    def visitSubpattern_input(self, ctx:Python3Parser.Subpattern_inputContext):
         return self.visitChildren(ctx)
 
 
@@ -669,38 +669,38 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_call.
-    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+    # Visit a parse tree produced by Python3Parser#subpattern_call.
+    def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_stmts.
-    def visitMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
+    # Visit a parse tree produced by Python3Parser#subpattern_stmts.
+    def visitSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro.
-    def visitMacro(self, ctx:Python3Parser.MacroContext):
+    # Visit a parse tree produced by Python3Parser#subpattern.
+    def visitSubpattern(self, ctx:Python3Parser.SubpatternContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_args.
-    def visitMacro_args(self, ctx:Python3Parser.Macro_argsContext):
+    # Visit a parse tree produced by Python3Parser#subpattern_args.
+    def visitSubpattern_args(self, ctx:Python3Parser.Subpattern_argsContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#macro_arg.
-    def visitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+    # Visit a parse tree produced by Python3Parser#subpattern_arg.
+    def visitSubpattern_arg(self, ctx:Python3Parser.Subpattern_argContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#simple_macro.
-    def visitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+    # Visit a parse tree produced by Python3Parser#simple_subpattern.
+    def visitSimple_subpattern(self, ctx:Python3Parser.Simple_subpatternContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#compound_macro.
-    def visitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+    # Visit a parse tree produced by Python3Parser#compound_subpattern.
+    def visitCompound_subpattern(self, ctx:Python3Parser.Compound_subpatternContext):
         return self.visitChildren(ctx)
 
 

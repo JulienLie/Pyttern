@@ -747,7 +747,7 @@ class Python3Parser ( Python3ParserBase ):
     RULE_single_input = 0
     RULE_file_input = 1
     RULE_eval_input = 2
-    RULE_macro_input = 3
+    RULE_subpattern_input = 3
     RULE_decorator = 4
     RULE_decorators = 5
     RULE_decorated = 6
@@ -876,16 +876,16 @@ class Python3Parser ( Python3ParserBase ):
     RULE_simple_compound_wildcard = 129
     RULE_multiple_compound_wildcard = 130
     RULE_list_wildcard = 131
-    RULE_macro_call = 132
-    RULE_macro_stmts = 133
-    RULE_macro = 134
-    RULE_macro_args = 135
-    RULE_macro_arg = 136
-    RULE_simple_macro = 137
-    RULE_compound_macro = 138
+    RULE_subpattern_call = 132
+    RULE_subpattern_stmts = 133
+    RULE_subpattern = 134
+    RULE_subpattern_args = 135
+    RULE_subpattern_arg = 136
+    RULE_simple_subpattern = 137
+    RULE_compound_subpattern = 138
     RULE_transformation = 139
 
-    ruleNames =  [ "single_input", "file_input", "eval_input", "macro_input", 
+    ruleNames =  [ "single_input", "file_input", "eval_input", "subpattern_input", 
                    "decorator", "decorators", "decorated", "async_funcdef", 
                    "funcdef", "parameters", "tfpdef", "varargslist", "vfpdef", 
                    "stmt", "simple_stmts", "simple_stmt", "expr_stmt", "annassign", 
@@ -918,9 +918,9 @@ class Python3Parser ( Python3ParserBase ):
                    "atom_wildcard", "simple_wildcard", "number_wildcard", 
                    "double_wildcard", "var_wildcard", "contains_wildcard", 
                    "compound_wildcard", "simple_compound_wildcard", "multiple_compound_wildcard", 
-                   "list_wildcard", "macro_call", "macro_stmts", "macro", 
-                   "macro_args", "macro_arg", "simple_macro", "compound_macro", 
-                   "transformation" ]
+                   "list_wildcard", "subpattern_call", "subpattern_stmts", 
+                   "subpattern", "subpattern_args", "subpattern_arg", "simple_subpattern", 
+                   "compound_subpattern", "transformation" ]
 
     EOF = Token.EOF
     INDENT=1
@@ -1270,7 +1270,7 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Macro_inputContext(ParserRuleContext):
+    class Subpattern_inputContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1286,37 +1286,37 @@ class Python3Parser ( Python3ParserBase ):
             else:
                 return self.getToken(Python3Parser.NEWLINE, i)
 
-        def macro_stmts(self, i:int=None):
+        def subpattern_stmts(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(Python3Parser.Macro_stmtsContext)
+                return self.getTypedRuleContexts(Python3Parser.Subpattern_stmtsContext)
             else:
-                return self.getTypedRuleContext(Python3Parser.Macro_stmtsContext,i)
+                return self.getTypedRuleContext(Python3Parser.Subpattern_stmtsContext,i)
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro_input
+            return Python3Parser.RULE_subpattern_input
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro_input" ):
-                listener.enterMacro_input(self)
+            if hasattr( listener, "enterSubpattern_input" ):
+                listener.enterSubpattern_input(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro_input" ):
-                listener.exitMacro_input(self)
+            if hasattr( listener, "exitSubpattern_input" ):
+                listener.exitSubpattern_input(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_input" ):
-                return visitor.visitMacro_input(self)
+            if hasattr( visitor, "visitSubpattern_input" ):
+                return visitor.visitSubpattern_input(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro_input(self):
+    def subpattern_input(self):
 
-        localctx = Python3Parser.Macro_inputContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 6, self.RULE_macro_input)
+        localctx = Python3Parser.Subpattern_inputContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_subpattern_input)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -1333,7 +1333,7 @@ class Python3Parser ( Python3ParserBase ):
                     pass
                 elif token in [105]:
                     self.state = 306
-                    self.macro_stmts()
+                    self.subpattern_stmts()
                     pass
                 else:
                     raise NoViableAltException(self)
@@ -2520,8 +2520,8 @@ class Python3Parser ( Python3ParserBase ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def macro_call(self):
-            return self.getTypedRuleContext(Python3Parser.Macro_callContext,0)
+        def subpattern_call(self):
+            return self.getTypedRuleContext(Python3Parser.Subpattern_callContext,0)
 
 
         def NEWLINE(self):
@@ -2570,7 +2570,7 @@ class Python3Parser ( Python3ParserBase ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 537
-                self.macro_call()
+                self.subpattern_call()
                 self.state = 538
                 self.match(Python3Parser.NEWLINE)
                 pass
@@ -11646,8 +11646,8 @@ class Python3Parser ( Python3ParserBase ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def macro_call(self):
-            return self.getTypedRuleContext(Python3Parser.Macro_callContext,0)
+        def subpattern_call(self):
+            return self.getTypedRuleContext(Python3Parser.Subpattern_callContext,0)
 
 
         def var_wildcard(self):
@@ -11693,7 +11693,7 @@ class Python3Parser ( Python3ParserBase ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1545
-                self.macro_call()
+                self.subpattern_call()
                 pass
 
             elif la_ == 2:
@@ -12336,7 +12336,7 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Macro_callContext(ParserRuleContext):
+    class Subpattern_callContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -12358,8 +12358,8 @@ class Python3Parser ( Python3ParserBase ):
         def CLOSE_PAREN(self):
             return self.getToken(Python3Parser.CLOSE_PAREN, 0)
 
-        def macro_args(self):
-            return self.getTypedRuleContext(Python3Parser.Macro_argsContext,0)
+        def subpattern_args(self):
+            return self.getTypedRuleContext(Python3Parser.Subpattern_argsContext,0)
 
 
         def COLON(self):
@@ -12370,29 +12370,29 @@ class Python3Parser ( Python3ParserBase ):
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro_call
+            return Python3Parser.RULE_subpattern_call
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro_call" ):
-                listener.enterMacro_call(self)
+            if hasattr( listener, "enterSubpattern_call" ):
+                listener.enterSubpattern_call(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro_call" ):
-                listener.exitMacro_call(self)
+            if hasattr( listener, "exitSubpattern_call" ):
+                listener.exitSubpattern_call(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_call" ):
-                return visitor.visitMacro_call(self)
+            if hasattr( visitor, "visitSubpattern_call" ):
+                return visitor.visitSubpattern_call(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro_call(self):
+    def subpattern_call(self):
 
-        localctx = Python3Parser.Macro_callContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 264, self.RULE_macro_call)
+        localctx = Python3Parser.Subpattern_callContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 264, self.RULE_subpattern_call)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -12409,7 +12409,7 @@ class Python3Parser ( Python3ParserBase ):
             _la = self._input.LA(1)
             if (((_la) & ~0x3f) == 0 and ((1 << _la) & 720718055479443480) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 137438961665) != 0):
                 self.state = 1601
-                self.macro_args()
+                self.subpattern_args()
 
 
             self.state = 1604
@@ -12433,15 +12433,15 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Macro_stmtsContext(ParserRuleContext):
+    class Subpattern_stmtsContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def macro(self):
-            return self.getTypedRuleContext(Python3Parser.MacroContext,0)
+        def subpattern(self):
+            return self.getTypedRuleContext(Python3Parser.SubpatternContext,0)
 
 
         def transformation(self, i:int=None):
@@ -12452,34 +12452,34 @@ class Python3Parser ( Python3ParserBase ):
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro_stmts
+            return Python3Parser.RULE_subpattern_stmts
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro_stmts" ):
-                listener.enterMacro_stmts(self)
+            if hasattr( listener, "enterSubpattern_stmts" ):
+                listener.enterSubpattern_stmts(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro_stmts" ):
-                listener.exitMacro_stmts(self)
+            if hasattr( listener, "exitSubpattern_stmts" ):
+                listener.exitSubpattern_stmts(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_stmts" ):
-                return visitor.visitMacro_stmts(self)
+            if hasattr( visitor, "visitSubpattern_stmts" ):
+                return visitor.visitSubpattern_stmts(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro_stmts(self):
+    def subpattern_stmts(self):
 
-        localctx = Python3Parser.Macro_stmtsContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 266, self.RULE_macro_stmts)
+        localctx = Python3Parser.Subpattern_stmtsContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 266, self.RULE_subpattern_stmts)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1609
-            self.macro()
+            self.subpattern()
             self.state = 1611 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -12501,48 +12501,48 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class MacroContext(ParserRuleContext):
+    class SubpatternContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def compound_macro(self):
-            return self.getTypedRuleContext(Python3Parser.Compound_macroContext,0)
+        def compound_subpattern(self):
+            return self.getTypedRuleContext(Python3Parser.Compound_subpatternContext,0)
 
 
-        def simple_macro(self):
-            return self.getTypedRuleContext(Python3Parser.Simple_macroContext,0)
+        def simple_subpattern(self):
+            return self.getTypedRuleContext(Python3Parser.Simple_subpatternContext,0)
 
 
         def NEWLINE(self):
             return self.getToken(Python3Parser.NEWLINE, 0)
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro
+            return Python3Parser.RULE_subpattern
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro" ):
-                listener.enterMacro(self)
+            if hasattr( listener, "enterSubpattern" ):
+                listener.enterSubpattern(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro" ):
-                listener.exitMacro(self)
+            if hasattr( listener, "exitSubpattern" ):
+                listener.exitSubpattern(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro" ):
-                return visitor.visitMacro(self)
+            if hasattr( visitor, "visitSubpattern" ):
+                return visitor.visitSubpattern(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro(self):
+    def subpattern(self):
 
-        localctx = Python3Parser.MacroContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 268, self.RULE_macro)
+        localctx = Python3Parser.SubpatternContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 268, self.RULE_subpattern)
         try:
             self.state = 1619
             self._errHandler.sync(self)
@@ -12550,13 +12550,13 @@ class Python3Parser ( Python3ParserBase ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1615
-                self.compound_macro()
+                self.compound_subpattern()
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1616
-                self.simple_macro()
+                self.simple_subpattern()
                 self.state = 1617
                 self.match(Python3Parser.NEWLINE)
                 pass
@@ -12571,18 +12571,18 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Macro_argsContext(ParserRuleContext):
+    class Subpattern_argsContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def macro_arg(self, i:int=None):
+        def subpattern_arg(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(Python3Parser.Macro_argContext)
+                return self.getTypedRuleContexts(Python3Parser.Subpattern_argContext)
             else:
-                return self.getTypedRuleContext(Python3Parser.Macro_argContext,i)
+                return self.getTypedRuleContext(Python3Parser.Subpattern_argContext,i)
 
 
         def COMMA(self, i:int=None):
@@ -12592,34 +12592,34 @@ class Python3Parser ( Python3ParserBase ):
                 return self.getToken(Python3Parser.COMMA, i)
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro_args
+            return Python3Parser.RULE_subpattern_args
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro_args" ):
-                listener.enterMacro_args(self)
+            if hasattr( listener, "enterSubpattern_args" ):
+                listener.enterSubpattern_args(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro_args" ):
-                listener.exitMacro_args(self)
+            if hasattr( listener, "exitSubpattern_args" ):
+                listener.exitSubpattern_args(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_args" ):
-                return visitor.visitMacro_args(self)
+            if hasattr( visitor, "visitSubpattern_args" ):
+                return visitor.visitSubpattern_args(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro_args(self):
+    def subpattern_args(self):
 
-        localctx = Python3Parser.Macro_argsContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 270, self.RULE_macro_args)
+        localctx = Python3Parser.Subpattern_argsContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 270, self.RULE_subpattern_args)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1621
-            self.macro_arg()
+            self.subpattern_arg()
             self.state = 1626
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -12627,7 +12627,7 @@ class Python3Parser ( Python3ParserBase ):
                 self.state = 1622
                 self.match(Python3Parser.COMMA)
                 self.state = 1623
-                self.macro_arg()
+                self.subpattern_arg()
                 self.state = 1628
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
@@ -12641,7 +12641,7 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Macro_argContext(ParserRuleContext):
+    class Subpattern_argContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -12664,29 +12664,29 @@ class Python3Parser ( Python3ParserBase ):
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_macro_arg
+            return Python3Parser.RULE_subpattern_arg
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMacro_arg" ):
-                listener.enterMacro_arg(self)
+            if hasattr( listener, "enterSubpattern_arg" ):
+                listener.enterSubpattern_arg(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMacro_arg" ):
-                listener.exitMacro_arg(self)
+            if hasattr( listener, "exitSubpattern_arg" ):
+                listener.exitSubpattern_arg(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_arg" ):
-                return visitor.visitMacro_arg(self)
+            if hasattr( visitor, "visitSubpattern_arg" ):
+                return visitor.visitSubpattern_arg(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def macro_arg(self):
+    def subpattern_arg(self):
 
-        localctx = Python3Parser.Macro_argContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 272, self.RULE_macro_arg)
+        localctx = Python3Parser.Subpattern_argContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 272, self.RULE_subpattern_arg)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -12723,7 +12723,7 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Simple_macroContext(ParserRuleContext):
+    class Simple_subpatternContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -12751,34 +12751,34 @@ class Python3Parser ( Python3ParserBase ):
         def NOT_WILDCARD(self):
             return self.getToken(Python3Parser.NOT_WILDCARD, 0)
 
-        def macro_args(self):
-            return self.getTypedRuleContext(Python3Parser.Macro_argsContext,0)
+        def subpattern_args(self):
+            return self.getTypedRuleContext(Python3Parser.Subpattern_argsContext,0)
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_simple_macro
+            return Python3Parser.RULE_simple_subpattern
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimple_macro" ):
-                listener.enterSimple_macro(self)
+            if hasattr( listener, "enterSimple_subpattern" ):
+                listener.enterSimple_subpattern(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimple_macro" ):
-                listener.exitSimple_macro(self)
+            if hasattr( listener, "exitSimple_subpattern" ):
+                listener.exitSimple_subpattern(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimple_macro" ):
-                return visitor.visitSimple_macro(self)
+            if hasattr( visitor, "visitSimple_subpattern" ):
+                return visitor.visitSimple_subpattern(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def simple_macro(self):
+    def simple_subpattern(self):
 
-        localctx = Python3Parser.Simple_macroContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 274, self.RULE_simple_macro)
+        localctx = Python3Parser.Simple_subpatternContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 274, self.RULE_simple_subpattern)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -12800,7 +12800,7 @@ class Python3Parser ( Python3ParserBase ):
             _la = self._input.LA(1)
             if (((_la) & ~0x3f) == 0 and ((1 << _la) & 720718055479443480) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & 137438961665) != 0):
                 self.state = 1641
-                self.macro_args()
+                self.subpattern_args()
 
 
             self.state = 1644
@@ -12814,15 +12814,15 @@ class Python3Parser ( Python3ParserBase ):
         return localctx
 
 
-    class Compound_macroContext(ParserRuleContext):
+    class Compound_subpatternContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def simple_macro(self):
-            return self.getTypedRuleContext(Python3Parser.Simple_macroContext,0)
+        def simple_subpattern(self):
+            return self.getTypedRuleContext(Python3Parser.Simple_subpatternContext,0)
 
 
         def COLON(self):
@@ -12833,33 +12833,33 @@ class Python3Parser ( Python3ParserBase ):
 
 
         def getRuleIndex(self):
-            return Python3Parser.RULE_compound_macro
+            return Python3Parser.RULE_compound_subpattern
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCompound_macro" ):
-                listener.enterCompound_macro(self)
+            if hasattr( listener, "enterCompound_subpattern" ):
+                listener.enterCompound_subpattern(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCompound_macro" ):
-                listener.exitCompound_macro(self)
+            if hasattr( listener, "exitCompound_subpattern" ):
+                listener.exitCompound_subpattern(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCompound_macro" ):
-                return visitor.visitCompound_macro(self)
+            if hasattr( visitor, "visitCompound_subpattern" ):
+                return visitor.visitCompound_subpattern(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def compound_macro(self):
+    def compound_subpattern(self):
 
-        localctx = Python3Parser.Compound_macroContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 276, self.RULE_compound_macro)
+        localctx = Python3Parser.Compound_subpatternContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 276, self.RULE_compound_subpattern)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1646
-            self.simple_macro()
+            self.simple_subpattern()
             self.state = 1647
             self.match(Python3Parser.COLON)
             self.state = 1648
