@@ -29,8 +29,10 @@ class PythonProcessor(BaseProcessor):
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)
 
+        input = io.StringIO()
+
         py_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener()
+        error_listener = Python3ErrorListener(input)
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
@@ -83,13 +85,13 @@ class PythonProcessor(BaseProcessor):
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)
 
-        py_parser.removeErrorListeners()
+        error = io.StringIO()
 
-        error_listener = PytternErrorListener()
+        py_parser.removeErrorListeners()
+        error_listener = PytternErrorListener(error)
         py_parser.addErrorListener(error_listener)
 
-        test_listener = Python3ErrorListener()
-        py_parser.addErrorListener(test_listener)
+        py_parser.file_input()
 
         logger.debug(f"Parsing done, error found: {error_listener.errors}")
 

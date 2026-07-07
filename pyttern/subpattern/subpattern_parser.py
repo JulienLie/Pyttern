@@ -18,9 +18,10 @@ def string_to_subpattern_tree(subpattern_string):
     stream = CommonTokenStream(lexer)
     py_parser = Python3Parser(stream)
 
+    error = io.StringIO()
 
     py_parser.removeErrorListeners()
-    error_listener = Python3ErrorListener()
+    error_listener = Python3ErrorListener(error)
     py_parser.addErrorListener(error_listener)
 
     tree = py_parser.subpattern_input()
