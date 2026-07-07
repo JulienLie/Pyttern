@@ -12,9 +12,6 @@ class Python3ErrorListener(ErrorListener):
     """
     Python3ErrorListener class is responsible for handling syntax errors in the input pyttern file.
     """
-    def __init__(self, input):
-        self.input = input
-
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         """
         Syntax error handler.
@@ -37,7 +34,6 @@ class PytternErrorListener(ErrorListener):
     def __init__(self):
         self.errors = []
 
-    @override
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         error = {
             "message": msg,
@@ -48,14 +44,11 @@ class PytternErrorListener(ErrorListener):
         logger.debug(f"New syntax error: {error}")
         self.errors.append(error)
 
-    @override
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         pass
 
-    @override
     def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs):
         pass
 
-    @override
     def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
         pass

@@ -88,6 +88,10 @@ class PythonProcessor(BaseProcessor):
         py_parser.removeErrorListeners()
         error_listener = PytternErrorListener()
         py_parser.addErrorListener(error_listener)
+
+        test_listener = Python3ErrorListener()
+        py_parser.addErrorListener(test_listener)
+
         logger.debug(f"Parsing done, error found: {error_listener.errors}")
 
         return error_listener.errors
