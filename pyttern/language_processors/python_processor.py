@@ -80,7 +80,7 @@ class PythonProcessor(BaseProcessor):
         code = code.strip() + "\n"
         stream = InputStream(code)
 
-        logger.debug("Generating tree")
+        logger.debug("Parsing for debugging purpose")
         lexer = Python3Lexer(stream)
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)
@@ -88,6 +88,7 @@ class PythonProcessor(BaseProcessor):
         py_parser.removeErrorListeners()
         error_listener = PytternErrorListener()
         py_parser.addErrorListener(error_listener)
+        logger.debug(f"Parsing done, error found: {error_listener.errors}")
 
         return error_listener.errors
     
