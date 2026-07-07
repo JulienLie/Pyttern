@@ -2,8 +2,6 @@
 This module contains the Python3ErrorListener class.
 """
 
-from typing import override
-
 from antlr4.error.ErrorListener import ErrorListener
 from loguru import logger
 
