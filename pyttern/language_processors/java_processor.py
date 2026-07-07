@@ -18,10 +18,9 @@ class JavaProcessor(BaseProcessor):
         stream = CommonTokenStream(lexer)
         java_parser = JavaParser(stream)
 
-        error = io.StringIO()
 
         java_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener(error)
+        error_listener = Python3ErrorListener()
         java_parser.addErrorListener(error_listener)
 
         tree = java_parser.compilationUnit()

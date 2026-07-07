@@ -29,10 +29,8 @@ class PythonProcessor(BaseProcessor):
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)
 
-        error = io.StringIO()
-
         py_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener(error)
+        error_listener = Python3ErrorListener()
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
@@ -80,12 +78,13 @@ class PythonProcessor(BaseProcessor):
         code = code.strip() + "\n"
         stream = InputStream(code)
 
-        logger.debug("Parsing for debugging purpose")
+        logger.debug(f"Parsing {code} for debugging purpose")
         lexer = Python3Lexer(stream)
         stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(stream)
 
         py_parser.removeErrorListeners()
+
         error_listener = PytternErrorListener()
         py_parser.addErrorListener(error_listener)
 
