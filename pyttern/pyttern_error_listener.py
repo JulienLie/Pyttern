@@ -2,6 +2,8 @@
 This module contains the Python3ErrorListener class.
 """
 
+from typing import override
+
 from antlr4.error.ErrorListener import ErrorListener
 
 
@@ -28,3 +30,29 @@ class PytternSyntaxException(Exception):
 
     def __str__(self):
         return f"Syntax error at {self.line}:{self.column} ({self.symbol}) : {self.msg}"
+
+
+class PytternErrorListener(ErrorListener):
+    def __init__(self):
+        self.errors = []
+
+    @override
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        self.errors.append({
+            "message": msg,
+            "line": line,
+            "character": column,
+            "severity": "error",
+        })
+
+    @override
+    def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
+        pass
+
+    @override
+    def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs):
+        pass
+
+    @override
+    def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
+        pass
