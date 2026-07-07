@@ -13,17 +13,6 @@ from ..antlr.python import Python3Parser
 
 from ..simulator.pda import PDA
 
-def check_for_alone(tree: ParseTree):
-    return False
-    if isinstance(tree, Python3Parser.Subpattern_stmtsContext):
-        subpattern = loaded_subpatterns[tree]
-        if subpattern is not None and subpattern.alone:
-            return True
-    if hasattr("children", tree):
-        if any([check_for_alone(child) for child in tree.children]):
-            return True
-    return False
-
 def prune(tree: RuleContext, ctx: RuleContext | None):
     if isinstance(ctx, Python3Parser.Expr_wildcardContext):
         tree = tree.getChild(0) #stmt -> simple_stmts
@@ -48,7 +37,6 @@ class BaseSubPattern(ABC):
     args_order: list[str]
     code: str
     transformations: dict[str, ParseTree] = field(default_factory=dict)
-    alone: bool = False
 
     def __post_init__(self):
         loaded_subpatterns[self.name] = self
@@ -61,8 +49,6 @@ class BaseSubPattern(ABC):
         :param transformation: The transformation object of type PDA.
         """
         self.transformations[name] = transformation
-        if not self.alone:
-            check_for_alone(transformation)
 
 
     def compile(self, ctx, body=None) -> dict[str, PDA]:
@@ -199,8 +185,11 @@ class NotSubPattern(BaseSubPattern):
             pda = PDA()
             current_state = self.__add_default_transitions(pda)
 
-            pda = Python_to_PDA(pda, current_state).visit(trans)
-            ret[f"{self.name}::{name}"] = pda
+            pda_generator = Python_to_PDA()
+            pda_generator.pda = pda
+            pda_generator.current_state = current_state
+            pda_generator.visit(trans)
+            ret[f"{self.name}::{name}"] = pda_generator.dict_pda
 
         return ret
     

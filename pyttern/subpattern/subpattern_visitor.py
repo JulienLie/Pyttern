@@ -30,7 +30,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         vals = flatten(self.visitChildren(ctx))
         name, type, args = vals[0]
         args_order = list(args.keys())
-        self.current_subpattern = type(name, args, args_order, code=get_original_text(ctx).strip(), alone=False)
+        self.current_subpattern = type(name, args, args_order, code=get_original_text(ctx).strip())
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation
