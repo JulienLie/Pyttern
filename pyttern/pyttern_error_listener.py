@@ -5,6 +5,7 @@ This module contains the Python3ErrorListener class.
 from typing import override
 
 from antlr4.error.ErrorListener import ErrorListener
+from loguru import logger
 
 
 class Python3ErrorListener(ErrorListener):
@@ -38,12 +39,14 @@ class PytternErrorListener(ErrorListener):
 
     @override
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.errors.append({
+        error = {
             "message": msg,
             "line": line,
             "character": column,
             "severity": "error",
-        })
+        }
+        logger.debug(f"New syntax error: {error}")
+        self.errors.append(error)
 
     @override
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
