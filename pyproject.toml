@@ -17,6 +17,8 @@ loguru="^0.7.2"
 pymemcache="^4.0.0"
 tqdm="^4.66.5"
 flasgger="0.9.7b2"
+graphviz = "^0.21"
+pyyaml = "^6.0.3"
 
 [tool.poetry.group.test.dependencies]
 pytest="^9.0.3"
@@ -39,4 +41,4 @@ pyttern = "pyttern.main:main"
 
 pytternweb = "pyttern.main:run_application"
 pytterncompile = "pyttern.main:_compile_code"
-pytterngraph = "pyttern.main:generate_graph"
+pytterngraph = "pyttern.visualizer.pytterngraph_cli:main"

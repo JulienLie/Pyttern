@@ -79,6 +79,20 @@ pytternweb
 ```
 *Accessible at `http://localhost:5000`.*
 
+### Static Graph Generation
+
+You can also generate static PDF visualizations of PDAs or Parse Trees using the `pytterngraph` command.
+
+```bash
+# Visualize a pattern as a PDA
+pytterngraph pattern.pyt output_pda --type tpa --font-size 16
+
+# Visualize a Python file as a Parse Tree
+pytterngraph code.py output_pt --type pt --wrap-at 10
+```
+
+> **Learn more:** Check out the [Visualization Guide](examples/visualization.md) for details on highlighting nodes and formatting graphs.
+
 ---
 
 ## Advanced Pattern Logic

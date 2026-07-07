@@ -1,0 +1,17 @@
+class A {
+    void main() {
+        print( #* ); // simple pattern to check overloading
+    }
+
+    static void print() {
+
+    }
+
+    static void print(int a) {
+        
+    }
+
+    static void print(int a, int b) {
+
+    }
+}

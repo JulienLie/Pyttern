@@ -8,83 +8,24 @@ from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ...subpattern.SubPattern import loaded_subpatterns
 from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
-from ...simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
+from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
+from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
 
+class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
+    def __init__(self):
+        grammar = Python3Parser
+        skippable_nodes = [
+                "StmtContext"
+            ]
+        remove_double_wildcard = [
+            grammar.List_wildcardContext,
+            grammar.Double_wildcardContext
+        ]
+        tree_pruner = TreePruner()
+        
+        super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
 
-def rightmost_terminal(root):
-    node = root
-    # Drill down the last child at each level until you hit a terminal
-    while not isinstance(node, TerminalNode) or "wildcard" in node.__class__.__name__:
-        # If you only have getChildren(), materialize once per level
-        children = list(node.getChildren())
-        if not children:
-            return None  # malformed/empty subtree
-        node = children[-1]
-    return node
-
-class Python_to_PDA(Python3ParserVisitor):
-    def __init__(self, pda = None, initial_state = -1):
-        self.pda = PDA() if pda is None else pda
-        self.current_state = self.pda.initial_state if initial_state == -1 else initial_state
-        self.depth = 0
-        self.move_to_B = []
-        self.__var_names = {}
-        self.__last_node = None
-        self.__is_last_branch = True
-        self.__dict_pda = {}
-
-    def visit(self, tree) -> dict[str, PDA]:
-        logger.debug(f"Visiting tree: {tree}")
-        self.__dict_pda = {}
-        self.__var_names = {}
-        self.__last_node = rightmost_terminal(tree)
-        super().visit(tree)
-        self.depth = 0
-        self.pda.final_states = self.current_state
-        logger.debug(f"var_names: {self.__var_names}")
-        self.__dict_pda["__main__"] = self.pda
-        return self.__dict_pda
-
-    def visitChildren(self, node):
-        logger.trace(f"Visiting {node}")
-
-        children = node.children
-        if len(children) == 0:
-            return self.visitTerminal(node)
-
-        down, up = self._define_boundaries(node)
-
-        while len(children) > 1 and (
-                self.lookahead(children[-1], Python3Parser.Double_wildcardContext)
-                or self.lookahead(children[-1], Python3Parser.List_wildcardContext)
-        ):
-            children.pop()
-            logger.trace("Remove double wildcard")
-
-
-        next_state = self.pda.new_state()
-        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
-                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
-        self.pda.add_transition(transition)
-        self.current_state = next_state
-
-        is_last_branch = self.__is_last_branch
-        self.__is_last_branch = False
-        old_move_to_B = self.move_to_B
-        self.move_to_B = []
-
-        old_depth = self.depth
-        self.depth = 0
-        for i, child in enumerate(children):
-            if i == len(children) - 1:
-                self.depth = old_depth + 1
-                self.move_to_B = old_move_to_B
-                self.__is_last_branch = is_last_branch
-            child.accept(self)
-
-        return next_state
-
-    def _define_boundaries(self, ctx):
+    def define_boundaries(self, ctx):
         """
         Define the boundaries for the current context.
         :param ctx: The context to define boundaries for.
@@ -92,17 +33,17 @@ class Python_to_PDA(Python3ParserVisitor):
         """
         logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
-        if isinstance(ctx, (Python3Parser.File_inputContext, Python3Parser.BlockContext)):
+        if isinstance(ctx, (self.grammar.File_inputContext, self.grammar.BlockContext)):
             logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif isinstance(ctx, Python3Parser.If_stmtContext):
+        elif isinstance(ctx, self.grammar.If_stmtContext):
             logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (Python3Parser.Double_wildcardContext, Python3Parser.List_wildcardContext)) is not None:
+                if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext)) is not None:
                     logger.trace(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
@@ -111,9 +52,9 @@ class Python_to_PDA(Python3ParserVisitor):
                 everything = lambda _: True
                 predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
 
-                simple_node = self.lookahead(child, Python3Parser.Number_wildcardContext, predicate)
+                simple_node = self.lookahead(child, self.grammar.Number_wildcardContext, predicate)
                 if simple_node is not None:
-                    numbers_node = simple_node.getChild(0, Python3Parser.Wildcard_numberContext)
+                    numbers_node = simple_node.getChild(0, self.grammar.Wildcard_numberContext)
                     if numbers_node is not None:
                         logger.trace(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
@@ -178,7 +119,7 @@ class Python_to_PDA(Python3ParserVisitor):
         # Handle double wildcard as Stmt
         logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
-        lookahead_double_wildcard = self.lookahead(ctx, Python3Parser.Double_wildcardContext)
+        lookahead_double_wildcard = self.lookahead(ctx, self.grammar.Double_wildcardContext)
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
@@ -186,87 +127,10 @@ class Python_to_PDA(Python3ParserVisitor):
                                       self.current_state, '')
         self.pda.add_transition(self_transition)
 
-        lookahead_multiple_body = self.lookahead(ctx, Python3Parser.Multiple_compound_wildcardContext)
-        if lookahead_multiple_body:
-            return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
-
-        lookahead_simple_wildcard = self.lookahead(ctx, Python3Parser.Simple_wildcardContext)
-        if lookahead_simple_wildcard:
-            return self.visitSimple_wildcard(lookahead_simple_wildcard)
-
-        lookahead_number_wildcard = self.lookahead(ctx, Python3Parser.Number_wildcardContext)
-        if lookahead_number_wildcard:
-            return self.visitNumber_wildcard(lookahead_number_wildcard)
-
-        return self.visitChildren(ctx)
-
-    def visitExpr_wildcard(self, ctx:Python3Parser.Expr_wildcardContext):
-        return ctx.getChild(0).accept(self)
-
-    def visitStmt_wildcard(self, ctx:Python3Parser.Stmt_wildcardContext):
-        return ctx.getChild(0).accept(self)
-
-    def visitCompound_wildcard(self, ctx:Python3Parser.Compound_wildcardContext):
-        return ctx.getChild(0).accept(self)
+        return super().visitStatement(ctx)
 
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
-
-    def visitSimple_wildcard(self, ctx:Python3Parser.Simple_wildcardContext):
-        return self._add_up_transition(ctx)
-
-    def visitNumber_wildcard(self, ctx:Python3Parser.Number_wildcardContext):
-        numbers_node = ctx.getChild(0, Python3Parser.Wildcard_numberContext)
-        low, high = numbers_node.accept(self)
-        logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
-
-        if low > high:
-            logger.error(f"Invalid simple wildcard: low={low} > high={high}")
-            raise ValueError(f"Invalid simple wildcard: low={low} > high={high}")
-
-        for _ in range(1, low):
-            # Add transitions for low - 1
-            next_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
-            self.pda.add_transition(transition)
-            self.current_state = next_state
-
-        # We don't have optional nodes -> we fall back to basic behavior
-        if high <= low or high == math.inf:
-            return self._add_up_transition(ctx)
-
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, '')
-        self.pda.add_transition(dummy_transition)
-
-        for _ in range(low, high):
-            # Add transitions for high - low
-            next_state = self.pda.new_state()
-
-            # There is a sibling
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
-            self.pda.add_transition(transition)
-
-            # No more siblings
-            up_transition = Transition(next_state, '', NodeTransition(''), [], dummy_state, '')
-            self.pda.add_transition(up_transition)
-            self.current_state = next_state
-
-        self.current_state = dummy_state
-        return self._add_up_transition(ctx)
-
-    def visitWildcard_number(self, ctx:Python3Parser.Wildcard_numberContext):
-        low = int(ctx.NUMBER(0).getText())
-        high = int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else math.inf
-        if ctx.COMMA() is None:
-            high = low
-        logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
-        if low > high:
-            logger.error(f"Invalid wildcard number: low={low} > high={high}")
-            return 1, 1
-        return low, high
 
     def visitSimple_compound_wildcard(self, ctx:Python3Parser.Simple_compound_wildcardContext):
         # Go to children
@@ -283,52 +147,32 @@ class Python_to_PDA(Python3ParserVisitor):
         self.pda.add_transition(self_transition)
 
         # Explore body
-        return ctx.getChild(0, Python3Parser.BlockContext).accept(self)
+        return ctx.getChild(0, self.grammar.BlockContext).accept(self)
 
     def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
         # Handle a case when the double wildcard is the only statement
-        parent_block = self.lookbehind(ctx, Python3Parser.BlockContext)
+        parent_block = self.lookbehind(ctx, self.grammar.BlockContext)
         if parent_block is None:
             logger.error("Double wildcard not in a block")
             return self.current_state
 
         last_child = parent_block.getChild(parent_block.getChildCount() - 1)
-        maybe_this = self.lookahead(last_child, Python3Parser.Double_wildcardContext)
+        maybe_this = self.lookahead(last_child, self.grammar.Double_wildcardContext)
         if  maybe_this is not None and maybe_this == ctx:
             # If the double wildcard is the last statement of the block, we need to add a transition to the end of the
             # block
             self._add_up_transition(ctx)
         return self.current_state
 
-    def visitList_wildcard(self, ctx:Python3Parser.List_wildcardContext):
-        # Adding self-transition to search for the next element
-        self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                               self.current_state, '')
-        self.pda.add_transition(self_transition)
-        return self.current_state
-
-    def visitTerminal(self, node):
-        if isinstance(node, TerminalNode):
-            logger.trace(f"Visiting terminal {node}")
-            node_text = str(node).strip()
-            node_transition = NodeTransition(node_text)
-        else:
-            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
-            node_text = f"{node.__class__.__name__}/0,0"
-            node_transition = NodeTransition(node.__class__.__name__, 0, 0)
-
-        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
-
-        return self._add_up_transition(node, node_transition)
 
     def visitParameters(self, ctx:Python3Parser.ParametersContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitVarargslist(self, ctx:Python3Parser.VarargslistContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitArgument(self, ctx:Python3Parser.ArgumentContext):
-        return self._handle_empty_list(ctx)
+        return self.handle_empty_list(ctx)
 
     def visitVar_wildcard(self, ctx:Python3Parser.Var_wildcardContext):
         label = ctx.NAME().getText()
@@ -341,45 +185,10 @@ class Python_to_PDA(Python3ParserVisitor):
         return self.current_state
 
     def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
-        # Transition to push B on the stack
-        dummy_state = self.__add_body_transition()
+        # Get the body of the compound wildcard, then let the superclass handle the rest
+        blockChild = ctx.getChild(0, self.grammar.BlockContext)
 
-        # Explore
-        ret = ctx.getChild(0, Python3Parser.BlockContext).accept(self)
-
-        skip_transition = Transition(dummy_state, "B", NodeTransition(''), [], ret, 'B')
-        self.pda.add_transition(skip_transition)
-
-        return ret
-
-    def visitContains_wildcard(self, ctx:Python3Parser.Contains_wildcardContext):
-        self.__add_body_transition()
-
-        logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        prune_tree = TreePruner().visit(ctx)
-        return prune_tree.getChild(2).accept(self)
-
-    def __add_body_transition(self):
-        dummy_state = self.pda.new_state()
-        dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
-        self.pda.add_transition(dummy_transition)
-        self.current_state = dummy_state
-
-        self.move_to_B.append(self.depth)
-
-        next_state = self.pda.new_state()
-        child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(child_transition)
-
-        self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                    next_state, '')
-        self.pda.add_transition(self_transition)
-        back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                    self.current_state, 'I')
-        self.pda.add_transition(back_transition)
-        self.current_state = next_state
-
-        return dummy_state
+        return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
 
     def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
@@ -405,114 +214,88 @@ class Python_to_PDA(Python3ParserVisitor):
 
         # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(ctx.parentCtx, body)
-        self.__dict_pda.update(transformations)
+        self.dict_pda.update(transformations)
+        n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
+        if len(args_names) < n_args_req:
+            logger.error(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Macro {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+
+        # TODO: Probably no change but should be checked
+        if subpattern.type == "OR":
+            self.__visit_or_subpattern(subpattern, args_names)
+        elif subpattern.type == "AND":
+            self.__visit_and_subpattern(subpattern, args_names)
+        else:
+            logger.error(f"Unknown subpattern type {subpattern.type} for subpattern {subpattern_name}")
+
+        return self._add_up_transition(ctx)
 
         self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
 
-        return self._add_up_transition(ctx)
-    
-
-    def _handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, Python3Parser.List_wildcardContext)
-        if list_wildcard is not None:
-            # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.trace("Handling empty list")
-            return self._add_up_transition(ctx)
-        return self.visitChildren(ctx)
-
-
-    def _add_up_transition(self, node, label:TransitionCondition=None):
-        logger.trace("Adding up transition")
-        if label is None:
-            label = NodeTransition('')
-
-        if self._is_last_node():
-            logger.trace(f"Node {node} is the last node in the tree, adding transition to the end")
-            self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                         self.current_state, '')
-            self.pda.add_transition(self_transition)
-
-            last_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', label, [], last_state, '')
+        for transformation in subpattern.transformations:
+            logger.trace(f"Adding transformation {transformation} for OR subpattern {subpattern_name}")
+            transition = Transition(self.current_state, '', CallTransition(subpattern_name, transformation, args), [],
+                                    next_state, '')
             self.pda.add_transition(transition)
-            self.current_state = last_state
-            return last_state
 
-
-        if len(self.move_to_B) > 0:
-            return self._add_up_to_B_transition(label)
-
-        return self._add_up_default_transition(label)
-
-    def _add_up_default_transition(self, label:TransitionCondition):
-        logger.trace("Classic up transition")
-
-        next_state = self.pda.new_state()
-        to_pop = 'I' * self.depth
-        to_up = [NavigationAlphabet.PARENT] * self.depth
-        self.depth = 0
-        transition = Transition(self.current_state, to_pop, label, to_up +
-                                [NavigationAlphabet.RIGHT_SIBLING], next_state, '')
-        self.pda.add_transition(transition)
         self.current_state = next_state
-        return next_state
+        return self.current_state
 
-    def _add_up_to_B_transition(self, label:TransitionCondition):
-        logger.trace("Adding B transitions")
+    def __visit_and_subpattern(self, subpattern: SubPattern, args):
+        transformations = list(subpattern.transformations.keys())
+        n = len(transformations)
+        subpattern_name = subpattern.name
 
-        depth = self.move_to_B.pop()
-        self.depth = depth
+        if n == 0:
+            return self.current_state
 
-        match_state = self.pda.new_state()
-        match_transition = Transition(self.current_state, '', label, [], match_state, '')
-        self.pda.add_transition(match_transition)
-        self.current_state = match_state
+        if n > 10:
+            logger.warning(
+                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+            )
 
-        up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
-                                                              self.current_state, '')
-        self.pda.add_transition(up_transition)
+        # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)
+        pda_states = {mask: self.pda.new_state() for mask in range(1, 1 << n)}
+        pda_states[0] = self.current_state
 
-        next_state = self.pda.new_state()
-        next_transition = Transition(self.current_state, 'B', NodeTransition(''), [], next_state, '')
-        self.pda.add_transition(next_transition)
-        self.current_state = next_state
+        for mask in range(1 << n):
+            current_pda_state = pda_states[mask]
 
-        self._add_up_transition(None)
+            # Add a self-loop to navigate/skip statements that do not match any required transformations.
+            # This allows matching transformations in any order, interspersed with other statements.
+            # The navigation path is based on the original implementation's logic.
+            if mask != (1 << n) - 1:
+                nav_loop_transition = Transition(
+                    current_pda_state,
+                    "",
+                    NodeTransition(""),
+                    [
+                        NavigationAlphabet.PARENT,
+                        NavigationAlphabet.RIGHT_SIBLING,
+                        NavigationAlphabet.LEFT_CHILD,
+                    ],
+                    current_pda_state,
+                    "",
+                )
+                self.pda.add_transition(nav_loop_transition)
 
-        return match_state
+            # For each transformation not yet matched in the current subset (mask)
+            for i, trans_name in enumerate(transformations):
+                if not ((mask >> i) & 1):  # Check if i-th bit is not set
+                    next_mask = mask | (1 << i)
+                    next_pda_state = pda_states[next_mask]
 
-    def _is_last_node(self):
-        return self.__is_last_branch
+                    # Add a transition to match the transformation and move to the next state (subset)
+                    match_transition = Transition(
+                        current_pda_state,
+                        "",
+                        CallTransition(subpattern_name, trans_name, args),
+                        [],
+                        next_pda_state,
+                        "",
+                    )
+                    self.pda.add_transition(match_transition)
 
-    @staticmethod
-    def lookahead(ctx, clazz, predicate=None):
-        """
-        Check if one of the descendants of ctx is an instance of clazz. Stop if ctx has more than one child.
-        :param ctx:
-        :param clazz:
-        :param predicate:
-        :return: True if the first instance of @clazz is found in the descendant of ctx or None if not found.
-        """
-        if isinstance(ctx, clazz):
-            return ctx
-        if not hasattr(ctx, 'children'):
-            return None
-        if len(ctx.children) != 1:
-            return None
-        if predicate is not None and not predicate(ctx):
-            return None
-        return Python_to_PDA.lookahead(ctx.children[0], clazz)
-
-    @staticmethod
-    def lookbehind(ctx, clazz):
-        """
-        Check if one of the ancestors of ctx is an instance of clazz.
-        :param ctx:
-        :param clazz:
-        :return: True if the first instance of clazz is found in the ancestors of ctx or None if not found.
-        """
-        if isinstance(ctx, clazz):
-            return ctx
-        if not hasattr(ctx, 'parentCtx'):
-            return None
-        return Python_to_PDA.lookbehind(ctx.parentCtx, clazz)
+        # The final state is the one where all transformations have been matched
+        self.current_state = pda_states[(1 << n) - 1]
+        return self.current_state

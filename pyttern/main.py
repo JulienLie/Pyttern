@@ -266,8 +266,9 @@ def main():
     parser.add_argument("--stop-first", action="store_true", help="Stop at the first match found.")
     parser.add_argument(
         '-s', '--sub', 
-        action='append', 
-        dest='sub_patterns', 
+        action='append',
+        default=[],
+        dest='sub', 
         help='Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).'
     )
     parser.add_argument(
@@ -293,12 +294,13 @@ def main():
         parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
     
-    for sub_pyttern in args.sub:
-        ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
-        if len(ret) > 0:
-            logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
-        else:
-            logger.warning(f"No sub pytterns found in {sub_pyttern}")
+    if args.sub_patterns:
+        for sub_pyttern in args.sub_patterns:
+            ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
+            if len(ret) > 0:
+                logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
+            else:
+                logger.warning(f"No sub pytterns found in {sub_pyttern}")
 
     matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first)
 

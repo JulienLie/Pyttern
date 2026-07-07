@@ -1,0 +1,5 @@
+record Book(int val) {
+    public int add(Book a, Book b) {
+        return a.val + b.val;
+    }
+}

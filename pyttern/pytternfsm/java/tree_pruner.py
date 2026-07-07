@@ -2,32 +2,17 @@ from antlr4 import TerminalNode, Token
 
 from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
+from ..generic_tree_pruner import GenericTreePruner
 
-
-class TreePruner(JavaParserVisitor):
-
-    def visitChildren(self, node):
-        result = super().visitChildren(node)
-
-        node.children = result
-        for child in result:
-            if child is not None:
-                child.parentCtx = node
-
-        return node
-
-    def prune_single_child(self, node):
-        # As long as there is only one child, prune everything except the terminal node (last node) or important nodes (identifier & expression wildcard)
-        new_child = self.visitChildren(node)
-        while len(new_child.children) == 1:
-            new_child = new_child.getChild(0)
-            if isinstance(new_child, TerminalNode):
-                return new_child
-            if isinstance(new_child, JavaParser.IdentifierContext):
-                return new_child
-            if isinstance(new_child, JavaParser.Expr_wildcardContext):
-                return new_child
-        return new_child
+class TreePruner(GenericTreePruner, JavaParserVisitor):
+    def __init__(self):
+        TO_KEEP = (
+            TerminalNode,
+            JavaParser.IdentifierContext,
+            JavaParser.Expr_wildcardContext
+        )
+        TO_REMOVE = "():,.}{;"
+        super().__init__(TO_KEEP, TO_REMOVE)
     
     def visitIdentifier(self, ctx:JavaParser.IdentifierContext):
         # Remove the intermediate "identifier" node iff its child is a wildcard
@@ -47,28 +32,3 @@ class TreePruner(JavaParserVisitor):
 
     def visitPrimary(self, ctx:JavaParser.PrimaryContext):
         return self.prune_single_child(ctx)
-
-    def visitWildcard_number(self, ctx):
-        return ctx
-
-    def visitTerminal(self, node):
-        # Remove syntactic nodes which carry no information (only useful in the parsing, not in the PDA)
-        sym = node.getSymbol()
-        if sym.type == Token.EOF:
-            sym.text = "<EOF>"
-            return node
-        txt = node.getText().strip()
-        if txt in "():,.}{;":
-            return None
-        return node
-
-    def visitErrorNode(self, node):
-        return node
-
-    def defaultResult(self):
-        return []
-
-    def aggregateResult(self, aggregate, nextResult):
-        if nextResult is None:
-            return aggregate
-        return aggregate + [nextResult]
