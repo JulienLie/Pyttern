@@ -18,7 +18,7 @@ class Python3ErrorListener(ErrorListener):
         Syntax error handler.
         """
         logger.error(f"Syntax error: {msg}")
-        #raise PytternSyntaxException(line, column, offendingSymbol.text, msg)
+        raise PytternSyntaxException(line, column, offendingSymbol.text, msg)
 
 class PytternSyntaxException(Exception):
     """PytternSyntaxError class."""
