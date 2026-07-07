@@ -671,8 +671,8 @@ def serializedATN():
         5,47,0,0,1640,1642,5,59,0,0,1641,1643,3,270,135,0,1642,1641,1,0,
         0,0,1642,1643,1,0,0,0,1643,1644,1,0,0,0,1644,1645,5,60,0,0,1645,
         275,1,0,0,0,1646,1647,3,274,137,0,1647,1648,5,62,0,0,1648,1649,3,
-        96,48,0,1649,277,1,0,0,0,1650,1651,5,104,0,0,1651,1652,5,47,0,0,
-        1652,1653,5,46,0,0,1653,1654,3,26,13,0,1654,279,1,0,0,0,227,285,
+        252,126,0,1649,277,1,0,0,0,1650,1651,5,104,0,0,1651,1652,5,47,0,
+        0,1652,1653,5,46,0,0,1653,1654,3,26,13,0,1654,279,1,0,0,0,227,285,
         289,291,300,307,309,317,320,327,333,342,347,356,362,366,372,378,
         382,389,391,393,398,400,402,406,412,416,423,425,427,432,434,441,
         446,451,457,461,467,473,477,484,486,488,493,495,497,501,507,511,
@@ -12828,8 +12828,8 @@ class Python3Parser ( Python3ParserBase ):
         def COLON(self):
             return self.getToken(Python3Parser.COLON, 0)
 
-        def block(self):
-            return self.getTypedRuleContext(Python3Parser.BlockContext,0)
+        def var_wildcard(self):
+            return self.getTypedRuleContext(Python3Parser.Var_wildcardContext,0)
 
 
         def getRuleIndex(self):
@@ -12863,7 +12863,7 @@ class Python3Parser ( Python3ParserBase ):
             self.state = 1647
             self.match(Python3Parser.COLON)
             self.state = 1648
-            self.block()
+            self.var_wildcard()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

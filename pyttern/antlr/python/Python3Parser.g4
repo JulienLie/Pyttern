@@ -282,6 +282,6 @@ subpattern: compound_subpattern | (simple_subpattern NEWLINE);
 subpattern_args: subpattern_arg (',' subpattern_arg)*;
 subpattern_arg: (atom_wildcard | atom) ('=' test)?;
 simple_subpattern: SUB_PATTERN ('&'|'|'|'!') NAME '(' subpattern_args? ')';
-compound_subpattern: simple_subpattern ':' block;
+compound_subpattern: simple_subpattern ':' var_wildcard;
 
 transformation: BALISE NAME NEWLINE stmt;
