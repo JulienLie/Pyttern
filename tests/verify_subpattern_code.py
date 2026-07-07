@@ -5,7 +5,7 @@ from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 def test_subpattern_code_retrieval():
     # Use loop.myt as it has multiple transformations and a compound structure
-    subpattern_file = Path("tests/tests_files/macros/or/compound/loop.myt")
+    subpattern_file = Path("tests/tests_files/subpatterns/or/compound/loop.myt")
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     
     subpattern = ret[0]
@@ -20,7 +20,7 @@ def test_subpattern_code_retrieval():
     # Usually parse_subpattern_from_file might return multiple subpatterns if there are many in the file.
     # In loop.myt there is only one.
     
-    # We expect subpattern.code to match a portion of the original file (the macro_stmts part)
+    # We expect subpattern.code to match a portion of the original file (the subpattern_stmts part)
     assert subpattern.code.strip() in original_content.strip()
     assert "$|Loop(?i, ?n)" in subpattern.code
     assert "$# for_loop" in subpattern.code

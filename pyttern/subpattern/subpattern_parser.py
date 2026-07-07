@@ -24,7 +24,7 @@ def string_to_subpattern_tree(subpattern_string):
     error_listener = Python3ErrorListener(error)
     py_parser.addErrorListener(error_listener)
 
-    tree = py_parser.macro_input()
+    tree = py_parser.subpattern_input()
 
     pruned_tree = TreePruner().visit(tree)
 

@@ -224,7 +224,7 @@ rule names:
 single_input
 file_input
 eval_input
-macro_input
+subpattern_input
 decorator
 decorators
 decorated
@@ -353,13 +353,13 @@ compound_wildcard
 simple_compound_wildcard
 multiple_compound_wildcard
 list_wildcard
-macro_call
-macro_stmts
-macro
-macro_args
-macro_arg
-simple_macro
-compound_macro
+subpattern_call
+subpattern_stmts
+subpattern
+subpattern_args
+subpattern_arg
+simple_subpattern
+compound_subpattern
 transformation
 
 

@@ -44,7 +44,7 @@ class CallTransition(TransitionCondition):
     def to_json(self):
         return {
             "type": "CallTransition",
-            "macro_name": self.subpattern_name,
+            "subpattern_name": self.subpattern_name,
             "transformation_name": self.transformation_name,
             "args": self.args
         }
@@ -57,7 +57,7 @@ class NotCallTransition(CallTransition):
     def to_json(self):
         return {
             "type": "NotCallTransition",
-            "macro_name": self.subpattern_name,
+            "subpattern_name": self.subpattern_name,
             "transformation_name": self.transformation_name,
             "args": self.args
         }

@@ -8,7 +8,7 @@ from pyttern.subpattern.SubPattern import BaseSubPattern
 def test_subpattern_code_isolation():
     """Test that multiple subpatterns in the same file have isolated code attributes."""
     # Using loop.myt which has 3 subpatterns: Incr, Comp, Loop
-    subpattern_file = Path("tests/tests_files/macros/or/multiple_define/loop.myt")
+    subpattern_file = Path("tests/tests_files/subpatterns/or/multiple_define/loop.myt")
     subpatterns = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     
     assert len(subpatterns) == 3
@@ -40,28 +40,28 @@ def test_subpattern_code_isolation():
     assert "$|Comp" not in loop.code
 
 def test_subpattern_code_integrity():
-    """Test that the retrieved code is exactly what was in the source for that macro."""
-    code = """$|Macro1(?x)
+    """Test that the retrieved code is exactly what was in the source for that subpattern."""
+    code = """$|Subpattern1(?x)
 $# t1
 ?x = 1
 
-$|Macro2(?y)
+$|Subpattern2(?y)
 $# t1
 ?y = 2
 """
     subpatterns = parse_subpattern_from_string(code, Languages.PYTHON)
     assert len(subpatterns) == 2
     
-    m1 = next(s for s in subpatterns if s.name == "Macro1")
-    m2 = next(s for s in subpatterns if s.name == "Macro2")
+    m1 = next(s for s in subpatterns if s.name == "Subpattern1")
+    m2 = next(s for s in subpatterns if s.name == "Subpattern2")
     
     # The code should include its own header and transformations
-    assert m1.code.strip() == "$|Macro1(?x)\n$# t1\n?x = 1"
-    assert m2.code.strip() == "$|Macro2(?y)\n$# t1\n?y = 2"
+    assert m1.code.strip() == "$|Subpattern1(?x)\n$# t1\n?x = 1"
+    assert m2.code.strip() == "$|Subpattern2(?y)\n$# t1\n?y = 2"
     
     # Ensure they don't leak into each other
-    assert "Macro2" not in m1.code
-    assert "Macro1" not in m2.code
+    assert "Subpattern2" not in m1.code
+    assert "Subpattern1" not in m2.code
 
 def test_subpattern_with_comments_isolation():
     """Test that comments are preserved and isolated within their respective subpatterns."""
@@ -69,7 +69,7 @@ def test_subpattern_with_comments_isolation():
 $# t1
 ?x = 1 # Comment 1
 
-# Inter-macro comment
+# Inter-subpattern comment
 
 $|M2()
 $# t1
@@ -87,9 +87,9 @@ $# t1
     # M2 should not contain M1 header
     assert "$|M1" not in m2.code
     
-    # We don't strictly care if the inter-macro comment is captured by M1 as long as it doesn't leak M2
+    # We don't strictly care if the inter-subpattern comment is captured by M1 as long as it doesn't leak M2
     # But it's better if it's NOT in M2.
-    assert "# Inter-macro comment" not in m2.code
+    assert "# Inter-subpattern comment" not in m2.code
 
 if __name__ == "__main__":
     pytest.main([__file__])

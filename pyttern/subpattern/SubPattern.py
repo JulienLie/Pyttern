@@ -15,9 +15,9 @@ from ..simulator.pda import PDA
 
 def check_for_alone(tree: ParseTree):
     return False
-    if isinstance(tree, Python3Parser.Macro_stmtsContext):
-        macro = loaded_subpatterns[tree]
-        if macro is not None and macro.alone:
+    if isinstance(tree, Python3Parser.Subpattern_stmtsContext):
+        subpattern = loaded_subpatterns[tree]
+        if subpattern is not None and subpattern.alone:
             return True
     if hasattr("children", tree):
         if any([check_for_alone(child) for child in tree.children]):
@@ -97,8 +97,8 @@ class BaseSubPattern(ABC):
     def check_args_nbr(self, args_names):
         n_args_req = sum(1 for key in self.args if self.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Macro {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Macro {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            raise ValueError(f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
 @dataclass
 class OrSubPattern(BaseSubPattern):
@@ -136,7 +136,7 @@ class AndSubPattern(BaseSubPattern):
 
         if n > 10:
             logger.warning(
-                f"Macro {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
+                f"Subpattern {subpattern_name} has {n} AND-clauses, which will create a PDA with {1 << n} states."
             )
 
         # Create 2^n states, one for each subset of matched transformations (represented by a bitmask)

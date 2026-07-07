@@ -35,12 +35,12 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#macro_input.
-    def enterMacro_input(self, ctx:Python3Parser.Macro_inputContext):
+    # Enter a parse tree produced by Python3Parser#subpattern_input.
+    def enterSubpattern_input(self, ctx:Python3Parser.Subpattern_inputContext):
         pass
 
-    # Exit a parse tree produced by Python3Parser#macro_input.
-    def exitMacro_input(self, ctx:Python3Parser.Macro_inputContext):
+    # Exit a parse tree produced by Python3Parser#subpattern_input.
+    def exitSubpattern_input(self, ctx:Python3Parser.Subpattern_inputContext):
         pass
 
 
@@ -1196,66 +1196,66 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#macro_call.
-    def enterMacro_call(self, ctx:Python3Parser.Macro_callContext):
+    # Enter a parse tree produced by Python3Parser#subpattern_call.
+    def enterSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         pass
 
-    # Exit a parse tree produced by Python3Parser#macro_call.
-    def exitMacro_call(self, ctx:Python3Parser.Macro_callContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#macro_stmts.
-    def enterMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#macro_stmts.
-    def exitMacro_stmts(self, ctx:Python3Parser.Macro_stmtsContext):
+    # Exit a parse tree produced by Python3Parser#subpattern_call.
+    def exitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#macro.
-    def enterMacro(self, ctx:Python3Parser.MacroContext):
+    # Enter a parse tree produced by Python3Parser#subpattern_stmts.
+    def enterSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
         pass
 
-    # Exit a parse tree produced by Python3Parser#macro.
-    def exitMacro(self, ctx:Python3Parser.MacroContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#macro_args.
-    def enterMacro_args(self, ctx:Python3Parser.Macro_argsContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#macro_args.
-    def exitMacro_args(self, ctx:Python3Parser.Macro_argsContext):
+    # Exit a parse tree produced by Python3Parser#subpattern_stmts.
+    def exitSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#macro_arg.
-    def enterMacro_arg(self, ctx:Python3Parser.Macro_argContext):
+    # Enter a parse tree produced by Python3Parser#subpattern.
+    def enterSubpattern(self, ctx:Python3Parser.SubpatternContext):
         pass
 
-    # Exit a parse tree produced by Python3Parser#macro_arg.
-    def exitMacro_arg(self, ctx:Python3Parser.Macro_argContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#simple_macro.
-    def enterSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#simple_macro.
-    def exitSimple_macro(self, ctx:Python3Parser.Simple_macroContext):
+    # Exit a parse tree produced by Python3Parser#subpattern.
+    def exitSubpattern(self, ctx:Python3Parser.SubpatternContext):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#compound_macro.
-    def enterCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+    # Enter a parse tree produced by Python3Parser#subpattern_args.
+    def enterSubpattern_args(self, ctx:Python3Parser.Subpattern_argsContext):
         pass
 
-    # Exit a parse tree produced by Python3Parser#compound_macro.
-    def exitCompound_macro(self, ctx:Python3Parser.Compound_macroContext):
+    # Exit a parse tree produced by Python3Parser#subpattern_args.
+    def exitSubpattern_args(self, ctx:Python3Parser.Subpattern_argsContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#subpattern_arg.
+    def enterSubpattern_arg(self, ctx:Python3Parser.Subpattern_argContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#subpattern_arg.
+    def exitSubpattern_arg(self, ctx:Python3Parser.Subpattern_argContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#simple_subpattern.
+    def enterSimple_subpattern(self, ctx:Python3Parser.Simple_subpatternContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#simple_subpattern.
+    def exitSimple_subpattern(self, ctx:Python3Parser.Simple_subpatternContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#compound_subpattern.
+    def enterCompound_subpattern(self, ctx:Python3Parser.Compound_subpatternContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#compound_subpattern.
+    def exitCompound_subpattern(self, ctx:Python3Parser.Compound_subpatternContext):
         pass
 
 

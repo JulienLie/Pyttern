@@ -125,8 +125,8 @@ class Python_to_PDA(Python3ParserVisitor):
 
         return down, up
     
-    def _find_direct_macro_calls(self, node):
-        if isinstance(node, Python3Parser.Macro_callContext):
+    def _find_direct_subpattern_calls(self, node):
+        if isinstance(node, Python3Parser.Subpattern_callContext):
             return [node]
         if isinstance(node, Python3Parser.BlockContext):
             return []
@@ -134,35 +134,35 @@ class Python_to_PDA(Python3ParserVisitor):
             return []
         calls = []
         for child in node.children:
-            calls.extend(self._find_direct_macro_calls(child))
+            calls.extend(self._find_direct_subpattern_calls(child))
         return calls
 
     def visitBlock(self, ctx:Python3Parser.BlockContext):
-        # Scan for macro calls directly under this block (ignoring sub-blocks)
-        direct_macros = []
+        # Scan for subpattern calls directly under this block (ignoring sub-blocks)
+        direct_subpatterns = []
         if ctx.children:
             for child in ctx.children:
-                direct_macros.extend(self._find_direct_macro_calls(child))
+                direct_subpatterns.extend(self._find_direct_subpattern_calls(child))
 
-        not_macros = []
-        for macro in direct_macros:
-            name = macro.NAME().getText()
+        not_subpatterns = []
+        for subpattern_call in direct_subpatterns:
+            name = subpattern_call.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
             if subpattern and subpattern.type == "NOT":
-                not_macros.append((macro, subpattern))
+                not_subpatterns.append((subpattern_call, subpattern))
 
-        if not_macros:
+        if not_subpatterns:
             # If a NOT subpattern is present, it must be the ONLY statement in the block.
             if len(ctx.children) > 1:
                 logger.error("Using a NOT subpattern alongside another statement in a block is not allowed.")
                 raise ValueError("Using a NOT subpattern alongside another statement in a block is not allowed.")
 
-            macro_call, subpattern = not_macros[0]
+            subpattern_call, subpattern = not_subpatterns[0]
             logger.trace("Handling Not transition at Block level")
             transformations = subpattern.compile(ctx.parentCtx)
             self.__dict_pda.update(transformations)
 
-            args_nodes = macro_call.macro_args().macro_arg() if macro_call.macro_args() is not None else None
+            args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
             if args_nodes is not None:
                 args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
             else:
@@ -382,18 +382,18 @@ class Python_to_PDA(Python3ParserVisitor):
         return dummy_state
 
 
-    def visitMacro_call(self, ctx:Python3Parser.Macro_callContext):
+    def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         subpattern_name = ctx.NAME().getText()
         logger.debug(f"Calling subpattern {subpattern_name}")
         if subpattern_name not in loaded_subpatterns:
             raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
-        # TODO: change handling of macro args
-        # Should be able to handle 3 types -> maybe check types from macro?
+        # TODO: change handling of subpattern args
+        # Should be able to handle 3 types -> maybe check types from subpattern?
         # 1: simple var wildcard -> can stay the same
         # 2: expr -> change all var in expr then compile
         # 3: stmts -> change all var in stmts then compile
-        args_nodes = ctx.macro_args().macro_arg() if ctx.macro_args() is not None else None
+        args_nodes = ctx.subpattern_args().subpattern_arg() if ctx.subpattern_args() is not None else None
         if args_nodes is not None:
             args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
         else:
@@ -403,7 +403,7 @@ class Python_to_PDA(Python3ParserVisitor):
 
         subpattern = loaded_subpatterns[subpattern_name]
 
-        # TODO: same as before, change compilation in relation to macro args 
+        # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(ctx.parentCtx, body)
         self.__dict_pda.update(transformations)
 
