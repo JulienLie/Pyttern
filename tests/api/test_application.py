@@ -46,7 +46,10 @@ def test_validate_python_syntax_error(client):
     result = json.loads(response.data)
     assert result["status"] == "error"
     assert "message" in result
-    assert "line" in result["message"]
+    assert result["message"]["line"] == 1
+    assert result["message"]["column"] == 0
+    assert result["message"]["symbol"] == "<EOF>"
+    assert result["message"]["msg"] == "expected 'match', '_', name/identifier, '*', ')', '**', or '?' but found end of file"
 
 
 def test_pattern_compilation_success(client):

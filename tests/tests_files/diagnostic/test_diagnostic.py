@@ -21,4 +21,16 @@ def test_contains_ko():
     content = read_file("contains_ko.pyt")
 
     res = PythonProcessor.parse_diagnostics(content)
-    assert len(res) > 0
+    assert len(res) == 2
+    
+    # Asserting first error
+    assert res[0]["message"] == "expected '(' but found newline"
+    assert res[0]["line"] == 1
+    assert res[0]["character"] == 0
+    assert res[0]["severity"] == "error"
+
+    # Asserting second error
+    assert res[1]["message"] == "expected indentation but found end of file"
+    assert res[1]["line"] == 1
+    assert res[1]["character"] == 0
+    assert res[1]["severity"] == "error"
