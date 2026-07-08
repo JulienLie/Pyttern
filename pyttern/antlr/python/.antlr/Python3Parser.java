@@ -35,7 +35,7 @@ public class Python3Parser extends Python3ParserBase {
 		WILDCARD=103, BALISE=104, SUB_PATTERN=105, NOT_WILDCARD=106, SKIP_=107, 
 		UNKNOWN_CHAR=108;
 	public static final int
-		RULE_single_input = 0, RULE_file_input = 1, RULE_eval_input = 2, RULE_macro_input = 3, 
+		RULE_single_input = 0, RULE_file_input = 1, RULE_eval_input = 2, RULE_subpattern_input = 3, 
 		RULE_decorator = 4, RULE_decorators = 5, RULE_decorated = 6, RULE_async_funcdef = 7, 
 		RULE_funcdef = 8, RULE_parameters = 9, RULE_tfpdef = 10, RULE_varargslist = 11, 
 		RULE_vfpdef = 12, RULE_stmt = 13, RULE_simple_stmts = 14, RULE_simple_stmt = 15, 
@@ -72,12 +72,13 @@ public class Python3Parser extends Python3ParserBase {
 		RULE_expr_wildcard = 121, RULE_atom_wildcard = 122, RULE_simple_wildcard = 123, 
 		RULE_number_wildcard = 124, RULE_double_wildcard = 125, RULE_var_wildcard = 126, 
 		RULE_contains_wildcard = 127, RULE_compound_wildcard = 128, RULE_simple_compound_wildcard = 129, 
-		RULE_multiple_compound_wildcard = 130, RULE_list_wildcard = 131, RULE_macro_call = 132, 
-		RULE_macro_stmts = 133, RULE_macro = 134, RULE_macro_args = 135, RULE_macro_arg = 136, 
-		RULE_simple_macro = 137, RULE_compound_macro = 138, RULE_transformation = 139;
+		RULE_multiple_compound_wildcard = 130, RULE_list_wildcard = 131, RULE_subpattern_call = 132, 
+		RULE_subpattern_stmts = 133, RULE_subpattern = 134, RULE_subpattern_args = 135, 
+		RULE_subpattern_arg = 136, RULE_simple_subpattern = 137, RULE_compound_subpattern = 138, 
+		RULE_transformation = 139;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"single_input", "file_input", "eval_input", "macro_input", "decorator", 
+			"single_input", "file_input", "eval_input", "subpattern_input", "decorator", 
 			"decorators", "decorated", "async_funcdef", "funcdef", "parameters", 
 			"tfpdef", "varargslist", "vfpdef", "stmt", "simple_stmts", "simple_stmt", 
 			"expr_stmt", "annassign", "testlist_star_expr", "augassign", "del_stmt", 
@@ -104,9 +105,9 @@ public class Python3Parser extends Python3ParserBase {
 			"strings", "wildcard_number", "stmt_wildcard", "expr_wildcard", "atom_wildcard", 
 			"simple_wildcard", "number_wildcard", "double_wildcard", "var_wildcard", 
 			"contains_wildcard", "compound_wildcard", "simple_compound_wildcard", 
-			"multiple_compound_wildcard", "list_wildcard", "macro_call", "macro_stmts", 
-			"macro", "macro_args", "macro_arg", "simple_macro", "compound_macro", 
-			"transformation"
+			"multiple_compound_wildcard", "list_wildcard", "subpattern_call", "subpattern_stmts", 
+			"subpattern", "subpattern_args", "subpattern_arg", "simple_subpattern", 
+			"compound_subpattern", "transformation"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
@@ -446,35 +447,35 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Macro_inputContext extends ParserRuleContext {
+	public static class Subpattern_inputContext extends ParserRuleContext {
 		public TerminalNode EOF() { return getToken(Python3Parser.EOF, 0); }
 		public List<TerminalNode> NEWLINE() { return getTokens(Python3Parser.NEWLINE); }
 		public TerminalNode NEWLINE(int i) {
 			return getToken(Python3Parser.NEWLINE, i);
 		}
-		public List<Macro_stmtsContext> macro_stmts() {
-			return getRuleContexts(Macro_stmtsContext.class);
+		public List<Subpattern_stmtsContext> subpattern_stmts() {
+			return getRuleContexts(Subpattern_stmtsContext.class);
 		}
-		public Macro_stmtsContext macro_stmts(int i) {
-			return getRuleContext(Macro_stmtsContext.class,i);
+		public Subpattern_stmtsContext subpattern_stmts(int i) {
+			return getRuleContext(Subpattern_stmtsContext.class,i);
 		}
-		public Macro_inputContext(ParserRuleContext parent, int invokingState) {
+		public Subpattern_inputContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro_input; }
+		@Override public int getRuleIndex() { return RULE_subpattern_input; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro_input(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_input(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro_input(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_input(this);
 		}
 	}
 
-	public final Macro_inputContext macro_input() throws RecognitionException {
-		Macro_inputContext _localctx = new Macro_inputContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_macro_input);
+	public final Subpattern_inputContext subpattern_input() throws RecognitionException {
+		Subpattern_inputContext _localctx = new Subpattern_inputContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_subpattern_input);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -496,7 +497,7 @@ public class Python3Parser extends Python3ParserBase {
 				case SUB_PATTERN:
 					{
 					setState(306);
-					macro_stmts();
+					subpattern_stmts();
 					}
 					break;
 				default:
@@ -1698,8 +1699,8 @@ public class Python3Parser extends Python3ParserBase {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class StmtContext extends ParserRuleContext {
-		public Macro_callContext macro_call() {
-			return getRuleContext(Macro_callContext.class,0);
+		public Subpattern_callContext subpattern_call() {
+			return getRuleContext(Subpattern_callContext.class,0);
 		}
 		public TerminalNode NEWLINE() { return getToken(Python3Parser.NEWLINE, 0); }
 		public Contains_wildcardContext contains_wildcard() {
@@ -1737,7 +1738,7 @@ public class Python3Parser extends Python3ParserBase {
 				{
 				{
 				setState(537);
-				macro_call();
+				subpattern_call();
 				setState(538);
 				match(NEWLINE);
 				}
@@ -10359,8 +10360,8 @@ public class Python3Parser extends Python3ParserBase {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class Expr_wildcardContext extends ParserRuleContext {
-		public Macro_callContext macro_call() {
-			return getRuleContext(Macro_callContext.class,0);
+		public Subpattern_callContext subpattern_call() {
+			return getRuleContext(Subpattern_callContext.class,0);
 		}
 		public Var_wildcardContext var_wildcard() {
 			return getRuleContext(Var_wildcardContext.class,0);
@@ -10396,7 +10397,7 @@ public class Python3Parser extends Python3ParserBase {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(1545);
-				macro_call();
+				subpattern_call();
 				}
 				break;
 			case 2:
@@ -10942,36 +10943,36 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Macro_callContext extends ParserRuleContext {
+	public static class Subpattern_callContext extends ParserRuleContext {
 		public TerminalNode WILDCARD() { return getToken(Python3Parser.WILDCARD, 0); }
 		public TerminalNode SUB_PATTERN() { return getToken(Python3Parser.SUB_PATTERN, 0); }
 		public TerminalNode NAME() { return getToken(Python3Parser.NAME, 0); }
 		public TerminalNode OPEN_PAREN() { return getToken(Python3Parser.OPEN_PAREN, 0); }
 		public TerminalNode CLOSE_PAREN() { return getToken(Python3Parser.CLOSE_PAREN, 0); }
-		public Macro_argsContext macro_args() {
-			return getRuleContext(Macro_argsContext.class,0);
+		public Subpattern_argsContext subpattern_args() {
+			return getRuleContext(Subpattern_argsContext.class,0);
 		}
 		public TerminalNode COLON() { return getToken(Python3Parser.COLON, 0); }
 		public BlockContext block() {
 			return getRuleContext(BlockContext.class,0);
 		}
-		public Macro_callContext(ParserRuleContext parent, int invokingState) {
+		public Subpattern_callContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro_call; }
+		@Override public int getRuleIndex() { return RULE_subpattern_call; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro_call(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_call(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro_call(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_call(this);
 		}
 	}
 
-	public final Macro_callContext macro_call() throws RecognitionException {
-		Macro_callContext _localctx = new Macro_callContext(_ctx, getState());
-		enterRule(_localctx, 264, RULE_macro_call);
+	public final Subpattern_callContext subpattern_call() throws RecognitionException {
+		Subpattern_callContext _localctx = new Subpattern_callContext(_ctx, getState());
+		enterRule(_localctx, 264, RULE_subpattern_call);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -10990,7 +10991,7 @@ public class Python3Parser extends Python3ParserBase {
 			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 720718055479443480L) != 0) || ((((_la - 66)) & ~0x3f) == 0 && ((1L << (_la - 66)) & 137438961665L) != 0)) {
 				{
 				setState(1601);
-				macro_args();
+				subpattern_args();
 				}
 			}
 
@@ -11022,9 +11023,9 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Macro_stmtsContext extends ParserRuleContext {
-		public MacroContext macro() {
-			return getRuleContext(MacroContext.class,0);
+	public static class Subpattern_stmtsContext extends ParserRuleContext {
+		public SubpatternContext subpattern() {
+			return getRuleContext(SubpatternContext.class,0);
 		}
 		public List<TransformationContext> transformation() {
 			return getRuleContexts(TransformationContext.class);
@@ -11032,29 +11033,29 @@ public class Python3Parser extends Python3ParserBase {
 		public TransformationContext transformation(int i) {
 			return getRuleContext(TransformationContext.class,i);
 		}
-		public Macro_stmtsContext(ParserRuleContext parent, int invokingState) {
+		public Subpattern_stmtsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro_stmts; }
+		@Override public int getRuleIndex() { return RULE_subpattern_stmts; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro_stmts(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_stmts(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro_stmts(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_stmts(this);
 		}
 	}
 
-	public final Macro_stmtsContext macro_stmts() throws RecognitionException {
-		Macro_stmtsContext _localctx = new Macro_stmtsContext(_ctx, getState());
-		enterRule(_localctx, 266, RULE_macro_stmts);
+	public final Subpattern_stmtsContext subpattern_stmts() throws RecognitionException {
+		Subpattern_stmtsContext _localctx = new Subpattern_stmtsContext(_ctx, getState());
+		enterRule(_localctx, 266, RULE_subpattern_stmts);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1609);
-			macro();
+			subpattern();
 			setState(1611); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -11083,31 +11084,31 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class MacroContext extends ParserRuleContext {
-		public Compound_macroContext compound_macro() {
-			return getRuleContext(Compound_macroContext.class,0);
+	public static class SubpatternContext extends ParserRuleContext {
+		public Compound_subpatternContext compound_subpattern() {
+			return getRuleContext(Compound_subpatternContext.class,0);
 		}
-		public Simple_macroContext simple_macro() {
-			return getRuleContext(Simple_macroContext.class,0);
+		public Simple_subpatternContext simple_subpattern() {
+			return getRuleContext(Simple_subpatternContext.class,0);
 		}
 		public TerminalNode NEWLINE() { return getToken(Python3Parser.NEWLINE, 0); }
-		public MacroContext(ParserRuleContext parent, int invokingState) {
+		public SubpatternContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro; }
+		@Override public int getRuleIndex() { return RULE_subpattern; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern(this);
 		}
 	}
 
-	public final MacroContext macro() throws RecognitionException {
-		MacroContext _localctx = new MacroContext(_ctx, getState());
-		enterRule(_localctx, 268, RULE_macro);
+	public final SubpatternContext subpattern() throws RecognitionException {
+		SubpatternContext _localctx = new SubpatternContext(_ctx, getState());
+		enterRule(_localctx, 268, RULE_subpattern);
 		try {
 			setState(1619);
 			_errHandler.sync(this);
@@ -11116,7 +11117,7 @@ public class Python3Parser extends Python3ParserBase {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(1615);
-				compound_macro();
+				compound_subpattern();
 				}
 				break;
 			case 2:
@@ -11124,7 +11125,7 @@ public class Python3Parser extends Python3ParserBase {
 				{
 				{
 				setState(1616);
-				simple_macro();
+				simple_subpattern();
 				setState(1617);
 				match(NEWLINE);
 				}
@@ -11144,40 +11145,40 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Macro_argsContext extends ParserRuleContext {
-		public List<Macro_argContext> macro_arg() {
-			return getRuleContexts(Macro_argContext.class);
+	public static class Subpattern_argsContext extends ParserRuleContext {
+		public List<Subpattern_argContext> subpattern_arg() {
+			return getRuleContexts(Subpattern_argContext.class);
 		}
-		public Macro_argContext macro_arg(int i) {
-			return getRuleContext(Macro_argContext.class,i);
+		public Subpattern_argContext subpattern_arg(int i) {
+			return getRuleContext(Subpattern_argContext.class,i);
 		}
 		public List<TerminalNode> COMMA() { return getTokens(Python3Parser.COMMA); }
 		public TerminalNode COMMA(int i) {
 			return getToken(Python3Parser.COMMA, i);
 		}
-		public Macro_argsContext(ParserRuleContext parent, int invokingState) {
+		public Subpattern_argsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro_args; }
+		@Override public int getRuleIndex() { return RULE_subpattern_args; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro_args(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_args(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro_args(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_args(this);
 		}
 	}
 
-	public final Macro_argsContext macro_args() throws RecognitionException {
-		Macro_argsContext _localctx = new Macro_argsContext(_ctx, getState());
-		enterRule(_localctx, 270, RULE_macro_args);
+	public final Subpattern_argsContext subpattern_args() throws RecognitionException {
+		Subpattern_argsContext _localctx = new Subpattern_argsContext(_ctx, getState());
+		enterRule(_localctx, 270, RULE_subpattern_args);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1621);
-			macro_arg();
+			subpattern_arg();
 			setState(1626);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -11187,7 +11188,7 @@ public class Python3Parser extends Python3ParserBase {
 				setState(1622);
 				match(COMMA);
 				setState(1623);
-				macro_arg();
+				subpattern_arg();
 				}
 				}
 				setState(1628);
@@ -11208,7 +11209,7 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Macro_argContext extends ParserRuleContext {
+	public static class Subpattern_argContext extends ParserRuleContext {
 		public Atom_wildcardContext atom_wildcard() {
 			return getRuleContext(Atom_wildcardContext.class,0);
 		}
@@ -11219,23 +11220,23 @@ public class Python3Parser extends Python3ParserBase {
 		public TestContext test() {
 			return getRuleContext(TestContext.class,0);
 		}
-		public Macro_argContext(ParserRuleContext parent, int invokingState) {
+		public Subpattern_argContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_macro_arg; }
+		@Override public int getRuleIndex() { return RULE_subpattern_arg; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMacro_arg(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_arg(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMacro_arg(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_arg(this);
 		}
 	}
 
-	public final Macro_argContext macro_arg() throws RecognitionException {
-		Macro_argContext _localctx = new Macro_argContext(_ctx, getState());
-		enterRule(_localctx, 272, RULE_macro_arg);
+	public final Subpattern_argContext subpattern_arg() throws RecognitionException {
+		Subpattern_argContext _localctx = new Subpattern_argContext(_ctx, getState());
+		enterRule(_localctx, 272, RULE_subpattern_arg);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -11282,7 +11283,7 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Simple_macroContext extends ParserRuleContext {
+	public static class Simple_subpatternContext extends ParserRuleContext {
 		public TerminalNode SUB_PATTERN() { return getToken(Python3Parser.SUB_PATTERN, 0); }
 		public TerminalNode NAME() { return getToken(Python3Parser.NAME, 0); }
 		public TerminalNode OPEN_PAREN() { return getToken(Python3Parser.OPEN_PAREN, 0); }
@@ -11290,26 +11291,26 @@ public class Python3Parser extends Python3ParserBase {
 		public TerminalNode AND_OP() { return getToken(Python3Parser.AND_OP, 0); }
 		public TerminalNode OR_OP() { return getToken(Python3Parser.OR_OP, 0); }
 		public TerminalNode NOT_WILDCARD() { return getToken(Python3Parser.NOT_WILDCARD, 0); }
-		public Macro_argsContext macro_args() {
-			return getRuleContext(Macro_argsContext.class,0);
+		public Subpattern_argsContext subpattern_args() {
+			return getRuleContext(Subpattern_argsContext.class,0);
 		}
-		public Simple_macroContext(ParserRuleContext parent, int invokingState) {
+		public Simple_subpatternContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_simple_macro; }
+		@Override public int getRuleIndex() { return RULE_simple_subpattern; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_macro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_subpattern(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_macro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_subpattern(this);
 		}
 	}
 
-	public final Simple_macroContext simple_macro() throws RecognitionException {
-		Simple_macroContext _localctx = new Simple_macroContext(_ctx, getState());
-		enterRule(_localctx, 274, RULE_simple_macro);
+	public final Simple_subpatternContext simple_subpattern() throws RecognitionException {
+		Simple_subpatternContext _localctx = new Simple_subpatternContext(_ctx, getState());
+		enterRule(_localctx, 274, RULE_simple_subpattern);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -11336,7 +11337,7 @@ public class Python3Parser extends Python3ParserBase {
 			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 720718055479443480L) != 0) || ((((_la - 66)) & ~0x3f) == 0 && ((1L << (_la - 66)) & 137438961665L) != 0)) {
 				{
 				setState(1641);
-				macro_args();
+				subpattern_args();
 				}
 			}
 
@@ -11356,36 +11357,36 @@ public class Python3Parser extends Python3ParserBase {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class Compound_macroContext extends ParserRuleContext {
-		public Simple_macroContext simple_macro() {
-			return getRuleContext(Simple_macroContext.class,0);
+	public static class Compound_subpatternContext extends ParserRuleContext {
+		public Simple_subpatternContext simple_subpattern() {
+			return getRuleContext(Simple_subpatternContext.class,0);
 		}
 		public TerminalNode COLON() { return getToken(Python3Parser.COLON, 0); }
 		public BlockContext block() {
 			return getRuleContext(BlockContext.class,0);
 		}
-		public Compound_macroContext(ParserRuleContext parent, int invokingState) {
+		public Compound_subpatternContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_compound_macro; }
+		@Override public int getRuleIndex() { return RULE_compound_subpattern; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCompound_macro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCompound_subpattern(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCompound_macro(this);
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCompound_subpattern(this);
 		}
 	}
 
-	public final Compound_macroContext compound_macro() throws RecognitionException {
-		Compound_macroContext _localctx = new Compound_macroContext(_ctx, getState());
-		enterRule(_localctx, 276, RULE_compound_macro);
+	public final Compound_subpatternContext compound_subpattern() throws RecognitionException {
+		Compound_subpatternContext _localctx = new Compound_subpatternContext(_ctx, getState());
+		enterRule(_localctx, 276, RULE_compound_subpattern);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1646);
-			simple_macro();
+			simple_subpattern();
 			setState(1647);
 			match(COLON);
 			setState(1648);

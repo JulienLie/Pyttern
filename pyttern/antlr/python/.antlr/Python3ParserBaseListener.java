@@ -52,13 +52,13 @@ public class Python3ParserBaseListener implements Python3ParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_input(Python3Parser.Macro_inputContext ctx) { }
+	@Override public void enterSubpattern_input(Python3Parser.Subpattern_inputContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro_input(Python3Parser.Macro_inputContext ctx) { }
+	@Override public void exitSubpattern_input(Python3Parser.Subpattern_inputContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1600,85 +1600,85 @@ public class Python3ParserBaseListener implements Python3ParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_call(Python3Parser.Macro_callContext ctx) { }
+	@Override public void enterSubpattern_call(Python3Parser.Subpattern_callContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro_call(Python3Parser.Macro_callContext ctx) { }
+	@Override public void exitSubpattern_call(Python3Parser.Subpattern_callContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_stmts(Python3Parser.Macro_stmtsContext ctx) { }
+	@Override public void enterSubpattern_stmts(Python3Parser.Subpattern_stmtsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro_stmts(Python3Parser.Macro_stmtsContext ctx) { }
+	@Override public void exitSubpattern_stmts(Python3Parser.Subpattern_stmtsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro(Python3Parser.MacroContext ctx) { }
+	@Override public void enterSubpattern(Python3Parser.SubpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro(Python3Parser.MacroContext ctx) { }
+	@Override public void exitSubpattern(Python3Parser.SubpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_args(Python3Parser.Macro_argsContext ctx) { }
+	@Override public void enterSubpattern_args(Python3Parser.Subpattern_argsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro_args(Python3Parser.Macro_argsContext ctx) { }
+	@Override public void exitSubpattern_args(Python3Parser.Subpattern_argsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMacro_arg(Python3Parser.Macro_argContext ctx) { }
+	@Override public void enterSubpattern_arg(Python3Parser.Subpattern_argContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMacro_arg(Python3Parser.Macro_argContext ctx) { }
+	@Override public void exitSubpattern_arg(Python3Parser.Subpattern_argContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSimple_macro(Python3Parser.Simple_macroContext ctx) { }
+	@Override public void enterSimple_subpattern(Python3Parser.Simple_subpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSimple_macro(Python3Parser.Simple_macroContext ctx) { }
+	@Override public void exitSimple_subpattern(Python3Parser.Simple_subpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCompound_macro(Python3Parser.Compound_macroContext ctx) { }
+	@Override public void enterCompound_subpattern(Python3Parser.Compound_subpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCompound_macro(Python3Parser.Compound_macroContext ctx) { }
+	@Override public void exitCompound_subpattern(Python3Parser.Compound_subpatternContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

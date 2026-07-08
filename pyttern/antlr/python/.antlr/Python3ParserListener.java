@@ -37,15 +37,15 @@ public interface Python3ParserListener extends ParseTreeListener {
 	 */
 	void exitEval_input(Python3Parser.Eval_inputContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_input}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern_input}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro_input(Python3Parser.Macro_inputContext ctx);
+	void enterSubpattern_input(Python3Parser.Subpattern_inputContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_input}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern_input}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro_input(Python3Parser.Macro_inputContext ctx);
+	void exitSubpattern_input(Python3Parser.Subpattern_inputContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link Python3Parser#decorator}.
 	 * @param ctx the parse tree
@@ -1327,75 +1327,75 @@ public interface Python3ParserListener extends ParseTreeListener {
 	 */
 	void exitList_wildcard(Python3Parser.List_wildcardContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_call}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern_call}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro_call(Python3Parser.Macro_callContext ctx);
+	void enterSubpattern_call(Python3Parser.Subpattern_callContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_call}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern_call}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro_call(Python3Parser.Macro_callContext ctx);
+	void exitSubpattern_call(Python3Parser.Subpattern_callContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_stmts}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern_stmts}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro_stmts(Python3Parser.Macro_stmtsContext ctx);
+	void enterSubpattern_stmts(Python3Parser.Subpattern_stmtsContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_stmts}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern_stmts}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro_stmts(Python3Parser.Macro_stmtsContext ctx);
+	void exitSubpattern_stmts(Python3Parser.Subpattern_stmtsContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro(Python3Parser.MacroContext ctx);
+	void enterSubpattern(Python3Parser.SubpatternContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro(Python3Parser.MacroContext ctx);
+	void exitSubpattern(Python3Parser.SubpatternContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_args}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern_args}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro_args(Python3Parser.Macro_argsContext ctx);
+	void enterSubpattern_args(Python3Parser.Subpattern_argsContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_args}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern_args}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro_args(Python3Parser.Macro_argsContext ctx);
+	void exitSubpattern_args(Python3Parser.Subpattern_argsContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#macro_arg}.
+	 * Enter a parse tree produced by {@link Python3Parser#subpattern_arg}.
 	 * @param ctx the parse tree
 	 */
-	void enterMacro_arg(Python3Parser.Macro_argContext ctx);
+	void enterSubpattern_arg(Python3Parser.Subpattern_argContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#macro_arg}.
+	 * Exit a parse tree produced by {@link Python3Parser#subpattern_arg}.
 	 * @param ctx the parse tree
 	 */
-	void exitMacro_arg(Python3Parser.Macro_argContext ctx);
+	void exitSubpattern_arg(Python3Parser.Subpattern_argContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#simple_macro}.
+	 * Enter a parse tree produced by {@link Python3Parser#simple_subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void enterSimple_macro(Python3Parser.Simple_macroContext ctx);
+	void enterSimple_subpattern(Python3Parser.Simple_subpatternContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#simple_macro}.
+	 * Exit a parse tree produced by {@link Python3Parser#simple_subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void exitSimple_macro(Python3Parser.Simple_macroContext ctx);
+	void exitSimple_subpattern(Python3Parser.Simple_subpatternContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#compound_macro}.
+	 * Enter a parse tree produced by {@link Python3Parser#compound_subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void enterCompound_macro(Python3Parser.Compound_macroContext ctx);
+	void enterCompound_subpattern(Python3Parser.Compound_subpatternContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link Python3Parser#compound_macro}.
+	 * Exit a parse tree produced by {@link Python3Parser#compound_subpattern}.
 	 * @param ctx the parse tree
 	 */
-	void exitCompound_macro(Python3Parser.Compound_macroContext ctx);
+	void exitCompound_subpattern(Python3Parser.Compound_subpatternContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link Python3Parser#transformation}.
 	 * @param ctx the parse tree
