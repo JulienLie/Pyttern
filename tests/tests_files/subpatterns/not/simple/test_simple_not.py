@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from loguru import logger
-import pytest
 
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
+from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.main import configure_logger
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
@@ -18,6 +17,14 @@ def test_not_subpattern():
     assert ret[0].name == "Return", f"Expected subpattern name 'Return', got {ret[0].name}"
     assert len(ret[0].transformations) == 1, f"Expected 1 transformations, got {len(ret[0].transformations)}"
 
+    pattern_path = Path(__file__).parent / "no_return.pyt"
+    processor = PythonProcessor()
+    try:
+        processor.generate_tree_from_code(pattern_path)
+        assert False, "Should not work"
+    except:
+        pass
+    
     code_path = Path(__file__).parent / "no_return_ok.py"
     pattern_path = Path(__file__).parent / "no_return.pyt"
 
