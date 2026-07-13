@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Any
 
 from antlr4 import RuleContext
 from antlr4.tree.Tree import Tree, ParseTree
@@ -12,6 +12,13 @@ from pyttern.simulator.pda.transition import CallTransition, NodeTransition, Not
 from ..antlr.python import Python3Parser
 
 from ..simulator.pda import PDA
+
+@dataclass(frozen=True)
+class SubPatternCallContext:
+    ast_ctx: Any
+    body: Any = None
+    alone: bool = False
+    var_bindings: dict[str, str] = {}
 
 def prune(tree: RuleContext, ctx: RuleContext | None):
     if isinstance(ctx, Python3Parser.Expr_wildcardContext):
