@@ -1,5 +1,6 @@
 import math
 import abc
+from typing import TypeVar
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
@@ -18,6 +19,8 @@ def rightmost_terminal(root):
             return None  # malformed/empty subtree
         node = children[-1]
     return node
+
+T = TypeVar('T')
 
 class Generic_to_PDA(metaclass=abc.ABCMeta):
     def __init__(self, grammar, skippable_nodes, remove_double_wildcard, tree_pruner):
@@ -51,7 +54,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         pass
 
     def visitChildren(self, node):
-        logger.trace(f"Visiting {node}: Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
+        logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
         children = node.children
         if len(children) == 0:
@@ -338,7 +341,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self.visitChildren(ctx)
 
     @staticmethod
-    def lookahead(ctx, clazz, predicate=None):
+    def lookahead(ctx, clazz: type[T], predicate=None) -> T:
         """
         Check if one of the descendants of ctx is an instance of clazz. Stop if ctx has more than one child.
         :param ctx:

@@ -77,39 +77,16 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             calls.extend(self._find_direct_subpattern_calls(child))
         return calls
 
-    def _is_alone_in_block(self, ctx) -> bool:
-        curr = ctx
-        while curr is not None and not isinstance(curr, Python3Parser.BlockContext):
-            curr = curr.parentCtx
-        if curr is None or not curr.children:
-            return False
-        
-        non_terminal_count = sum(1 for child in curr.children if not isinstance(child, TerminalNode))
-        return False #non_terminal_count == 1
-
     def visitBlock(self, ctx:Python3Parser.BlockContext):
-        # Scan for subpattern calls directly under this block (ignoring sub-blocks)
-        direct_subpatterns = []
-        if ctx.children:
-            for child in ctx.children:
-                direct_subpatterns.extend(self._find_direct_subpattern_calls(child))
+        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        logger.trace(f"Checking for subpattern in {ctx.getText()} -> {subpattern_call}")
 
-        not_subpatterns = []
-        for subpattern_call in direct_subpatterns:
+        if subpattern_call:
             name = subpattern_call.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
-            if subpattern and subpattern.type == "NOT":
-                not_subpatterns.append((subpattern_call, subpattern))
+            logger.debug(f"Handling {subpattern} at block level")
 
-        if not_subpatterns:
-            # If a NOT subpattern is present, it must be the ONLY statement in the block.
-            if len(ctx.children) > 1:
-                logger.error("Using a NOT subpattern alongside another statement in a block is not allowed.")
-                raise ValueError("Using a NOT subpattern alongside another statement in a block is not allowed.")
-
-            subpattern_call, subpattern = not_subpatterns[0]
-            logger.trace("Handling Not transition at Block level")
-            context = SubPatternCallContext(ast_ctx=ctx.parentCtx, body=None, alone=True)
+            context = SubPatternCallContext(ctx, None, True)
             transformations = subpattern.compile(context)
             self.dict_pda.update(transformations)
 
