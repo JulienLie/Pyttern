@@ -42,7 +42,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
-        logger.debug(f"var_names: {self.__var_names}")
+        logger.trace(f"var_names: {self.__var_names}")
         self.dict_pda["__main__"] = self.pda
         return self.dict_pda
     
@@ -51,8 +51,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         pass
 
     def visitChildren(self, node):
-        logger.debug(f"Visiting {node}")
-        logger.debug(f"Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
+        logger.trace(f"Visiting {node}: Class name: {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
         children = node.children
         if len(children) == 0:
@@ -63,7 +62,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         # Handle the double wildcard case
         while len(children) > 1 and self.lookahead(children[-1], self.remove_double_wildcard):
             children.pop()
-            logger.debug("Remove double wildcard")
+            logger.trace("Remove double wildcard")
 
         # Add self-transition to be able to skip statements
         if node.__class__.__name__ in self.skippable_nodes:
@@ -95,7 +94,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return next_state
     
     def visitStatement(self, ctx):
-        logger.debug(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
+        logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
         # Handle multiple compound wildcard
         lookahead_multiple_body = self.lookahead(ctx, self.grammar.Multiple_compound_wildcardContext)
@@ -129,7 +128,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
     def visitNumber_wildcard(self, ctx):
         numbers_node = ctx.getChild(0, self.grammar.Wildcard_numberContext)
         low, high = self.visitWildcard_number(numbers_node)
-        logger.debug(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
+        logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
         if low > high:
             logger.error(f"Invalid simple wildcard: low={low} > high={high}")
@@ -176,7 +175,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         if ctx.COMMA() is None:
             high = low
         
-        logger.debug(f"Visiting Wildcard_number: low={low}, high={high}")
+        logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
         if low > high:
             logger.error(f"Invalid wildcard number: low={low} > high={high}")
             return 1, 1
@@ -192,15 +191,15 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
     def visitTerminal(self, node):
         if isinstance(node, TerminalNode):
-            logger.debug(f"Visiting terminal {node}")
+            logger.trace(f"Visiting terminal {node}")
             node_text = str(node).strip()
             node_transition = NodeTransition(node_text)
         else:
-            logger.debug(f"Visiting {node.__class__.__name__} as terminal")
+            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
             node_text = f"{node.__class__.__name__}/0,0"
             node_transition = NodeTransition(node.__class__.__name__, 0, 0)
 
-        logger.debug(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
+        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
 
         return self._add_up_transition(node, node_transition)
 
@@ -334,7 +333,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
-            logger.debug("Handling empty list")
+            logger.trace("Handling empty list")
             return self._add_up_transition(ctx)
         return self.visitChildren(ctx)
 

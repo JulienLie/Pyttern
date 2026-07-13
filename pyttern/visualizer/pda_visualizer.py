@@ -80,7 +80,9 @@ def format_transition_label(t: Transition):
     # Navigation
     nav = ", ".join([str(n) for n in t.t])
     
-    return f"{cond}, {alpha} -> {beta}\n{nav}"
+    stack_op = f"{alpha} -> {beta}"
+    label = f"{cond}, {stack_op}" if cond else stack_op
+    return f"{label}\n{nav}"
 
 def parse_intervals(intervals_input):
     if not intervals_input:
@@ -134,17 +136,36 @@ def find_next_visible(pda: PDA, start_state: int, intervals: list, visited=None)
             results.update(find_next_visible(pda, t.q_prime, intervals, visited))
     return results
 
-def visualize_pda(pda: PDA, output_path: str, title: str = "PDA", 
+def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA", 
                   wrap_at: int = None, 
                   node_intervals: list = None,
                   highlights: dict = None,
                   font_size: int = 14):
     
+    if isinstance(pda, PDA):
+        pdas = {"__main__": pda}
+    else:
+        pdas = pda
+
+    flat_pdas = {}
+    for name, item in pdas.items():
+        if isinstance(item, dict):
+            if "__main__" in item:
+                flat_pdas[name] = item["__main__"]
+            else:
+                for sub_name, sub_pda in item.items():
+                    flat_pdas[f"{name}_{sub_name}"] = sub_pda
+        else:
+            flat_pdas[name] = item
+    pdas = flat_pdas
+
     intervals = parse_intervals(node_intervals)
-    if intervals is None and node_intervals is not None and node_intervals != "all":
+    if node_intervals == "all":
+        intervals = None
+    elif intervals is None and node_intervals is not None:
         intervals = []
     elif intervals is None and node_intervals is None:
-        intervals = []
+        intervals = None  # Show all states by default
 
     parsed_highlights = []
     if highlights:
@@ -155,20 +176,6 @@ def visualize_pda(pda: PDA, output_path: str, title: str = "PDA",
                 "highlight_self": cfg.get("self", False)
             })
 
-    # Add highlighted nodes to intervals
-    for h in parsed_highlights:
-        if h["intervals"]:
-            if intervals is not None:
-                intervals.extend(h["intervals"])
-    
-    if intervals is not None:
-        first = pda.initial_state
-        last = pda.final_states
-        if not is_in_intervals(first, intervals):
-            intervals.append((first, first))
-        if not is_in_intervals(last, intervals):
-            intervals.append((last, last))
-    
     dot = graphviz.Digraph(comment=title)
     dot.attr(pad='0.5')
     dot.edge_attr.update(fontsize=str(font_size))
@@ -186,27 +193,70 @@ def visualize_pda(pda: PDA, output_path: str, title: str = "PDA",
     dot.attr(overlap='false')
     dot.attr(splines='true')
 
-    visible_states = [s for s in sorted(list(pda.states)) if is_in_intervals(s, intervals)]
-    
-    # Add Nodes
+    # Render each PDA
+    last_pda_initial = None
+    for pda_name, current_pda in pdas.items():
+        if pda_name == "__main__":
+            target_graph = dot
+            main_intervals = list(intervals) if intervals is not None else None
+            for h in parsed_highlights:
+                if h["intervals"] and main_intervals is not None:
+                    main_intervals.extend(h["intervals"])
+            
+            if main_intervals is not None:
+                first = current_pda.initial_state
+                last = current_pda.final_states
+                if not is_in_intervals(first, main_intervals):
+                    main_intervals.append((first, first))
+                if not is_in_intervals(last, main_intervals):
+                    main_intervals.append((last, last))
+            
+            visible_states = [s for s in sorted(list(current_pda.states)) if is_in_intervals(s, main_intervals)]
+        else:
+            main_intervals = None
+            visible_states = sorted(list(current_pda.states))
+
+        pda_name_clean = pda_name.replace(":", "_")
+        if pda_name == "__main__":
+            _render_single_pda_to_graph(dot, current_pda, pda_name_clean, visible_states, main_intervals, wrap_at, parsed_highlights)
+        else:
+            subgraph_name = f"cluster_{pda_name_clean}"
+            with dot.subgraph(name=subgraph_name) as sub:
+                sub.attr(label=pda_name)
+                sub.attr(color='grey')
+                sub.attr(style='dashed')
+                _render_single_pda_to_graph(sub, current_pda, pda_name_clean, visible_states, main_intervals, None, parsed_highlights)
+
+        # Connect subpatterns horizontally using invisible edges from the previous initial state
+        if current_pda.states:
+            current_initial = "0" if pda_name_clean == "__main__" else f"{pda_name_clean}_0"
+            if last_pda_initial is not None:
+                dot.edge(last_pda_initial, current_initial, style='invis')
+            last_pda_initial = current_initial
+
+    dot.render(output_path, format='pdf', cleanup=True)
+
+def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals, wrap_at, parsed_highlights):
     node_to_row = {}
     if wrap_at:
         first_nodes_of_rows = []
         for row_idx, i in enumerate(range(0, len(visible_states), wrap_at)):
-            with dot.subgraph() as s:
+            with graph.subgraph() as s:
                 s.attr(rank='same')
                 chunk = visible_states[i:i + wrap_at]
                 if chunk:
                     first_nodes_of_rows.append(chunk[0])
                 for state in chunk:
                     node_to_row[state] = row_idx
-                    add_node_to_graph(s, state, pda, parsed_highlights)
+                    add_node_to_graph(s, state, pda, parsed_highlights, pda_name=pda_name)
         
         for j in range(len(first_nodes_of_rows) - 1):
-            dot.edge(str(first_nodes_of_rows[j]), str(first_nodes_of_rows[j+1]), style='invis')
+            n1 = str(first_nodes_of_rows[j]) if pda_name == "__main__" else f"{pda_name}_{first_nodes_of_rows[j]}"
+            n2 = str(first_nodes_of_rows[j+1]) if pda_name == "__main__" else f"{pda_name}_{first_nodes_of_rows[j+1]}"
+            graph.edge(n1, n2, style='invis')
     else:
         for state in visible_states:
-            add_node_to_graph(dot, state, pda, parsed_highlights)
+            add_node_to_graph(graph, state, pda, parsed_highlights, pda_name=pda_name)
 
     processed_skips = set() 
 
@@ -236,7 +286,9 @@ def visualize_pda(pda: PDA, output_path: str, title: str = "PDA",
                     attr['penwidth'] = '2.0'
                     attr['fontcolor'] = h_color
                 
-                dot.edge(str(t.q), str(t.q_prime), label=label, **attr)
+                node_q = str(t.q) if pda_name == "__main__" else f"{pda_name}_{t.q}"
+                node_qp = str(t.q_prime) if pda_name == "__main__" else f"{pda_name}_{t.q_prime}"
+                graph.edge(node_q, node_qp, label=label, **attr)
             else:
                 next_visible = find_next_visible(pda, t.q_prime, intervals)
                 for v in next_visible:
@@ -248,13 +300,12 @@ def visualize_pda(pda: PDA, output_path: str, title: str = "PDA",
                             if row_q is not None and row_v is not None and row_q != row_v:
                                 attr['constraint'] = 'false'
                         
-                        dot.edge(str(state), str(v), **attr)
+                        node_state = str(state) if pda_name == "__main__" else f"{pda_name}_{state}"
+                        node_v = str(v) if pda_name == "__main__" else f"{pda_name}_{v}"
+                        graph.edge(node_state, node_v, **attr)
                         processed_skips.add((state, v))
 
-    dot.render(output_path, format='pdf', cleanup=True)
-
-def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=12):
-    # Scale node width based on font size (e.g., 14pt -> ~0.65in)
+def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=12, pda_name="__main__"):
     width = str(0.3 + (node_font_size / 40.0) * 1.0)
     attr = {'shape': 'circle', 'fixedsize': 'true', 'width': width, 'fontsize': str(node_font_size)}
     
@@ -274,4 +325,5 @@ def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=
     else:
         attr.update({'style': 'filled', 'fillcolor': 'lightblue', 'fontcolor': 'black'})
         
-    graph.node(str(state), str(state), **attr)
+    node_id = str(state) if pda_name == "__main__" else f"{pda_name}_{state}"
+    graph.node(node_id, str(state), **attr)

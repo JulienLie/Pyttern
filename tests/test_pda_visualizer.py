@@ -150,3 +150,26 @@ def test_visualize_pda_wrap_at(mock_digraph_class):
     assert mock_dot.subgraph.call_count == 3
     # Check if rank='same' was set in subgraphs
     mock_subgraph.attr.assert_any_call(rank='same')
+
+
+@patch('graphviz.Digraph')
+def test_visualize_pda_with_subpatterns(mock_digraph_class):
+    mock_dot = MagicMock()
+    mock_digraph_class.return_value = mock_dot
+    
+    # Mock subgraph context manager
+    mock_subgraph = MagicMock()
+    mock_dot.subgraph.return_value.__enter__.return_value = mock_subgraph
+    
+    pda1 = PDA()
+    pda2 = PDA()
+    
+    pda_dict = {
+        "__main__": pda1,
+        "SubPattern::trans": pda2
+    }
+    
+    visualize_pda(pda_dict, "dummy_path", node_intervals="all")
+    
+    # Check that a subgraph was created for SubPattern::trans
+    mock_dot.subgraph.assert_any_call(name="cluster_SubPattern__trans")

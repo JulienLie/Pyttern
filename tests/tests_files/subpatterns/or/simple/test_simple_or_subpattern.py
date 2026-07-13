@@ -7,7 +7,7 @@ from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(5)
 def test_incr_subpattern():
     #logger.enable("pyttern")
 

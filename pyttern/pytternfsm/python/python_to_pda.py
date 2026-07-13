@@ -5,11 +5,10 @@ from loguru import logger
 
 from .tree_pruner import TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...subpattern.SubPattern import BaseSubPattern, loaded_subpatterns
-from ...simulator.pda.PDA import PDA
+from ...subpattern.SubPattern import loaded_subpatterns, SubPatternCallContext
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
-from ...simulator.pda.transition import NodeTransition, CallTransition, TransitionCondition, NamedTransition, Transition
-from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
+from ...simulator.pda.transition import NodeTransition, NamedTransition, Transition
+from ..generic_to_pda import Generic_to_PDA
 
 class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def __init__(self):
@@ -78,6 +77,16 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             calls.extend(self._find_direct_subpattern_calls(child))
         return calls
 
+    def _is_alone_in_block(self, ctx) -> bool:
+        curr = ctx
+        while curr is not None and not isinstance(curr, Python3Parser.BlockContext):
+            curr = curr.parentCtx
+        if curr is None or not curr.children:
+            return False
+        
+        non_terminal_count = sum(1 for child in curr.children if not isinstance(child, TerminalNode))
+        return False #non_terminal_count == 1
+
     def visitBlock(self, ctx:Python3Parser.BlockContext):
         # Scan for subpattern calls directly under this block (ignoring sub-blocks)
         direct_subpatterns = []
@@ -100,7 +109,8 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
             subpattern_call, subpattern = not_subpatterns[0]
             logger.trace("Handling Not transition at Block level")
-            transformations = subpattern.compile(ctx.parentCtx)
+            context = SubPatternCallContext(ast_ctx=ctx.parentCtx, body=None, alone=True)
+            transformations = subpattern.compile(context)
             self.dict_pda.update(transformations)
 
             args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
@@ -109,7 +119,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
             self.current_state = new_state
             return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
 
@@ -212,8 +222,10 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         subpattern = loaded_subpatterns[subpattern_name]
 
+        context = SubPatternCallContext(ast_ctx=ctx.parentCtx, body=body, alone=False) # Alone is always false here as it should be match at body lvl
+
         # TODO: same as before, change compilation in relation to subpattern args 
-        transformations = subpattern.compile(ctx.parentCtx, body)
+        transformations = subpattern.compile(context)
         self.dict_pda.update(transformations)
         n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:
@@ -221,5 +233,5 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             raise ValueError(f"Subpattern {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
 
-        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
         return self._add_up_transition(ctx)

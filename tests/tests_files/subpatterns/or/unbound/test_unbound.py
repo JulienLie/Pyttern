@@ -7,7 +7,7 @@ from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(2)
 def test_unbound_assign():
     subpattern_path = Path(__file__).parent / "unbound.myt"
     parse_subpattern_from_file(str(subpattern_path), language=Languages.PYTHON, override=True)

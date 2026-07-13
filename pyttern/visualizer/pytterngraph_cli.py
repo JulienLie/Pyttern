@@ -8,6 +8,7 @@ from pyttern.language_processors.languages import Languages
 from pyttern.language_processors import get_processor
 from pyttern.visualizer.pda_visualizer import visualize_pda
 from pyttern.visualizer.pt_visualizer import visualize_parse_tree
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 def main():
     parser = argparse.ArgumentParser(description="Pyttern Graph Tool: Visualize PDA structure or Parse Tree from code/patterns.")
@@ -100,20 +101,27 @@ def main():
             )
             logger.info(f"Generated {output_pdf}.pdf (Parse Tree)")
         else:
+            # Auto-load any subpatterns in the same directory
+            input_dir = os.path.dirname(os.path.abspath(input_path))
+            for file in os.listdir(input_dir):
+                if file.endswith(".myt"):
+                    try:
+                        parse_subpattern_from_file(os.path.join(input_dir, file), Languages[options["lang"].upper()])
+                        logger.info(f"Auto-loaded subpattern file: {file}")
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-load subpattern {file}: {e}")
+
             pdas = processor.create_pda(tree)
-            for name, pda in pdas.items():
-                suffix = "" if name == "__main__" else f"_{name}"
-                final_output = f"{output_pdf}{suffix}"
-                visualize_pda(
-                    pda, 
-                    final_output, 
-                    title=f"PDA - {name}",
-                    wrap_at=options.get("wrap_at"),
-                    node_intervals=options.get("nodes"),
-                    highlights=options.get("highlight"),
-                    font_size=options["font_size"]
-                )
-                logger.info(f"Generated {final_output}.pdf (PDA)")
+            visualize_pda(
+                pdas, 
+                output_pdf, 
+                title=f"PDA - {os.path.basename(input_path)}",
+                wrap_at=options.get("wrap_at"),
+                node_intervals=options.get("nodes"),
+                highlights=options.get("highlight"),
+                font_size=options["font_size"]
+            )
+            logger.info(f"Generated {output_pdf}.pdf (PDA with subpatterns)")
             
     except Exception as e:
         logger.exception(f"Error generating graph: {e}")
