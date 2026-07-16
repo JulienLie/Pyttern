@@ -1,12 +1,15 @@
-from antlr4 import TerminalNode, Token
+from typing import TypeVar
 
+from antlr4 import RuleContext, Token
+
+T = TypeVar('T', bound=RuleContext)
 
 class GenericTreePruner():
     def __init__(self, TO_KEEP, TO_REMOVE):
         self.TO_KEEP = TO_KEEP
         self.TO_REMOVE = TO_REMOVE
 
-    def visitChildren(self, node):
+    def visitChildren(self, node: T) -> T:
         result = super().visitChildren(node)
 
         node.children = result

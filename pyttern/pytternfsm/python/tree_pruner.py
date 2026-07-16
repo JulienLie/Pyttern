@@ -1,6 +1,7 @@
 from antlr4 import ParseTreeListener, ParseTreeVisitor, ParserRuleContext, RuleContext, TerminalNode
 from loguru import logger
 
+from ..generic_to_pda import Generic_to_PDA
 from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ..generic_tree_pruner import GenericTreePruner
 
@@ -37,9 +38,18 @@ class TreePruner(GenericTreePruner, Python3ParserVisitor):
         super().__init__(TO_KEEP, TO_REMOVE)
 
     def visitBlock(self, ctx: Python3Parser.BlockContext):
-        res = self.visitChildren(ctx)
-        end_node = BlockEndContext(parent=ctx)
-        res.children.append(end_node)
+        ctx = self.visitChildren(ctx)
+
+        put = True
+        if len(ctx.children) == 1:
+            child = ctx.getChild(0)
+            if Generic_to_PDA.lookahead(child, (Python3Parser.Subpattern_callContext, Python3Parser.Double_wildcardContext)):
+                put = False
+
+        if put:
+            end_node = BlockEndContext(parent=ctx)
+            ctx.children.append(end_node)
+        
         return ctx
 
     def visitTest(self, ctx: Python3Parser.TestContext):

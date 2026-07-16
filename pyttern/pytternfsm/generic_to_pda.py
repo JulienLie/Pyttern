@@ -1,6 +1,7 @@
 import math
 import abc
-from typing import TypeVar
+import types
+from typing import TypeAlias, TypeVar
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
@@ -308,6 +309,8 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         depth = self.move_to_B.pop()
         self.depth = depth
 
+        q_before_end = self.current_state
+
         # Commit to an intermediate state
         match_state = self.pda.new_state()
         match_transition = Transition(self.current_state, '', label, [], match_state, '')
@@ -316,7 +319,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         # Move up as many times as there I on the stack and consume them
         up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
-                                                              self.current_state, '')
+                                                               self.current_state, '')
         self.pda.add_transition(up_transition)
 
         # Consume the B from the stack
@@ -326,6 +329,11 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.current_state = next_state
 
         self._add_up_transition(None)
+        q_after = self.current_state
+
+        # Add a bypass transition for depth 0 (where B is on top of stack)
+        bypass_transition = Transition(q_before_end, 'B', NodeTransition(''), [], q_after, '')
+        self.pda.add_transition(bypass_transition)
 
         return match_state
 
