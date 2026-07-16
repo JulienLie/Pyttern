@@ -13,12 +13,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version in pyproject.toml
+        id: bump_version
+        run: |
+          python3 -c '
+          import re, os
+          pattern = re.compile(r"^version\s*=\s*\"(\d+)\.(\d+)\.(\d+)\"", re.MULTILINE)
+          with open("pyproject.toml", "r") as f:
+              content = f.read()
+          match = pattern.search(content)
+          if match:
+              major, minor, patch = match.groups()
+              new_version = f"{major}.{minor}.{int(patch)+1}"
+              new_content = pattern.sub(f"version = \"{new_version}\"", content)
+              with open("pyproject.toml", "w") as f:
+                  f.write(new_content)
+              print(f"Bumped version to {new_version}")
+              if "GITHUB_OUTPUT" in os.environ:
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as go:
+                      go.write(f"VERSION={new_version}\n")
+          else:
+              print("Error: Could not find version pattern in pyproject.toml")
+              exit(1)
+          '
+
+      - name: Commit and push version bump
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git add pyproject.toml
+          git commit -m "Bump version to v${{ steps.bump_version.outputs.VERSION }} [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "v${{ steps.bump_version.outputs.VERSION }}" --title "Release v${{ steps.bump_version.outputs.VERSION }}" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3
@@ -34,12 +77,6 @@ jobs:
         run: |
           echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Get version from pyproject.toml
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '^version = ' pyproject.toml | cut -d '"' -f 2)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -47,7 +84,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ steps.get_version.outputs.VERSION }}
+            type=raw,value=${{ steps.bump_version.outputs.VERSION }}
             type=sha
 
       - name: Build and push Docker image
