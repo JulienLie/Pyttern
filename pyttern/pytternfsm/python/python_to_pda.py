@@ -84,6 +84,31 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self.pda.add_transition(self_transition)
         return self.visitChildren(ctx)
 
+    def visitFile_input(self, ctx):
+        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        logger.trace(f"Checking for subpattern in {ctx.getText()} -> {subpattern_call}")
+
+        if subpattern_call:
+            name = subpattern_call.NAME().getText()
+            subpattern = loaded_subpatterns.get(name)
+            logger.debug(f"Handling {subpattern} at block level")
+
+            context = SubPatternCallContext(ctx, None, True)
+            transformations = subpattern.compile(context)
+            self.dict_pda.update(transformations)
+
+            args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
+            if args_nodes is not None:
+                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+            else:
+                args_names = []
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
+            self.current_state = new_state
+            return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
+
+        return super().visitFile_input(ctx)
+
     def visitBlock(self, ctx:Python3Parser.BlockContext):
         subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
         logger.trace(f"Checking for subpattern in {ctx.getText()} -> {subpattern_call}")
