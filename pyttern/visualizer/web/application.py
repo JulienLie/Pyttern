@@ -40,9 +40,9 @@ swagger = Swagger(app, template_file='swagger_template.yml')
 class PtToJson(ParseTreeVisitor):
     def visitChildren(self, node):
         elem = {"name": node.__class__.__name__, "children": [], "id": hash(node)}
-        if node.start is not None:
+        if hasattr(node, "start") and node.start is not None:
             elem["start"] = (node.start.line, node.start.column)
-        if node.stop is not None:
+        if hasattr(node, "stop") and node.stop is not None:
             elem["end"] = (node.stop.line, node.stop.column)
         result = self.defaultResult()
         n = node.getChildCount()

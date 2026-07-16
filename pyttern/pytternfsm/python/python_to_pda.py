@@ -3,7 +3,7 @@ import math
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
-from .tree_pruner import TreePruner
+from .tree_pruner import BlockEndContext, TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
 from ...subpattern.SubPattern import loaded_subpatterns, SubPatternCallContext
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
@@ -76,6 +76,13 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         for child in node.children:
             calls.extend(self._find_direct_subpattern_calls(child))
         return calls
+
+    def visitBlockEnd(self, ctx: BlockEndContext):
+        logger.debug("Visiting BlockEnd")
+        node = self.current_state
+        self_transition = Transition(node, "", NodeTransition(""), [NavigationAlphabet.RIGHT_SIBLING], node, "")
+        self.pda.add_transition(self_transition)
+        return self.visitChildren(ctx)
 
     def visitBlock(self, ctx:Python3Parser.BlockContext):
         subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
