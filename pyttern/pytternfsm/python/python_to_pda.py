@@ -86,7 +86,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
     def visitFile_input(self, ctx):
         subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
-        logger.trace(f"Checking for subpattern in {ctx.getText()} -> {subpattern_call}")
+        logger.trace(f"Checking for subpatterns in {ctx.getText()} -> {subpattern_call}")
 
         if subpattern_call:
             name = subpattern_call.NAME().getText()
@@ -116,6 +116,10 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         if subpattern_call:
             name = subpattern_call.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
+            if subpattern is None:
+                logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
+                raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
+
             logger.debug(f"Handling {subpattern} at block level")
 
             context = SubPatternCallContext(ctx, None, True)
@@ -142,9 +146,31 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
-        self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                      self.current_state, '')
-        self.pda.add_transition(self_transition)
+        lookahead_call_transition = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        if lookahead_call_transition:
+            name = lookahead_call_transition.NAME().getText()
+            subpattern = loaded_subpatterns.get(name)
+            if subpattern is None:
+                logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
+                raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
+            if subpattern.type == "NOT":
+                logger.trace("Handling Not subpattern not alone in body")
+                context = SubPatternCallContext(ctx, None, False)
+                transformations = subpattern.compile(context)
+                self.dict_pda.update(transformations)
+    
+                args_nodes = lookahead_call_transition.subpattern_args().subpattern_arg() if lookahead_call_transition.subpattern_args() is not None else None
+                if args_nodes is not None:
+                    args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+                else:
+                    args_names = []
+    
+                new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
+                self.current_state = new_state
+
+                self._restrict_stmt = True
+                logger.trace("Restricting self transition on next stmt")
+                return self.current_state
 
         return super().visitStatement(ctx)
 

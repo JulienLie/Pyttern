@@ -10,17 +10,6 @@ from ..simulator.pda.PDA import PDA
 from ..simulator.pda.PDA_alphabets import NavigationAlphabet
 from ..simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
 
-def rightmost_terminal(root):
-    node = root
-    # Drill down the last child at each level until you hit a terminal
-    while not isinstance(node, TerminalNode) or "wildcard" in node.__class__.__name__:
-        # If you only have getChildren(), materialize once per level
-        children = list(node.getChildren())
-        if not children:
-            return None  # malformed/empty subtree
-        node = children[-1]
-    return node
-
 T = TypeVar('T')
 
 class Generic_to_PDA(metaclass=abc.ABCMeta):
@@ -29,20 +18,19 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.current_state = self.pda.initial_state
         self.depth = 0
         self.move_to_B = []
-        self.__var_names = {}
-        self.__last_node = None
-        self.__is_last_branch = True
         self.dict_pda = {}
         self.grammar = grammar
         self.skippable_nodes = skippable_nodes
         self.remove_double_wildcard = tuple(remove_double_wildcard)
         self.tree_pruner = tree_pruner
+        self._restrict_stmt = False
+        self.__var_names = {}
+        self.__is_last_branch = True
 
     def visit(self, tree):
         logger.debug(f"Visiting tree: {tree}")
         self.dict_pda = {}
         self.__var_names = {}
-        self.__last_node = rightmost_terminal(tree)
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
@@ -70,9 +58,12 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         # Add self-transition to be able to skip statements
         if node.__class__.__name__ in self.skippable_nodes:
-            self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                        self.current_state, '')
-            self.pda.add_transition(self_transition)
+            if not self._restrict_stmt:
+                self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
+                                            self.current_state, '')
+                self.pda.add_transition(self_transition)
+            else:
+                self._restrict_stmt = False
 
         next_state = self.pda.new_state()
         transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
@@ -203,7 +194,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             node_text = f"{node.__class__.__name__}/0,0"
             node_transition = NodeTransition(node.__class__.__name__, 0, 0)
 
-        logger.trace(f"last node: {self.__last_node}, current node: {node}, node text: {node_text}")
+        logger.trace(f"is last branch: {self.__is_last_branch}, current node: {node}, node text: {node_text}")
 
         return self._add_up_transition(node, node_transition)
 

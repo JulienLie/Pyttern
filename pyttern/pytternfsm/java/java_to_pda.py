@@ -1,15 +1,13 @@
 import math
 
-from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
 from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
 from .tree_pruner import TreePruner
-from ...simulator.pda.PDA import PDA
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
-from ...simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
-from ..generic_to_pda import Generic_to_PDA, rightmost_terminal
+from ...simulator.pda.transition import NodeTransition, Transition
+from ..generic_to_pda import Generic_to_PDA
 
 class Java_to_PDA(Generic_to_PDA, JavaParserVisitor):
     def __init__(self):

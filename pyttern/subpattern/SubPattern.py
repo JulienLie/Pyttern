@@ -235,7 +235,7 @@ class NotSubPattern(BaseSubPattern):
     def type(self) -> Literal["NOT"]:
         return "NOT"
     
-    def _generate_pda_alone(self, pda, args, starting_state, context: SubPatternCallContext) -> int:
+    def _generate_pda_alone(self, pda, args, starting_state, _context: SubPatternCallContext) -> int:
         logger.debug(f"Not transformation disponible: {list(self.transformations.keys())}")
         name = list(self.transformations.keys())[0]
 
@@ -249,11 +249,34 @@ class NotSubPattern(BaseSubPattern):
             ""
         )
         pda.add_transition(transition)
-        logger.debug(f"Adding Not transition: {transition}")
+        logger.trace(f"Adding Not transition: {transition}")
 
         return next_state
 
-    def _generate_pda(self, pda, args, starting_state, context: SubPatternCallContext):
-        return self._generate_pda_alone(pda, args, starting_state, context)
+    def _generate_pda(self, pda: PDA, args, starting_state: int, _context: SubPatternCallContext) -> int:
+        middle_state = pda.new_state()
+        stmt_transition = Transition(
+            starting_state,
+            "",
+            NodeTransition(""), # Should put a Stmt transition
+            [NavigationAlphabet.LEFT_CHILD],
+            middle_state,
+            "I"
+        )
+        pda.add_transition(stmt_transition)
+
+        name = list(self.transformations.keys())[0]
+        self_call_transition = Transition(
+            middle_state, 
+            "I", 
+            NotCallTransition(self.name, name, args),
+            [NavigationAlphabet.PARENT, NavigationAlphabet.RIGHT_SIBLING],
+            starting_state,
+            ""
+        )
+        pda.add_transition(self_call_transition)
+        logger.trace(f"Adding Not transition: {self_call_transition}")
+
+        return starting_state
 
 loaded_subpatterns: dict[str, BaseSubPattern] = {}
