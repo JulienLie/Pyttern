@@ -142,8 +142,23 @@ class Matcher:
             new_matches = matches + [(transition, current_node)]
 
             for variables, k in new_vars:
-                skip = [NavigationAlphabet.RIGHT_SIBLING]*k
-                next_node = self._get_next_node(current_node, skip + t)
+                curr = current_node
+                valid_skip = True
+                for _ in range(k):
+                    parent = curr.parentCtx
+                    if parent is None:
+                        valid_skip = False
+                        break
+                    sibs = list(parent.getChildren())
+                    try:
+                        idx = sibs.index(curr)
+                        curr = sibs[idx + 1]
+                    except (IndexError, ValueError):
+                        valid_skip = False
+                        break
+                if not valid_skip:
+                    continue
+                next_node = self._get_next_node(curr, t)
                 if next_node is None:
                     logger.trace(f"Wrong direction: cannot get next node at {t}")
                     continue
@@ -218,12 +233,31 @@ class Matcher:
         return input.__class__.__name__ == name and down <= input.getChildCount() <= up
 
     @staticmethod
+    def _unwrap(tree):
+        from ..antlr.python import Python3Parser
+        while tree is not None and not isinstance(tree, TerminalNode) and hasattr(tree, 'children') and len(tree.children) == 1:
+            if isinstance(tree, Python3Parser.NameContext):
+                break
+            tree = tree.children[0]
+        return tree
+
+    @staticmethod
     def _match_tree(tree1, tree2):
         logger.trace(f'Matching {tree1} and {tree2}')
         if tree1 is None or tree2 is None:
             return False
+        from antlr4.tree.Tree import Tree
+        if not isinstance(tree1, Tree) or not isinstance(tree2, Tree):
+            return tree1 == tree2
         if isinstance(tree1, TerminalNode) and isinstance(tree2, TerminalNode):
             return str(tree1) == str(tree2)
+        if isinstance(tree1, TerminalNode) or isinstance(tree2, TerminalNode):
+            return False
+        from ..antlr.python import Python3Parser
+        if isinstance(tree1, Python3Parser.NameContext) and isinstance(tree2, Python3Parser.ExprContext):
+            unwrapped = Matcher._unwrap(tree2)
+            if isinstance(unwrapped, Python3Parser.NameContext):
+                return Matcher._match_tree(tree1, unwrapped)
         if tree1.__class__.__name__ != tree2.__class__.__name__:
             return False
         if len(tree1.children) != len(tree2.children):
@@ -232,3 +266,4 @@ class Matcher:
             if not Matcher._match_tree(child1, child2):
                 return False
         return True
+

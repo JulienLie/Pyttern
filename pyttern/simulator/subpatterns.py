@@ -23,12 +23,15 @@ def get_siblings(node: ParserRuleContext) -> List[ParserRuleContext]:
     """
     prec = node
     parent = prec.parentCtx
-    while not isinstance(prec, (Python3Parser.StmtContext, Python3Parser.ExprContext)):
+    while parent is not None and not isinstance(prec, (Python3Parser.StmtContext, Python3Parser.ExprContext, Python3Parser.TfpdefContext)):
         prec = parent
         parent = parent.parentCtx
+    if parent is None:
+        return [prec]
     children = list(parent.getChildren())
     node_index = children.index(prec)
     return children[node_index:]
+
 
 def search(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -> Set[Tuple[Environment, int]]:
     """
@@ -70,9 +73,13 @@ def eval_base(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -
     results = set()
     p = len(siblings)
     
+    is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
+    
     for m_out, i in search(tau, siblings, m_sub):
         # Authorize all block sizes k that are large enough to encapsulate match index i
-        for k in range(i, p):
+        start_k = i + 1 if is_stmt else i
+        end_k = p + 1 if is_stmt else p
+        for k in range(start_k, end_k):
             results.add((m_out, k))
                 
     return results
@@ -92,11 +99,13 @@ def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         all block sizes 'k' strictly prior to the first occurrence of the forbidden node.
     """
     results = set()
-    tau_forbidden = next(iter(transformations.values())) if isinstance(transformations, dict) else transformations[0]
-    matches = search(tau_forbidden, siblings, m_sub)
+    trans_list = list(transformations.values()) if isinstance(transformations, dict) else transformations
+    all_matches = set()
+    for tau in trans_list:
+        all_matches.update(search(tau, siblings, m_sub))
     
-    if matches:
-        k_limit = min(i for _, i in matches)
+    if all_matches:
+        k_limit = min(i for _, i in all_matches)
     else:
         k_limit = p + 1
         
@@ -118,10 +127,37 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
     Returns:
         Set[Tuple[Environment, int]]: The pure set union of all base evaluations.
     """
+def _tau_calls_not(tau) -> bool:
+    from ..subpattern.SubPattern import loaded_subpatterns
+    from .pda.transition import CallTransition
+    if isinstance(tau, dict):
+        tau = tau.get('__main__', next(iter(tau.values()))) if len(tau) > 0 else None
+    if tau is None or not hasattr(tau, 'states'):
+        return False
+    for s in tau.states:
+        for tr in tau.get_transitions(s):
+            if isinstance(tr.A, CallTransition):
+                called = loaded_subpatterns.get(tr.A.subpattern_name)
+                if called and called.type == 'NOT':
+                    return True
+    return False
+
+def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
     results = set()
+    is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
     for trans_name, tau in transformations.items():
         logger.trace(f"Computing OR for trans {trans_name}")
-        results.update(eval_base(tau, siblings, m_sub))
+        if _tau_calls_not(tau):
+            if len(siblings) > 0:
+                match_set = Matcher.match(tau, siblings[0], False, m_sub)
+                for match in match_set.matches:
+                    m_out = Environment.from_dict(match.bindings)
+                    start_k = 1 if is_stmt else 0
+                    end_k = p + 1 if is_stmt else p
+                    for k in range(start_k, end_k):
+                        results.add((m_out, k))
+        else:
+            results = results.union(eval_base(tau, siblings, m_sub))
         
     return results
 
@@ -139,40 +175,46 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         Set[Tuple[Environment, int]]: A set of valid configurations (m_merged, k) representing 
         the set intersection over valid block sizes 'k' and the set union over environment mappings.
     """
+    import itertools
     results = set()
     trans_list = list(transformations.values()) if isinstance(transformations, dict) else transformations
-    all_evals = [eval_base(tau, siblings, m_sub) for tau in trans_list]
-    
-    for k in range(0, p + 1):
-        mappings_for_k = []
-        for eval_set in all_evals:
-            valid_mappings = [m for m, valid_k in eval_set if valid_k == k]
-            mappings_for_k.append(valid_mappings)
-        
-        # If any transformation yielded 0 mappings for this k, intersection is impossible.
-        if any(len(mappings) == 0 for mappings in mappings_for_k):
+    all_matches = [search(tau, siblings, m_sub) for tau in trans_list]
+
+    for combo in itertools.product(*all_matches):
+        envs, indices = zip(*combo)
+        conflict = False
+        for idx1 in range(len(indices)):
+            for idx2 in range(idx1 + 1, len(indices)):
+                if indices[idx1] == indices[idx2]:
+                    e1, e2 = envs[idx1], envs[idx2]
+                    for k1, v1 in e1.items():
+                        if v1 is None:
+                            continue
+                        for k2, v2 in e2.items():
+                            if v2 is None:
+                                continue
+                            if k1 != k2 and (v1 is v2 or (isinstance(v1, ParserRuleContext) and v1 == v2)):
+                                conflict = True
+                                break
+                        if conflict:
+                            break
+                if conflict:
+                    break
+        if conflict:
             continue
-        
-        # Incremental Cartesian Product (Early Pruning) in subpattern variable scope
-        surviving_envs = {Environment.empty()}
-        
-        for next_mappings in mappings_for_k:
-            next_survivors = set()
-            
-            for current_env in surviving_envs:
-                for new_mapping in next_mappings:
-                    merged = current_env.merge(new_mapping)
-                    if merged is not None:
-                        next_survivors.add(merged)
-            
-            surviving_envs = next_survivors
-            
-            if not surviving_envs:
+        merged_env = Environment.empty()
+        valid = True
+        for env in envs:
+            merged_env = merged_env.merge(env)
+            if merged_env is None:
+                valid = False
                 break
-                
-        for final_env in surviving_envs:
-            results.add((final_env, k))
-                
+        if not valid:
+            continue
+        max_idx = max(indices)
+        for k in range(max_idx, p + 1):
+            results.add((merged_env, k))
+
     return results
 
 def eval_operator(

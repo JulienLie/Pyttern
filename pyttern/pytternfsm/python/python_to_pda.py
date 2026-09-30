@@ -46,8 +46,8 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext)) is not None:
-                    logger.trace(f"Child {child.__class__.__name__} is a double wildcard, setting boundaries to 0 and inf")
+                if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext, self.grammar.Subpattern_callContext)) is not None:
+                    logger.trace(f"Child {child.__class__.__name__} is a double wildcard or subpattern call, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
 

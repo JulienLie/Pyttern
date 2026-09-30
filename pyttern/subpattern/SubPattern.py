@@ -18,7 +18,41 @@ from pyttern.simulator.pda.transition import CallTransition, Transition
 
 from ..simulator.pda import PDA
 
+def _adapt_stmt_to_tfpdef(tree: RuleContext) -> RuleContext | None:
+    desc = tree
+    while desc and not isinstance(desc, Python3Parser.Expr_stmtContext):
+        children = list(desc.getChildren())
+        if len(children) != 1:
+            break
+        desc = children[0]
+
+    if desc and isinstance(desc, Python3Parser.Expr_stmtContext):
+        target_name = desc.getChild(0)
+        while target_name.getChildCount() == 1:
+            target_name = target_name.getChild(0)
+
+        if desc.getChildCount() > 1:
+            annassign = desc.getChild(1)
+            type_expr = annassign.getChild(0)
+            tfpdef = Python3Parser.TfpdefContext(None, parent=None, invokingState=-1)
+            tfpdef.children = [target_name, type_expr]
+            target_name.parentCtx = tfpdef
+            type_expr.parentCtx = tfpdef
+            return tfpdef
+        else:
+            tfpdef = Python3Parser.TfpdefContext(None, parent=None, invokingState=-1)
+            tfpdef.children = [target_name]
+            target_name.parentCtx = tfpdef
+            return tfpdef
+    return None
+
+
 def prune(tree: RuleContext, ctx: RuleContext | None):
+    if ctx is not None and isinstance(ctx, (Python3Parser.ParametersContext, Python3Parser.TfpdefContext)):
+        adapted = _adapt_stmt_to_tfpdef(tree)
+        if adapted is not None:
+            return adapted
+
     desc = tree
     while desc and not isinstance(desc, ctx.__class__):
         children = list(desc.getChildren())
@@ -26,6 +60,7 @@ def prune(tree: RuleContext, ctx: RuleContext | None):
             return None
         desc = children[0]
     return desc
+
 
 
 @dataclass

@@ -37,14 +37,29 @@ class Environment:
     def merge(self, other: 'Environment') -> Optional['Environment']:
         if not isinstance(other, Environment):
             other = Environment.from_dict(other)
+        from .Matcher import Matcher
+        from ..antlr.python import Python3Parser
         for key, val in self.mapping.items():
             if val is not None and key in other.mapping and other.mapping[key] is not None:
-                if other.mapping[key] != val:
-                    return None
+                other_val = other.mapping[key]
+                if val == other_val:
+                    continue
+                from antlr4.tree.Tree import Tree
+                if isinstance(val, Tree) and isinstance(other_val, Tree):
+                    if Matcher._match_tree(val, other_val) or Matcher._match_tree(other_val, val):
+                        continue
+                return None
 
         merged = self.mapping.copy()
         for key, val in other.mapping.items():
-            if val is not None or key not in merged:
+            if val is not None:
+                if key in merged and merged[key] is not None:
+                    curr_val = merged[key]
+                    if isinstance(val, Python3Parser.NameContext) and not isinstance(curr_val, Python3Parser.NameContext):
+                        merged[key] = val
+                else:
+                    merged[key] = val
+            elif key not in merged:
                 merged[key] = val
         return self._create(merged)
 

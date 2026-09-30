@@ -5,7 +5,7 @@ def ?a(?$IntAndStr(?int, ?str)):
     ?
 
 $# second
-def ?b(?$IntAndStr(?int, ?str)):
+def ?b(?$IntAndStr(?, ?)):
     ?
 
 
