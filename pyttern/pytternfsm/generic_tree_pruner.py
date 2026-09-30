@@ -10,6 +10,8 @@ class GenericTreePruner():
         self.TO_REMOVE = TO_REMOVE
 
     def visitChildren(self, node: T) -> T:
+        if getattr(node, "_is_pruned", False):
+            return node
         result = super().visitChildren(node)
 
         node.children = result
@@ -17,6 +19,7 @@ class GenericTreePruner():
             if child is not None:
                 child.parentCtx = node
 
+        node._is_pruned = True
         return node
 
     def prune_single_child(self, node):

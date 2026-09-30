@@ -50,6 +50,9 @@ class PDA:
         return len(self.states) - 1
 
     def add_transition(self, transition: Transition) -> None:
+        if transition.q == transition.q_prime:
+            logger.trace(f"Adding self transition: {transition}")
+
         current_state = transition.q
         if current_state not in self.states:
             raise ValueError("State not in the PDA")
@@ -68,3 +71,18 @@ class PDA:
             ] # Flatten
 
         return self.transitions[state]
+
+    def __str__(self) -> str:
+        num_transitions = sum(len(t) for t in self.transitions.values())
+        return (
+            f"PDA("
+            f"states={len(self.states)}, "
+            f"transitions={num_transitions}, "
+            f"initial_state={self.initial_state}, "
+            f"final_states={self.final_states}, "
+            f"named_wildcards={self.named_wildcards}"
+            f")"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()

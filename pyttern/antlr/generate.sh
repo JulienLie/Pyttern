@@ -1,4 +1,19 @@
-for d in ./*/ ; do
+#!/usr/bin/env bash
+set -e
+
+ORIGINAL_DIR="$(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+trap 'cd "$ORIGINAL_DIR"' EXIT RETURN 2>/dev/null || trap 'cd "$ORIGINAL_DIR"' EXIT
+
+ANTLR_JAR="$SCRIPT_DIR/antlr-4.13.2-complete.jar"
+
+cd "$SCRIPT_DIR"
+
+echo "Running ANTLR generator from: $SCRIPT_DIR"
+
+for d in "$SCRIPT_DIR"/*/ ; do
+  [ -d "$d" ] || continue
   basename=$(basename "$d")
   if [[ $basename == _* ]]; then
     echo "Skipping directory $basename"
@@ -6,9 +21,13 @@ for d in ./*/ ; do
   fi
   echo "Processing directory: $basename"
   cd "$d"
-  python3 transformGrammar.py
+  if [ -f "transformGrammar.py" ]; then
+    python3 transformGrammar.py
+  fi
   echo "Generating lexer and parser"
-  java -jar ../antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor *.g4
+  java -jar "$ANTLR_JAR" -Dlanguage=Python3 -visitor *.g4
   echo "Done!"
-  cd ..
+  cd "$SCRIPT_DIR"
 done
+
+cd "$ORIGINAL_DIR"

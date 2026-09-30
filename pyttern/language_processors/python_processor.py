@@ -15,14 +15,12 @@ from ..pytternfsm.python.tree_pruner import TreePruner
 
 class PythonProcessor(BaseProcessor):
 
-    @lru_cache(maxsize=128)
     def generate_tree_from_code(self, code):
         code = code.strip()
         code += "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
-    @lru_cache(maxsize=128)
     def generate_tree_from_stream(self, stream):
         logger.debug("Generating tree")
         lexer = Python3Lexer(stream)
@@ -41,12 +39,10 @@ class PythonProcessor(BaseProcessor):
 
         return pruned_tree
 
-    @lru_cache(maxsize=128)
     def generate_tree_from_file(self, file):
         with open(file, 'r', encoding="utf-8") as f:
             return self.generate_tree_from_code(f.read())
 
-    @lru_cache(maxsize=128)
     def create_pda(self, pattern_tree):
         return Python_to_PDA().visit(pattern_tree)
 

@@ -1,0 +1,2 @@
+def safe_sync(?a, ?b):
+    ?$NoDeadlock(?a, ?b)

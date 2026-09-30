@@ -2,57 +2,13 @@ from antlr4.ParserRuleContext import ParserRuleContext
 from antlr4.tree.Tree import TerminalNode, Tree
 from loguru import logger
 
+from pyttern.simulator.configuration import Environment
+
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
-from .pda.transition import NodeTransition, NamedTransition, CallTransition, NotCallTransition
+from .pda.transition import NodeTransition, NamedTransition, CallTransition
 from ..subpattern.SubPattern import loaded_subpatterns
 from ..pytternfsm.python.match_set import MatchSet, Match
-
-
-def join_dicts(m_a: dict, m_b: dict) -> dict:
-    """
-    Joins two dictionaries m_a and m_b such as:
-    (m_a ⊕ m_b)(t) = m_b(t) if m_b(t) is none None else m_a(t)
-    :param m_a: first dictionary with "default" values
-    :param m_b: second dictionary with "override" values
-    :return: the joined dictionary
-    """
-    result = m_a.copy()
-    for key, value in m_b.items():
-        if value is not None:
-            result[key] = value
-    return result
-
-
-def mapping(params: list, args: list) -> dict:
-    """
-    Create the mapping m_(i->j) from the subpattern parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
-    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
-    :param params: parameters of the PDA called (P_j)
-    :param args: Variables of the PDA calling (P_i)
-    :return: the mapping m_(i->j)
-    """
-
-    if len(params) != len(args):
-        raise ValueError("Parameters and arguments must have the same length")
-    return dict(zip(params, args))
-
-def composition(mapping, bindings):
-    """
-    The composition of a mapping m_(i->j) with a bindings m_j is defined as:
-    m_(i->j)[m_j] such as:
-    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
-    m_j = {t_p -> v_p | 1 <= p <= k}
-    m_(i->j)[m_j] = {u_p -> v_p | 1 <= p <= k}
-    :param mapping: a mapping m_(i->j)
-    :param bindings: The current mapping m_j
-    :return: The composition m_(i->j)[m_j]
-    """
-    result = {}
-    for u, t in mapping.items():
-        if t in bindings:
-            result[u] = bindings[t]
-    return result
 
 class Matcher:
     def __init__(self, pdas: dict[str, PDA], parse_tree: Tree):
@@ -98,8 +54,11 @@ class Matcher:
     def start(self, initial_bindings=None):
         bindings = {t: None for t in self.pda.named_wildcards}
         if initial_bindings is not None:
-            bindings.update(initial_bindings)
-        first_config = (self.pda.initial_state, self.parse_tree, "", bindings, [])
+            if isinstance(initial_bindings, Environment):
+                bindings.update(initial_bindings.mapping)
+            else:
+                bindings.update(initial_bindings)
+        first_config = (self.pda.initial_state, self.parse_tree, "", Environment.from_dict(bindings), [])
         self.configurations.append(first_config)
         for listener in self._listeners:
             listener.on_start(self, self.pda.initial_state, self.parse_tree)
@@ -117,7 +76,7 @@ class Matcher:
 
         if current_state == self.pda.final_states:
             logger.debug("Match found")
-            match = Match(self.n_step, var.copy(), matches)
+            match = Match(self.n_step, var, matches)
             self.match_set.record(match)
             for listener in self._listeners:
                 listener.on_match(self, match)
@@ -139,7 +98,7 @@ class Matcher:
 
             class_name = current_node.__class__.__name__
 
-            new_var = var.copy()
+            new_var: Environment = var
             new_vars = []
 
             # Default terminal node
@@ -150,18 +109,18 @@ class Matcher:
                     else:
                         logger.trace(f"Wrong input: expecting {A.name} but was {class_name}")
                     continue
-                new_vars.append(new_var)
+                new_vars.append((new_var, 0))
 
             # Handle Variables
             elif isinstance(A, NamedTransition):
                 name = A.name
                 if new_var[name] is None:
                     logger.trace(f"New variable: {name}")
-                    new_var[name] = current_node
+                    new_var = new_var.bind(name, current_node)
                 elif not self._match_tree(new_var[name], current_node):
                     logger.trace(f"Wrong variable: {name} expecting {new_var[name]} but was {current_node}")
                     continue
-                new_vars.append(new_var)
+                new_vars.append((new_var, 0))
 
             # Handle subpatterns
             elif isinstance(A, CallTransition):
@@ -169,6 +128,7 @@ class Matcher:
                 possible_bindings = self.call_subpattern(A, current_node, new_var)
                 if len(possible_bindings) < 1:
                     continue
+                logger.debug(possible_bindings)
                 new_vars += possible_bindings
 
             else:
@@ -176,80 +136,44 @@ class Matcher:
                 raise ValueError(f"Unknown transition type: {A} ({type(A)})")
 
 
-            next_node = self._get_next_node(current_node, t)
-            if next_node is None:
-                logger.trace(f"Wrong direction: cannot get next node at {t}")
-                continue
-
-            logger.trace(f"Taking {transition}")
+            logger.trace(f"Taking {transition} and generating {len(new_vars)} new configuration(s)")
 
             new_stack += beta
             new_matches = matches + [(transition, current_node)]
 
-            for variables in new_vars:
-                new_config = (q_prime, next_node, new_stack, variables.copy(), new_matches)
+            for variables, k in new_vars:
+                skip = [NavigationAlphabet.RIGHT_SIBLING]*k
+                next_node = self._get_next_node(current_node, skip + t)
+                if next_node is None:
+                    logger.trace(f"Wrong direction: cannot get next node at {t}")
+                    continue
+                new_config = (q_prime, next_node, new_stack, variables, new_matches)
                 self.configurations.append(new_config)
 
         self.n_step += 1
         return self
 
-    def call_subpattern(self, transition, current_node, bindings):
+    def call_subpattern(self, transition: CallTransition, current_node: ParserRuleContext, bindings):
         """
-        Calls a subpattern transition (CallTransition or NotCallTransition) against the current node.
+        Calls a subpattern transition (CallTransition) against the current node.
 
         :param transition: The transition object.
         :param current_node: The current node in the parse tree.
         :param bindings: The current variable bindings.
         :return: A list of binding dicts.
         """
+        from . import subpatterns
+
         subpattern_name = transition.subpattern_name
-        trnsf_name = transition.transformation_name
         args = transition.args
 
-        subpattern = loaded_subpatterns.get(subpattern_name)
-        to_call = f"{subpattern_name}::{trnsf_name}"
-        if to_call not in self.callable or not subpattern:
-            logger.warning(f"subpattern or transformation not found: {subpattern_name}:{trnsf_name}")
+        subp = loaded_subpatterns.get(subpattern_name)
+        if not subp:
+            logger.warning(f"subpattern not found: {subpattern_name}")
             logger.debug(f"Loaded subpatterns: {loaded_subpatterns.keys()}, callable subpatterns: {self.callable.keys()}")
             return []
-
-        subpattern_pdas = self.callable[to_call]
-        subpattern_pda = subpattern_pdas["__main__"]
-
-        m_j_to_i = mapping(subpattern.args_order, args)
-        comp = composition(m_j_to_i, bindings)
-        m_j_epsilon = {u: None for u in subpattern_pda.named_wildcards}
-        subpattern_params = join_dicts(m_j_epsilon, comp)
-
-        logger.trace(f"Calling subpattern {subpattern_name}:{trnsf_name} on node {current_node} with bindings {subpattern_params}")
-
-        match_set = Matcher.match(subpattern_pdas, current_node, stop_at_first=False, bindings=subpattern_params)
-
-        if isinstance(transition, NotCallTransition):
-            if match_set.count() > 0:
-                logger.trace(f"NOT subpattern {subpattern_name}:{trnsf_name} failed (match found)")
-                return []
-            else:
-                logger.trace(f"NOT subpattern {subpattern_name}:{trnsf_name} succeeded (no match found)")
-                return [bindings.copy()]
-
-        if match_set.count() == 0:
-            logger.trace(f"subpattern {subpattern_name}:{trnsf_name} did not match")
-            return []
-
-        new_bindings = []
-        for match in match_set.matches:
-            pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
-            v in match.bindings.items()}
-            logger.debug(f"subpattern {subpattern_name}:{trnsf_name} matched with bindings {pretty_bindings}")
-            sub_bindings = match.bindings
-            m_i_to_j = mapping(args, subpattern.args_order)
-            comp = composition(m_i_to_j, sub_bindings)
-            new_binding = bindings.copy()
-            new_binding.update(comp)
-            new_bindings.append(new_binding)
-
-        return new_bindings
+        
+        return subpatterns.call_subpattern(subp, current_node, bindings, args)
 
 
     def _get_next_node(self, node, directions):

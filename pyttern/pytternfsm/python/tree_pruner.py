@@ -32,7 +32,8 @@ class TreePruner(GenericTreePruner, Python3ParserVisitor):
         TO_KEEP = (
             TerminalNode,
             Python3Parser.NameContext,
-            Python3Parser.Expr_wildcardContext
+            Python3Parser.Expr_wildcardContext,
+            Python3Parser.ExprContext
         )
         TO_REMOVE = "():,."
         super().__init__(TO_KEEP, TO_REMOVE)
@@ -43,7 +44,7 @@ class TreePruner(GenericTreePruner, Python3ParserVisitor):
         put = True
         if len(ctx.children) == 1:
             child = ctx.getChild(0)
-            if Generic_to_PDA.lookahead(child, (Python3Parser.Subpattern_callContext, Python3Parser.Double_wildcardContext)):
+            if Generic_to_PDA.lookahead(child, (Python3Parser.Double_wildcardContext)):
                 put = False
 
         if put:
@@ -52,16 +53,13 @@ class TreePruner(GenericTreePruner, Python3ParserVisitor):
         
         return ctx
 
-    def visitTest(self, ctx: Python3Parser.TestContext):
+    def visitAtom_expr(self, ctx: Python3Parser.Atom_exprContext):
         return self.prune_single_child(ctx)
 
     def visitExpr_stmt(self, ctx:Python3Parser.Expr_stmtContext):
         return self.prune_single_child(ctx)
 
     def visitTfpdef(self, ctx:Python3Parser.TfpdefContext):
-        return self.prune_single_child(ctx)
-
-    def visitExpr(self, ctx:Python3Parser.ExprContext):
         return self.prune_single_child(ctx)
 
     def visitTerminal(self, node):

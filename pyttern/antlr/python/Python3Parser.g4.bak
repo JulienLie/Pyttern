@@ -53,18 +53,18 @@ decorators: decorator+;
 decorated: decorators (classdef | funcdef | async_funcdef);
 
 async_funcdef: ASYNC funcdef;
-funcdef: 'def' (name | simple_wildcard | var_wildcard) parameters ('->' test)? ':' block;
+funcdef: 'def' (name | simple_wildcard | var_wildcard) parameters ('->' expr)? ':' block;
 
-parameters: '(' (tfpdef ('=' test)? (',' tfpdef ('=' test)?)* (',' (
-        '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','? )? )?
+parameters: '(' (tfpdef ('=' expr)? (',' tfpdef ('=' expr)?)* (',' (
+        '*' tfpdef? (',' tfpdef ('=' expr)?)* (',' ('**' tfpdef ','? )? )?
       | '**' tfpdef ','? )? )?
-      | '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','? )? )?
+      | '*' tfpdef? (',' tfpdef ('=' expr)?)* (',' ('**' tfpdef ','? )? )?
       | '**' tfpdef ','?)? ')';
-tfpdef: name (':' test)? | expr_wildcard | number_wildcard | list_wildcard;
-varargslist: (vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (',' (
-        '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
+tfpdef: name (':' expr)? | expr_wildcard | number_wildcard | list_wildcard;
+varargslist: (vfpdef ('=' expr)? (',' vfpdef ('=' expr)?)* (',' (
+        '*' vfpdef? (',' vfpdef ('=' expr)?)* (',' ('**' vfpdef ','? )? )?
       | '**' vfpdef (',')?)?)?
-  | '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','? )? )?
+  | '*' vfpdef? (',' vfpdef ('=' expr)?)* (',' ('**' vfpdef ','? )? )?
   | '**' vfpdef ','?
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
@@ -75,8 +75,8 @@ simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
 expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
                      ('=' (yield_expr|testlist_star_expr))*);
-annassign: ':' test ('=' test)?;
-testlist_star_expr: (test|star_expr) (',' (test|star_expr))* ','?;
+annassign: ':' expr ('=' expr)?;
+testlist_star_expr: (expr|star_expr) (',' (expr|star_expr))* ','?;
 augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' |
             '<<=' | '>>=' | '**=' | '//=');
 // For normal and annotated assignments, additional restrictions enforced by the interpreter
@@ -87,7 +87,7 @@ break_stmt: 'break';
 continue_stmt: 'continue';
 return_stmt: 'return' testlist?;
 yield_stmt: yield_expr;
-raise_stmt: 'raise' (test ('from' test)?)?;
+raise_stmt: 'raise' (expr ('from' expr)?)?;
 import_stmt: import_name | import_from;
 import_name: 'import' dotted_as_names;
 // note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
@@ -98,14 +98,14 @@ dotted_as_name: dotted_name ('as' name)?;
 import_as_names: import_as_name (',' import_as_name)* ','?;
 dotted_as_names: dotted_as_name (',' dotted_as_name)*;
 dotted_name: name ('.' name)*;
-global_stmt: 'global' name (',' name)*;
+global_stmt: 'global' (name | atom_wildcard) (',' (name | atom_wildcard))*;
 nonlocal_stmt: 'nonlocal' name (',' name)*;
-assert_stmt: 'assert' test (',' test)?;
+assert_stmt: 'assert' expr (',' expr)?;
 
 compound_stmt: compound_wildcard | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt | match_stmt;
 async_stmt: ASYNC (funcdef | with_stmt | for_stmt);
-if_stmt: 'if' test ':' block ('elif' test ':' block)* ('else' ':' block)?;
-while_stmt: 'while' test ':' block ('else' ':' block)?;
+if_stmt: 'if' expr ':' block ('elif' expr ':' block)* ('else' ':' block)?;
+while_stmt: 'while' expr ':' block ('else' ':' block)?;
 for_stmt: 'for' exprlist 'in' testlist ':' block ('else' ':' block)?;
 try_stmt: ('try' ':' block
            ((except_clause ':' block)+
@@ -113,16 +113,16 @@ try_stmt: ('try' ':' block
             ('finally' ':' block)? |
            'finally' ':' block));
 with_stmt: 'with' with_item (',' with_item)*  ':' block;
-with_item: test ('as' expr)?;
+with_item: expr ('as' expr)?;
 // NB compile.c makes sure that the default except clause is last
-except_clause: 'except' (test ('as' name)?)?;
+except_clause: 'except' (expr ('as' (name | atom_wildcard))?)?;
 block: simple_stmts | NEWLINE INDENT stmt+ DEDENT;
 match_stmt: 'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT ;
-subject_expr: star_named_expression ',' star_named_expressions? | test ;
+subject_expr: star_named_expression ',' star_named_expressions? | expr ;
 star_named_expressions: ',' star_named_expression+ ','? ;
-star_named_expression: '*' expr | test ;
+star_named_expression: '*' expr | expr ;
 case_block: 'case' patterns guard? ':' block ;
-guard: 'if' test ;
+guard: 'if' expr ;
 patterns: open_sequence_pattern | pattern ;
 pattern: as_pattern | or_pattern ;
 as_pattern: or_pattern 'as' pattern_capture_target ;
@@ -172,24 +172,13 @@ positional_patterns: pattern (',' pattern)* ;
 keyword_patterns: keyword_pattern (',' keyword_pattern)* ;
 keyword_pattern: name '=' pattern ;
 
-test: or_test ('if' or_test 'else' test)? | lambdef;
-test_nocond: or_test | lambdef_nocond;
-lambdef: 'lambda' varargslist? ':' test;
-lambdef_nocond: 'lambda' varargslist? ':' test_nocond;
-or_test: and_test ('or' and_test)*;
-and_test: not_test ('and' not_test)*;
-not_test: 'not' not_test | comparison;
-comparison: expr (comp_op expr)*;
-// <> isn't actually a valid comparison operator in Python. It's here for the
-// sake of a __future__ import described in PEP 401 (which really works :-)
-comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not';
 star_expr: '*' expr;
 
 expr:
     expr_wildcard
     | number_wildcard
     | atom_expr
-    | expr '**' expr
+    | <assoc=right> expr '**' expr
     | ('+'|'-'|'~')+ expr
     | expr ('*'|'@'|'/'|'%'|'//') expr
     | expr ('+'|'-') expr
@@ -197,16 +186,18 @@ expr:
     | expr '&' expr
     | expr '^' expr
     | expr '|' expr
+    | expr comp_op expr
+    | 'not' expr
+    | expr 'and' expr
+    | expr 'or' expr
+    | <assoc=right> expr 'if' expr 'else' expr
+    | 'lambda' varargslist? ':' expr
     ;
 
-//expr: xor_expr ('|' xor_expr)*;
-//xor_expr: and_expr ('^' and_expr)*;
-//and_expr: shift_expr ('&' shift_expr)*;
-//shift_expr: arith_expr (('<<'|'>>') arith_expr)*;
-//arith_expr: term (('+'|'-') term)*;
-//term: factor (('*'|'@'|'/'|'%'|'//') factor)*;
-//factor: ('+'|'-'|'~') factor | power;
-//power: atom_expr ('**' factor)?;
+// <> isn't actually a valid comparison operator in Python. It's here for the
+// sake of a __future__ import described in PEP 401 (which really works :-)
+comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not';
+
 atom_expr: AWAIT? atom trailer*;
 atom: '(' (yield_expr|testlist_comp)? ')'
    | OPEN_BRACK testlist_comp? CLOSE_BRACK
@@ -214,17 +205,17 @@ atom: '(' (yield_expr|testlist_comp)? ')'
    | atom_wildcard
    | name | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False' ;
 name : NAME | '_' | 'match' ;
-testlist_comp: (list_wildcard|test|star_expr) ( comp_for | (',' (list_wildcard|test|star_expr))* ','? );
+testlist_comp: (list_wildcard|expr|star_expr) ( comp_for | (',' (list_wildcard|expr|star_expr))* ','? );
 trailer: '(' arglist? ')' | OPEN_BRACK subscriptlist CLOSE_BRACK | '.' (atom_wildcard | name);
 subscriptlist: subscript_ (',' subscript_)* ','?;
-subscript_: test | test? ':' test? sliceop?;
-sliceop: ':' test?;
+subscript_: expr | expr? ':' expr? sliceop?;
+sliceop: ':' expr?;
 exprlist: (expr|star_expr) (',' (expr|star_expr))* ','?;
-testlist: (test | list_wildcard) (',' (test | list_wildcard))* ','?;
-dictorsetmaker: ( ((test ':' test | '**' expr)
-                   (comp_for | (',' (test ':' test | '**' expr))* ','?)) |
-                  ((test | star_expr)
-                   (comp_for | (',' (test | star_expr))* ','?)) );
+testlist: (expr | list_wildcard) (',' (expr | list_wildcard))* ','?;
+dictorsetmaker: ( ((expr ':' expr | '**' expr)
+                   (comp_for | (',' (expr ':' expr | '**' expr))* ','?)) |
+                  ((expr | star_expr)
+                   (comp_for | (',' (expr | star_expr))* ','?)) );
 
 classdef: 'class' (name | simple_wildcard | var_wildcard) ('(' arglist? ')')? ':' block;
 
@@ -242,20 +233,20 @@ arglist: (list_wildcard | number_wildcard | argument)
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
 argument: ( var_wildcard |
-            test comp_for? |
-            test '=' test |
-            '**' test |
-            '*' test );
+            expr comp_for? |
+            expr '=' expr |
+            '**' expr |
+            '*' expr );
 
 comp_iter: comp_for | comp_if;
-comp_for: ASYNC? 'for' exprlist 'in' or_test comp_iter?;
-comp_if: 'if' test_nocond comp_iter?;
+comp_for: ASYNC? 'for' exprlist 'in' expr comp_iter?;
+comp_if: 'if' expr comp_iter?;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
 encoding_decl: name;
 
 yield_expr: 'yield' yield_arg?;
-yield_arg: 'from' test | testlist;
+yield_arg: 'from' expr | testlist;
 
 strings: STRING+ ;
 
@@ -280,7 +271,7 @@ subpattern_call: WILDCARD SUB_PATTERN NAME '(' subpattern_args? ')' (':' block)?
 subpattern_stmts: subpattern transformation+;
 subpattern: compound_subpattern | (simple_subpattern NEWLINE);
 subpattern_args: subpattern_arg (',' subpattern_arg)*;
-subpattern_arg: (atom_wildcard | atom) ('=' test)?;
+subpattern_arg: (atom_wildcard | atom) ('=' expr)?;
 simple_subpattern: SUB_PATTERN ('&'|'|'|'!') NAME '(' subpattern_args? ')';
 compound_subpattern: simple_subpattern ':' block;
 

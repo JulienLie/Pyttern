@@ -39,8 +39,8 @@ def test_factory_method_subpattern():
     compare_binding(bindings, "Creator", "Dialog")
     compare_binding(bindings, "createProduct", "createButton")
     compare_binding(bindings, "Product", "Button")
-    compare_binding(bindings, "ProductA", "WindowsButton")
-    compare_binding(bindings, "ProductB", "WindowsButton")
+    compare_binding(bindings, "ProductA", "WebButton")
+    compare_binding(bindings, "ProductB", "WebButton")
     compare_binding(bindings, "productMethod", "render")
 
 

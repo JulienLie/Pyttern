@@ -444,51 +444,6 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by Python3Parser#test.
-    def visitTest(self, ctx:Python3Parser.TestContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#test_nocond.
-    def visitTest_nocond(self, ctx:Python3Parser.Test_nocondContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#lambdef.
-    def visitLambdef(self, ctx:Python3Parser.LambdefContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#lambdef_nocond.
-    def visitLambdef_nocond(self, ctx:Python3Parser.Lambdef_nocondContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#or_test.
-    def visitOr_test(self, ctx:Python3Parser.Or_testContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#and_test.
-    def visitAnd_test(self, ctx:Python3Parser.And_testContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#not_test.
-    def visitNot_test(self, ctx:Python3Parser.Not_testContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#comparison.
-    def visitComparison(self, ctx:Python3Parser.ComparisonContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by Python3Parser#comp_op.
-    def visitComp_op(self, ctx:Python3Parser.Comp_opContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by Python3Parser#star_expr.
     def visitStar_expr(self, ctx:Python3Parser.Star_exprContext):
         return self.visitChildren(ctx)
@@ -496,6 +451,11 @@ class Python3ParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Python3Parser#expr.
     def visitExpr(self, ctx:Python3Parser.ExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by Python3Parser#comp_op.
+    def visitComp_op(self, ctx:Python3Parser.Comp_opContext):
         return self.visitChildren(ctx)
 
 

@@ -791,87 +791,6 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by Python3Parser#test.
-    def enterTest(self, ctx:Python3Parser.TestContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#test.
-    def exitTest(self, ctx:Python3Parser.TestContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#test_nocond.
-    def enterTest_nocond(self, ctx:Python3Parser.Test_nocondContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#test_nocond.
-    def exitTest_nocond(self, ctx:Python3Parser.Test_nocondContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#lambdef.
-    def enterLambdef(self, ctx:Python3Parser.LambdefContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#lambdef.
-    def exitLambdef(self, ctx:Python3Parser.LambdefContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#lambdef_nocond.
-    def enterLambdef_nocond(self, ctx:Python3Parser.Lambdef_nocondContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#lambdef_nocond.
-    def exitLambdef_nocond(self, ctx:Python3Parser.Lambdef_nocondContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#or_test.
-    def enterOr_test(self, ctx:Python3Parser.Or_testContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#or_test.
-    def exitOr_test(self, ctx:Python3Parser.Or_testContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#and_test.
-    def enterAnd_test(self, ctx:Python3Parser.And_testContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#and_test.
-    def exitAnd_test(self, ctx:Python3Parser.And_testContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#not_test.
-    def enterNot_test(self, ctx:Python3Parser.Not_testContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#not_test.
-    def exitNot_test(self, ctx:Python3Parser.Not_testContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#comparison.
-    def enterComparison(self, ctx:Python3Parser.ComparisonContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#comparison.
-    def exitComparison(self, ctx:Python3Parser.ComparisonContext):
-        pass
-
-
-    # Enter a parse tree produced by Python3Parser#comp_op.
-    def enterComp_op(self, ctx:Python3Parser.Comp_opContext):
-        pass
-
-    # Exit a parse tree produced by Python3Parser#comp_op.
-    def exitComp_op(self, ctx:Python3Parser.Comp_opContext):
-        pass
-
-
     # Enter a parse tree produced by Python3Parser#star_expr.
     def enterStar_expr(self, ctx:Python3Parser.Star_exprContext):
         pass
@@ -887,6 +806,15 @@ class Python3ParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by Python3Parser#expr.
     def exitExpr(self, ctx:Python3Parser.ExprContext):
+        pass
+
+
+    # Enter a parse tree produced by Python3Parser#comp_op.
+    def enterComp_op(self, ctx:Python3Parser.Comp_opContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#comp_op.
+    def exitComp_op(self, ctx:Python3Parser.Comp_opContext):
         pass
 
 

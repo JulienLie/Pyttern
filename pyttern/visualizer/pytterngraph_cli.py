@@ -88,6 +88,16 @@ def main():
         processor = get_processor(Languages[options["lang"].upper()])
         tree = processor.generate_tree_from_file(input_path)
 
+        # Auto-load any subpatterns in the same directory
+        input_dir = os.path.dirname(os.path.abspath(input_path))
+        for file in os.listdir(input_dir):
+            if file.endswith(".myt"):
+                try:
+                    parse_subpattern_from_file(os.path.join(input_dir, file), Languages[options["lang"].upper()])
+                    logger.info(f"Auto-loaded subpattern file: {file}")
+                except Exception as e:
+                    logger.warning(f"Failed to auto-load subpattern {file}: {e}")
+
         viz_type = options.get("type", "tpa").lower()
         
         if viz_type == "pt":
@@ -97,20 +107,11 @@ def main():
                 title=f"Parse Tree - {os.path.basename(input_path)}", 
                 font_size=options["font_size"],
                 node_intervals=options.get("nodes"),
-                highlights=options.get("highlight")
+                highlights=options.get("highlight"),
+                wrap_at=options.get("wrap_at")
             )
-            logger.info(f"Generated {output_pdf}.pdf (Parse Tree)")
+            logger.info(f"Generated {output_pdf}.pdf (Parse Tree with subpatterns)")
         else:
-            # Auto-load any subpatterns in the same directory
-            input_dir = os.path.dirname(os.path.abspath(input_path))
-            for file in os.listdir(input_dir):
-                if file.endswith(".myt"):
-                    try:
-                        parse_subpattern_from_file(os.path.join(input_dir, file), Languages[options["lang"].upper()])
-                        logger.info(f"Auto-loaded subpattern file: {file}")
-                    except Exception as e:
-                        logger.warning(f"Failed to auto-load subpattern {file}: {e}")
-
             pdas = processor.create_pda(tree)
             visualize_pda(
                 pdas, 

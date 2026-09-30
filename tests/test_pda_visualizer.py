@@ -50,10 +50,10 @@ def test_format_transition_label():
     label2 = format_transition_label(t2)
     assert "<var>" in label2
 
-    call_t = CallTransition(subpattern_name="sub", transformation_name="trans", args=[])
+    call_t = CallTransition(subpattern_name="sub", args=["arg1"])
     t3 = Transition(q=0, alpha="ε", A=call_t, t=[], q_prime=1, beta="ε")
     label3 = format_transition_label(t3)
-    assert "sub:trans" in label3
+    assert "sub(arg1)" in label3
 
 def test_parse_intervals():
     assert parse_intervals(None) is None

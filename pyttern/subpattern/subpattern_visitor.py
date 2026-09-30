@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any, Optional
 from antlr4.tree.Tree import TerminalNodeImpl
 from loguru import logger
 
@@ -5,80 +8,123 @@ from .SubPattern import AndSubPattern, BaseSubPattern, NotSubPattern, OrSubPatte
 from ..antlr.python import Python3ParserVisitor, Python3Parser
 
 
-def flatten(lst: list) -> list:
+def flatten(lst: list[Any]) -> list[Any]:
+    """
+    Recursively flattens a nested list into a single flat list.
+
+    :param lst: The list containing nested lists or elements.
+    :return: A flat list of elements.
+    """
     flat_list = []
     for el in lst:
         flatten_el = flatten(el) if isinstance(el, list) else [el]
-        flat_list += flatten_el
+        flat_list.extend(flatten_el)
     return flat_list
 
-def get_original_text(ctx):
+
+def get_original_text(ctx: Any) -> str:
+    """
+    Extracts the raw source text corresponding to an ANTLR parse tree context.
+
+    :param ctx: ANTLR ParseTree context.
+    :return: Source text snippet.
+    """
     if ctx is None:
         return ""
     token_source = ctx.start.source[1]
     return token_source.getText(ctx.start.start, ctx.stop.stop)
 
-class SubPattern_Visitor(Python3ParserVisitor):
-    def __init__(self):
-        self.current_subpattern = None
 
-    def visitSubpattern_input(self, ctx:Python3Parser.Subpattern_inputContext):
+class SubPattern_Visitor(Python3ParserVisitor):
+    """
+    ANTLR visitor that traverses subpattern ASTs and constructs concrete SubPattern instances.
+    """
+
+    def __init__(self, override: bool = True):
+        super().__init__()
+        self.override = override
+        self.current_subpattern: Optional[BaseSubPattern] = None
+
+    def visitSubpattern_input(self, ctx: Python3Parser.Subpattern_inputContext) -> list[BaseSubPattern]:
+        """
+        Visits top-level subpattern input and collects all parsed SubPattern objects.
+        """
         results = self.visitChildren(ctx)
         return [res for res in results if isinstance(res, BaseSubPattern)]
 
-    def visitSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
+    def visitSubpattern_stmts(self, ctx: Python3Parser.Subpattern_stmtsContext) -> BaseSubPattern:
+        """
+        Visits subpattern statement definitions and constructs the SubPattern instance.
+        """
         vals = flatten(self.visitChildren(ctx))
-        name, type, args = vals[0]
+        name, type_cls, args = vals[0]
         args_order = list(args.keys())
-        self.current_subpattern = type(name, args, args_order, code=get_original_text(ctx).strip())
+        self.current_subpattern = type_cls(
+            name, args, args_order, code=get_original_text(ctx).strip()
+        )
         transformations = vals[1:]
         for transformation in transformations:
             t_name, t_pda = transformation
             self.current_subpattern.add_transformation(t_name, t_pda)
-        logger.debug(self.current_subpattern)
+        logger.trace(self.current_subpattern)
         return self.current_subpattern
 
-    def visitSimple_subpattern(self, ctx:Python3Parser.Simple_subpatternContext):
+    def visitSimple_subpattern(self, ctx: Python3Parser.Simple_subpatternContext) -> tuple[str, type, dict]:
+        """
+        Visits the subpattern header (e.g. $|Name(?arg)) and returns (name, subpattern_class, args).
+        """
         name = ctx.NAME().accept(self)
         type_str = ctx.getChild(1).getText().upper()
-        if type_str == "&": type_cls = AndSubPattern
-        elif type_str == "|": type_cls = OrSubPattern
-        elif type_str == "!": type_cls = NotSubPattern
-        
+        if type_str == "&":
+            type_cls = AndSubPattern
+        elif type_str == "|":
+            type_cls = OrSubPattern
+        elif type_str == "!":
+            type_cls = NotSubPattern
+        else:
+            raise ValueError(f"Unknown subpattern operator: {type_str}")
+
         if ctx.subpattern_args():
             arg_list = self.visitChildren(ctx.subpattern_args())
         else:
             arg_list = []
-            
+
         args = {}
         for arg in arg_list:
             args.update(arg)
-        logger.debug(f"Subpattern {name} with args {args}")
+        logger.trace(f"Subpattern {name} with args {args}")
         return name, type_cls, args
 
-    def visitSubpattern_arg(self, ctx:Python3Parser.Subpattern_argContext):
+    def visitSubpattern_arg(self, ctx: Python3Parser.Subpattern_argContext) -> dict[str, Any]:
+        """
+        Visits a formal argument definition in a subpattern header.
+        """
         name = flatten(ctx.getChild(0).accept(self))
         if isinstance(name, list):
             name = "".join(name)
         name = name.replace('?', '')
 
         bind = ctx.getChild(2)
-
         return {name: bind}
 
-    def visitTransformation(self, ctx:Python3Parser.TransformationContext):
+    def visitTransformation(self, ctx: Python3Parser.TransformationContext) -> tuple[str, Any]:
+        """
+        Visits a transformation branch ($# TransformationName).
+        """
         name = ctx.NAME().accept(self)
-        parse_tree = ctx.stmt().getChild(0)
-        # pda = Python_to_PDA().visit(ctx.stmt().getChild(0))
+        parse_tree = ctx.stmt()
 
-        logger.debug(f"Transformation {name} with stmt {parse_tree}")
+        logger.trace(f"Transformation {name} with stmt {parse_tree}")
         return name, parse_tree
 
-    def visitTerminal(self, node: TerminalNodeImpl):
+    def visitTerminal(self, node: TerminalNodeImpl) -> str:
+        """
+        Returns text representation of a terminal AST node.
+        """
         return node.getText()
 
-    def defaultResult(self):
+    def defaultResult(self) -> list:
         return []
 
-    def aggregateResult(self, aggregate, nextResult):
+    def aggregateResult(self, aggregate: list, nextResult: Any) -> list:
         return aggregate + [nextResult]

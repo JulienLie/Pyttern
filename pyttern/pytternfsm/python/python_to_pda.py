@@ -40,6 +40,10 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
+        elif isinstance(ctx, self.grammar.ExprContext): # TODO: generalize this probably
+            logger.trace(f"Context {ctx.__class__.__name__} is an Expression context, setting boundaries to 1 and inf")
+            down = 1
+            up = math.inf
         else:
             for child in ctx.children:
                 if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext)) is not None:
@@ -93,7 +97,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             subpattern = loaded_subpatterns.get(name)
             logger.debug(f"Handling {subpattern} at block level")
 
-            context = SubPatternCallContext(ctx, None, True)
+            context = SubPatternCallContext(ctx, None)
             transformations = subpattern.compile(context)
             self.dict_pda.update(transformations)
 
@@ -103,40 +107,11 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
             self.current_state = new_state
             return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
 
         return super().visitFile_input(ctx)
-
-    def visitBlock(self, ctx:Python3Parser.BlockContext):
-        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
-        logger.trace(f"Checking for subpattern in {ctx.getText()} -> {subpattern_call}")
-
-        if subpattern_call:
-            name = subpattern_call.NAME().getText()
-            subpattern = loaded_subpatterns.get(name)
-            if subpattern is None:
-                logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
-                raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
-
-            logger.debug(f"Handling {subpattern} at block level")
-
-            context = SubPatternCallContext(ctx, None, True)
-            transformations = subpattern.compile(context)
-            self.dict_pda.update(transformations)
-
-            args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
-            if args_nodes is not None:
-                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
-            else:
-                args_names = []
-
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
-            self.current_state = new_state
-            return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
-
-        return self.visitChildren(ctx)
 
     def visitStmt(self, ctx:Python3Parser.StmtContext):
         # Handle double wildcard as Stmt
@@ -153,29 +128,53 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             if subpattern is None:
                 logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
                 raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
-            if subpattern.type == "NOT":
-                logger.trace("Handling Not subpattern not alone in body")
-                context = SubPatternCallContext(ctx, None, False)
-                transformations = subpattern.compile(context)
-                self.dict_pda.update(transformations)
-    
-                args_nodes = lookahead_call_transition.subpattern_args().subpattern_arg() if lookahead_call_transition.subpattern_args() is not None else None
-                if args_nodes is not None:
-                    args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
-                else:
-                    args_names = []
-    
-                new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
-                self.current_state = new_state
 
-                self._restrict_stmt = True
-                logger.trace("Restricting self transition on next stmt")
-                return self.current_state
+            context = SubPatternCallContext(ctx, None)
+            transformations = subpattern.compile(context)
+            self.dict_pda.update(transformations)
+
+            args_nodes = lookahead_call_transition.subpattern_args().subpattern_arg() if lookahead_call_transition.subpattern_args() is not None else None
+            if args_nodes is not None:
+                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
+            else:
+                args_names = []
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            self.current_state = new_state
+
+            self._restrict_stmt = True
+            logger.trace("Restricting self transition on next stmt")
+            return self.current_state
 
         return super().visitStatement(ctx)
 
     def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
         return ctx.getChild(0).accept(self)
+
+    def visitExpr(self, ctx: Python3Parser.ExprContext):
+        wildcard = self.lookahead(ctx, (Python3Parser.Number_wildcardContext))
+        if wildcard is not None:
+            return wildcard.accept(self)
+
+        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        if subpattern_call is not None:
+            name = subpattern_call.NAME().getText()
+            subpattern = loaded_subpatterns.get(name)
+            if subpattern is not None:
+                context = SubPatternCallContext(ctx, None)
+                transformations = subpattern.compile(context)
+                self.dict_pda.update(transformations)
+
+                args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
+                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes] if args_nodes else []
+
+                new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+                self.current_state = new_state
+                return self._add_up_transition(ctx)
+
+        return self.visitChildren(ctx)
+
+
 
     def visitSimple_compound_wildcard(self, ctx:Python3Parser.Simple_compound_wildcardContext):
         # Go to children
@@ -235,7 +234,6 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
-
     def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         subpattern_name = ctx.NAME().getText()
         logger.debug(f"Calling subpattern {subpattern_name}")
@@ -257,7 +255,10 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         subpattern = loaded_subpatterns[subpattern_name]
 
-        context = SubPatternCallContext(ast_ctx=ctx.parentCtx, body=body, alone=False) # Alone is always false here as it should be match at body lvl
+        ast_ctx = ctx.parentCtx
+        while "wildcard" in ast_ctx.__class__.__name__:
+            ast_ctx = ast_ctx.parentCtx
+        context = SubPatternCallContext(ast_ctx, body=body) # first parent in also subpattern
 
         # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(context)
@@ -267,6 +268,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             logger.error(f"Subpattern {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
             raise ValueError(f"Subpattern {subpattern_name} requires at least {n_args_req} arguments, but got {len(args_names)}")
 
+        # self._restrict_stmt = True
+        # logger.trace("Restricting self transition on next stmt")
 
-        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context)
+
+        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
         return self._add_up_transition(ctx)

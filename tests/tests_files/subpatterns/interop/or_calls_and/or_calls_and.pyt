@@ -1,0 +1,2 @@
+def execute(?t, ?v):
+    ?$Transaction(?t, ?v)

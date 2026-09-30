@@ -19,6 +19,7 @@ tqdm="^4.66.5"
 flasgger="0.9.7b2"
 graphviz = "^0.21"
 pyyaml = "^6.0.3"
+frozendict = "^2.4.7"
 
 [tool.poetry.group.test.dependencies]
 pytest="^9.0.3"

@@ -13,7 +13,7 @@ class Match:
 
 class MatchSet:
     def __init__(self):
-        self.matches = []
+        self.matches: list[Match] = []
 
     def record(self, match: Match):
         self.matches.append(match)

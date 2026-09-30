@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 
 from antlr4 import InputStream, CommonTokenStream
@@ -11,7 +13,14 @@ from ..language_processors import Languages
 from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
 from ..pytternfsm.python.tree_pruner import TreePruner
 
-def string_to_subpattern_tree(subpattern_string):
+
+def string_to_subpattern_tree(subpattern_string: str) -> Any:
+    """
+    Parses a raw subpattern string into a pruned ANTLR ParseTree.
+
+    :param subpattern_string: The subpattern code string.
+    :return: The pruned ANTLR ParseTree.
+    """
     logger.info("Generating subpattern tree")
     stream = InputStream(subpattern_string)
     lexer = Python3Lexer(stream)
@@ -25,29 +34,31 @@ def string_to_subpattern_tree(subpattern_string):
     py_parser.addErrorListener(error_listener)
 
     tree = py_parser.subpattern_input()
-
     pruned_tree = TreePruner().visit(tree)
 
     return pruned_tree
 
-def parse_subpattern_from_string(code: str, language: Languages, override: bool=False) -> list[BaseSubPattern]:
+
+def parse_subpattern_from_string(
+    code: str, language: Languages, override: bool = True
+) -> list[BaseSubPattern]:
     """
-    Parses subpatterns from a string and returns the last parsed subpattern.
+    Parses subpattern definitions from a string.
 
     :param code: The string containing subpattern definitions.
-    :param language: The programming language of the subpatterns.
-    :param override: Whether to override existing subpatterns with the same name.
-    :return: The list of parsed subpatterns.
-    :raises ValueError: If the code format is invalid or no subpattern definition is found.
+    :param language: Target programming language.
+    :param override: Whether to override existing subpatterns.
+    :return: List of parsed SubPattern objects.
     """
     logger.trace("Parsing subpattern from string")
 
     subpattern_tree = string_to_subpattern_tree(code)
-    subpatterns = SubPattern_Visitor().visit(subpattern_tree)
+    subpatterns = SubPattern_Visitor(override=override).visit(subpattern_tree)
 
     return subpatterns
 
-def parse_subpattern_from_file(file: str, language: Languages, override: bool=False) -> list[BaseSubPattern]:
+
+def parse_subpattern_from_file(file: str, language: Languages, override: bool = True) -> list[BaseSubPattern]:
     """
     Parses subpatterns from a file and returns the last parsed subpattern.
 

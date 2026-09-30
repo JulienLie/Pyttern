@@ -1,6 +1,22 @@
 import graphviz
 from antlr4.tree.Tree import TerminalNode, ErrorNode
 
+try:
+    from ..antlr.python import Python3Parser
+except ImportError:
+    try:
+        from pyttern.antlr.python import Python3Parser
+    except ImportError:
+        Python3Parser = None
+
+try:
+    from ..subpattern.SubPattern import loaded_subpatterns
+except ImportError:
+    try:
+        from pyttern.subpattern.SubPattern import loaded_subpatterns
+    except ImportError:
+        loaded_subpatterns = {}
+
 def parse_intervals(intervals_input):
     if not intervals_input:
         return None
@@ -55,6 +71,9 @@ COLOR_MAP = {
     "lightblue": (173, 216, 230),
     "lightgreen": (144, 238, 144),
     "gold": (255, 215, 0),
+    "darkblue": (0, 0, 139),
+    "darkred": (139, 0, 0),
+    "darkgreen": (0, 100, 0),
 }
 
 def get_node_style(color_name):
@@ -80,10 +99,114 @@ def get_node_style(color_name):
     
     return {'style': 'filled', 'fillcolor': fill_hex, 'fontcolor': font_color}
 
+def flatten_tree_dict(d, current_prefix=""):
+    flat = {}
+    if not isinstance(d, dict):
+        flat[current_prefix or "__main__"] = d
+    else:
+        for k, val in d.items():
+            name = current_prefix if k == "__main__" else k
+            if not name:
+                name = "__main__"
+            
+            if not isinstance(val, dict):
+                flat[name] = val
+            else:
+                flat.update(flatten_tree_dict(val, current_prefix=name))
+    return flat
+
+def find_subpattern_calls(node):
+    calls = []
+    if node is None:
+        return calls
+    
+    is_sub_call = False
+    if getattr(node, '__class__', None) and node.__class__.__name__ == 'Subpattern_callContext':
+        is_sub_call = True
+    elif Python3Parser is not None and isinstance(node, getattr(Python3Parser, 'Subpattern_callContext', ())):
+        is_sub_call = True
+
+    if is_sub_call:
+        if hasattr(node, 'NAME') and callable(node.NAME):
+            name_node = node.NAME()
+            if name_node is not None:
+                calls.append(name_node.getText())
+
+    if hasattr(node, "children") and isinstance(node.children, (list, tuple)):
+        for child in node.children:
+            calls.extend(find_subpattern_calls(child))
+            
+    return calls
+
+def collect_subpattern_trees(root_tree, existing_keys=None):
+    if existing_keys is None:
+        existing_keys = set()
+    
+    collected = {}
+    visited_subpatterns = set()
+    queue = []
+    
+    queue.extend(find_subpattern_calls(root_tree))
+    
+    while queue:
+        sub_name = queue.pop(0)
+        if sub_name in visited_subpatterns:
+            continue
+        visited_subpatterns.add(sub_name)
+        
+        sub = loaded_subpatterns.get(sub_name)
+        if sub is None or not hasattr(sub, 'transformations'):
+            continue
+            
+        for t_name, t_tree in sub.transformations.items():
+            key = f"{sub_name}::{t_name}"
+            if key not in existing_keys and t_name not in existing_keys:
+                collected[key] = t_tree
+                existing_keys.add(key)
+                
+            # Check if this transformation tree calls further subpatterns
+            nested_calls = find_subpattern_calls(t_tree)
+            for nc in nested_calls:
+                if nc not in visited_subpatterns:
+                    queue.append(nc)
+                    
+    return collected
+
 def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree", 
                          font_size: int = 14, node_intervals: list = None, 
-                         highlights: dict = None):
+                         highlights: dict = None, wrap_at: int = None):
     
+    if not isinstance(tree, dict):
+        trees = {"__main__": tree}
+    else:
+        trees = tree
+
+    trees = flatten_tree_dict(trees)
+
+    # Collect any called subpatterns not already in trees
+    subpattern_trees = {}
+    for t_name, t_node in list(trees.items()):
+        discovered = collect_subpattern_trees(t_node, existing_keys=set(trees.keys()) | set(subpattern_trees.keys()))
+        subpattern_trees.update(discovered)
+    trees.update(subpattern_trees)
+
+    intervals = parse_intervals(node_intervals)
+    if node_intervals == "all":
+        intervals = None
+    elif intervals is None and node_intervals is not None:
+        intervals = []
+    elif intervals is None and node_intervals is None:
+        intervals = None  # Show all states by default
+
+    parsed_highlights = []
+    if highlights:
+        for range_str, cfg in highlights.items():
+            color = cfg.get("color", "red") if isinstance(cfg, dict) else cfg
+            parsed_highlights.append({
+                "intervals": parse_intervals(range_str),
+                "color": color
+            })
+
     dot = graphviz.Digraph(comment=title)
     dot.attr(fontsize=str(font_size))
     
@@ -92,23 +215,44 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     dot.attr(nodesep=spacing)
     dot.attr(ranksep=spacing)
     dot.attr(pad='0.5')
-    
-    intervals = parse_intervals(node_intervals)
-    if intervals is None and node_intervals is not None and node_intervals != "all":
-        intervals = []
-    elif intervals is None and node_intervals is None:
-        intervals = []
 
-    parsed_highlights = []
-    if highlights:
-        for range_str, cfg in highlights.items():
-            parsed_highlights.append({
-                "intervals": parse_intervals(range_str),
-                "color": cfg.get("color", "red")
-            })
-            if intervals is not None:
-                intervals.extend(parse_intervals(range_str))
+    sorted_tree_names = []
+    if "__main__" in trees:
+        sorted_tree_names.append("__main__")
+    for name in trees:
+        if name != "__main__":
+            sorted_tree_names.append(name)
 
+    last_tree_root = None
+    for tree_name in sorted_tree_names:
+        current_tree = trees[tree_name]
+        tree_name_clean = tree_name.replace(":", "_")
+        
+        if tree_name == "__main__":
+            main_intervals = list(intervals) if intervals is not None else None
+            for h in parsed_highlights:
+                if h["intervals"] and main_intervals is not None:
+                    main_intervals.extend(h["intervals"])
+            
+            root_id = _render_single_tree_to_graph(dot, current_tree, tree_name_clean, main_intervals, parsed_highlights, font_size)
+        else:
+            main_intervals = None
+            subgraph_name = f"cluster_{tree_name_clean}"
+            with dot.subgraph(name=subgraph_name) as sub:
+                sub.attr(label=tree_name)
+                sub.attr(color='grey')
+                sub.attr(style='dashed')
+                root_id = _render_single_tree_to_graph(sub, current_tree, tree_name_clean, main_intervals, parsed_highlights, font_size)
+
+        # Connect subpatterns horizontally using invisible edges from the previous root node
+        if root_id is not None:
+            if last_tree_root is not None:
+                dot.edge(last_tree_root, root_id, style='invis')
+            last_tree_root = root_id
+
+    dot.render(output_path, format='pdf', cleanup=True)
+
+def _render_single_tree_to_graph(graph, tree, tree_name, intervals, parsed_highlights, font_size):
     # First Pass: Assign DFS IDs and identify nodes
     node_info = {}
     dfs_order = []
@@ -117,28 +261,31 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
         dfs_id = len(dfs_order)
         dfs_order.append(node)
         node_info[node] = {"dfs_id": dfs_id}
-        if hasattr(node, "children") and node.children:
+        if hasattr(node, "children") and isinstance(node.children, (list, tuple)):
             for child in node.children:
                 first_pass(child)
     
     first_pass(tree)
+    if not dfs_order:
+        return None
     
     # Root (0) and last node (len-1) are always visible in filtered mode
-    if intervals is not None:
-        if not is_in_intervals(0, intervals):
-            intervals.append((0, 0))
+    current_intervals = list(intervals) if intervals is not None else None
+    if current_intervals is not None:
+        if not is_in_intervals(0, current_intervals):
+            current_intervals.append((0, 0))
         last_id = len(dfs_order) - 1
-        if not is_in_intervals(last_id, intervals):
-            intervals.append((last_id, last_id))
+        if not is_in_intervals(last_id, current_intervals):
+            current_intervals.append((last_id, last_id))
 
     def get_visible_descendants(node):
         results = []
-        if not hasattr(node, "children") or not node.children:
+        if not hasattr(node, "children") or not isinstance(node.children, (list, tuple)):
             return results
         
         for child in node.children:
             child_id = node_info[child]["dfs_id"]
-            if is_in_intervals(child_id, intervals):
+            if is_in_intervals(child_id, current_intervals):
                 results.append(child)
             else:
                 results.extend(get_visible_descendants(child))
@@ -147,17 +294,18 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     # Second Pass: Add nodes and edges
     def second_pass(node):
         node_id = node_info[node]["dfs_id"]
-        if not is_in_intervals(node_id, intervals):
+        if not is_in_intervals(node_id, current_intervals):
             return None
 
-        unique_id = str(hash(node))
+        unique_id = str(hash(node)) if tree_name == "__main__" else f"{tree_name}_{hash(node)}"
         
         # Determine Color
         h_color = None
-        for h in parsed_highlights:
-            if is_in_intervals(node_id, h["intervals"]):
-                h_color = h["color"]
-                break
+        if parsed_highlights:
+            for h in parsed_highlights:
+                if is_in_intervals(node_id, h["intervals"]):
+                    h_color = h["color"]
+                    break
         
         attr = {
             'fontsize': str(font_size), 
@@ -170,7 +318,7 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
         
         content = ""
         if isinstance(node, TerminalNode):
-            content = node.symbol.text
+            content = getattr(getattr(node, 'symbol', None), 'text', str(node))
             attr['shape'] = 'ellipse'
         elif isinstance(node, ErrorNode):
             content = f"Error: {node.getText()}"
@@ -184,17 +332,20 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
             attr.update(get_node_style(h_color))
             
         label = f"{node_id}\n{content}"
-        dot.node(unique_id, label, **attr)
+        graph.node(unique_id, label, **attr)
         
         # Add edges to visible descendants
         children = getattr(node, "children", [])
+        if not isinstance(children, (list, tuple)):
+            children = []
         skipped_any = False
         
         for child in children:
             cid = node_info[child]["dfs_id"]
-            if is_in_intervals(cid, intervals):
+            if is_in_intervals(cid, current_intervals):
                 child_unique_id = second_pass(child)
-                dot.edge(unique_id, child_unique_id)
+                if child_unique_id:
+                    graph.edge(unique_id, child_unique_id)
             else:
                 # Find visible descendants below this skipped child
                 visible_below = get_visible_descendants(child)
@@ -203,15 +354,15 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
                 else:
                     for vd in visible_below:
                         vd_unique_id = second_pass(vd)
-                        dot.edge(unique_id, vd_unique_id, style="dashed", color="grey")
+                        if vd_unique_id:
+                            graph.edge(unique_id, vd_unique_id, style="dashed", color="grey")
         
         if skipped_any:
             # Add an empty-ish node to show that children were skipped
             skip_id = f"skip_{unique_id}"
-            dot.node(skip_id, "...", shape="plain", fontsize=str(font_size))
-            dot.edge(unique_id, skip_id, style="dotted", arrowhead="none")
+            graph.node(skip_id, "...", shape="plain", fontsize=str(font_size))
+            graph.edge(unique_id, skip_id, style="dotted", arrowhead="none")
         
         return unique_id
 
-    second_pass(tree)
-    dot.render(output_path, format='pdf', cleanup=True)
+    return second_pass(tree)

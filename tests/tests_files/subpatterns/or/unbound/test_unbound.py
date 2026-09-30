@@ -5,6 +5,14 @@ import pytest
 from pyttern import match_files
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
+from pyttern.subpattern.SubPattern import loaded_subpatterns
+
+
+@pytest.fixture(autouse=True)
+def clean_subpatterns():
+    loaded_subpatterns.clear()
+    yield
+    loaded_subpatterns.clear()
 
 
 @pytest.mark.timeout(2)
@@ -26,6 +34,15 @@ def test_unbound_assign():
     assert binding_x.__class__.__name__ == "NameContext", f"Expected binding type 'NameContext', got {binding_x.__class__.__name__}"
     assert binding_x.getText() == "a", f"Expected binding text 'a', got {binding_x.getText()}"
 
+    loaded_subpatterns.clear()
+
+
+@pytest.mark.timeout(2)
+def test_unbound_use():
+    subpattern_path = Path(__file__).parent / "unbound.myt"
+    parse_subpattern_from_file(str(subpattern_path), language=Languages.PYTHON, override=True)
+
+    pattern_path = Path(__file__).parent / "unbound.pyt"
     code_path = Path(__file__).parent / "unbound_use_ok.py"
 
     res, det = match_files(pattern_path, code_path, match_details=True)
@@ -40,6 +57,15 @@ def test_unbound_assign():
                                                         f"got {binding_x.__class__.__name__}")
     assert binding_x.getText() == "10", f"Expected binding text '10', got {binding_x.getText()}"
 
+    loaded_subpatterns.clear()
+
+
+@pytest.mark.timeout(2)
+def test_unbound_call():
+    subpattern_path = Path(__file__).parent / "unbound.myt"
+    parse_subpattern_from_file(str(subpattern_path), language=Languages.PYTHON, override=True)
+
+    pattern_path = Path(__file__).parent / "unbound.pyt"
     code_path = Path(__file__).parent / "unbound_call_ok.py"
 
     res, det = match_files(pattern_path, code_path, match_details=True)
@@ -52,3 +78,5 @@ def test_unbound_assign():
     binding_x = bindings["x"]
     assert binding_x.__class__.__name__ == "NameContext", f"Expected binding type 'NameContext', got {binding_x.__class__.__name__}"
     assert binding_x.getText() == "print", f"Expected binding text 'print', got {binding_x.getText()}"
+
+    loaded_subpatterns.clear()

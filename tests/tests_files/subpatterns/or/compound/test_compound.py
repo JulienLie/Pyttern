@@ -36,7 +36,7 @@ def test_loop_subpattern_for():
 
     assert "v" in bindings, f"Expected binding for 'v', found bindings for {bindings.keys()}"
     binding_v = bindings["v"]
-    assert binding_v.__class__.__name__ == "TerminalNodeImpl", (f"Expected binding type 'TerminalNodeImpl', "
+    assert binding_v.__class__.__name__ == "ExprContext", (f"Expected binding type 'ExprContext', "
                                                            f"got {binding_v.__class__.__name__}")
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 

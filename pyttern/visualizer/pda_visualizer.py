@@ -71,7 +71,7 @@ def format_transition_label(t: Transition):
     elif isinstance(t.A, NamedTransition):
         cond = f"<{t.A.name}>"
     elif isinstance(t.A, CallTransition):
-        cond = f"{t.A.subpattern_name}:{t.A.transformation_name}"
+        cond = f"{t.A.subpattern_name}({','.join(t.A.args)})"
     
     # alpha -> beta
     alpha = format_stack(t.alpha)
@@ -147,17 +147,23 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
     else:
         pdas = pda
 
-    flat_pdas = {}
-    for name, item in pdas.items():
-        if isinstance(item, dict):
-            if "__main__" in item:
-                flat_pdas[name] = item["__main__"]
-            else:
-                for sub_name, sub_pda in item.items():
-                    flat_pdas[f"{name}_{sub_name}"] = sub_pda
-        else:
-            flat_pdas[name] = item
-    pdas = flat_pdas
+    def flatten_pda_dict(d, current_prefix=""):
+        flat = {}
+        if isinstance(d, PDA):
+            flat[current_prefix or "__main__"] = d
+        elif isinstance(d, dict):
+            for k, val in d.items():
+                name = current_prefix if k == "__main__" else k
+                if not name:
+                    name = "__main__"
+                
+                if isinstance(val, PDA):
+                    flat[name] = val
+                elif isinstance(val, dict):
+                    flat.update(flatten_pda_dict(val, current_prefix=name))
+        return flat
+
+    pdas = flatten_pda_dict(pdas)
 
     intervals = parse_intervals(node_intervals)
     if node_intervals == "all":
