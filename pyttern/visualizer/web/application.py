@@ -1,7 +1,9 @@
 import json
 from functools import wraps
+from typing import Any
 
 from antlr4 import ParseTreeVisitor
+
 from cachelib import FileSystemCache
 from flasgger import Swagger
 from flask import Flask, request, session, flash, get_flashed_messages, send_from_directory, Response
@@ -34,11 +36,21 @@ app.config['SWAGGER'] = {
 
 swagger = Swagger(app, template_file='swagger_template.yml')
 
-""" Helper classes and methods """
+"""Helper classes and methods for the web visualization API."""
 
 
 class PtToJson(ParseTreeVisitor):
-    def visitChildren(self, node):
+    """ANTLR parse tree visitor that serializes an AST into a JSON-compatible dictionary."""
+
+    def visitChildren(self, node: Any) -> dict[str, Any]:
+        """Visit child nodes and construct a node metadata dictionary.
+
+        Args:
+            node: Parse tree context node.
+
+        Returns:
+            dict[str, Any]: Serialized node structure with name, children, coordinates, and ID.
+        """
         elem = {"name": node.__class__.__name__, "children": [], "id": hash(node)}
         if hasattr(node, "start") and node.start is not None:
             elem["start"] = (node.start.line, node.start.column)
@@ -56,7 +68,15 @@ class PtToJson(ParseTreeVisitor):
         elem["children"] = result
         return elem
 
-    def visitTerminal(self, node):
+    def visitTerminal(self, node: Any) -> dict[str, Any]:
+        """Serialize a terminal token leaf node.
+
+        Args:
+            node: Terminal AST leaf node.
+
+        Returns:
+            dict[str, Any]: Leaf node dictionary containing symbol text and hash ID.
+        """
         return {
             "name": node.__class__.__name__,
             "symbol": node.symbol.text,
@@ -64,20 +84,47 @@ class PtToJson(ParseTreeVisitor):
             'id': hash(node)
         }
 
-    def visitErrorNode(self, node):
-        return {"name": node.__class__.__name__, "children": [], id: hash(node)}
+    def visitErrorNode(self, node: Any) -> dict[str, Any]:
+        """Serialize an ANTLR parse error node.
 
-    def defaultResult(self):
+        Args:
+            node: Error node.
+
+        Returns:
+            dict[str, Any]: Error node dictionary representation.
+        """
+        return {"name": node.__class__.__name__, "children": [], "id": hash(node)}
+
+    def defaultResult(self) -> list:
+        """Return the default empty list accumulator.
+
+        Returns:
+            list: Empty list.
+        """
         return []
 
-    def aggregateResult(self, aggregate, nextResult):
+    def aggregateResult(self, aggregate: list, nextResult: Any) -> list:
+        """Aggregate visited child results into a list.
+
+        Args:
+            aggregate: Accumulator list.
+            nextResult: Child visitor result.
+
+        Returns:
+            list: Appended results list.
+        """
         return aggregate + [nextResult]
 
 
-def file_check():
-    def _file_check(f):
+def file_check() -> Any:
+    """Decorator ensuring that both pattern and target code are uploaded in session.
+
+    Returns:
+        Callable: Wrapped endpoint function returning an error JSON if files are missing.
+    """
+    def _file_check(f: Any) -> Any:
         @wraps(f)
-        def __file_check(*args, **kwargs):
+        def __file_check(*args: Any, **kwargs: Any) -> Any:
             if ("pyttern_code" in session and "code_file" in session
                     and session["pyttern_code"] is not None
                     and session["code_file"] is not None):
@@ -93,7 +140,20 @@ def file_check():
     return _file_check
 
 
-def get_matcher(pattern_code, code, lang=None) -> Matcher:
+def get_matcher(pattern_code: str, code: str, lang: str | None = None) -> Matcher:
+    """Create and initialize a Matcher instance from pattern and code strings.
+
+    Args:
+        pattern_code: Source pattern code string.
+        code: Target code snippet string.
+        lang: Target programming language string. If None, language is auto-detected.
+
+    Returns:
+        Matcher: Initialized Matcher instance ready for simulation.
+
+    Raises:
+        Exception: If language cannot be determined.
+    """
     if lang is None:
         lang = determine_language(code)
     if lang is None:
@@ -106,11 +166,33 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
 
     return Matcher(pyttern_fsm, code_tree)
 
-class JsonListener(Pyttern_listener):
-    def __init__(self):
-        self.data = []
 
-    def step(self, _, fsm, ast, stack, variables, matches):
+class JsonListener(Pyttern_listener):
+    """Simulation listener that records step-by-step state and binding snapshots for UI playback."""
+
+    def __init__(self) -> None:
+        """Initialize the listener with an empty trace container."""
+        self.data: list[dict[str, Any]] = []
+
+    def step(
+        self,
+        _: Any,
+        fsm: Any,
+        ast: Any,
+        stack: list[Any],
+        variables: dict[str, Any],
+        matches: list[Any],
+    ) -> None:
+        """Capture a state snapshot at the current simulation step.
+
+        Args:
+            _: Unused simulator instance.
+            fsm: Current PDA state.
+            ast: Current AST node.
+            stack: Current stack symbols.
+            variables: Variable bindings environment.
+            matches: Matched node pairs.
+        """
         state_info = (str(fsm), hash(ast))
         pos = ()
         if hasattr(ast, "start") and hasattr(ast, "stop"):
@@ -118,7 +200,6 @@ class JsonListener(Pyttern_listener):
         if hasattr(ast, "symbol"):
             pos = (ast.symbol.start, ast.symbol.stop)
 
-            #logger.debug(f"{ast.start.start} -> {ast.stop.stop}")
         current_matchings = [(str(fsm), hash(ast)) for fsm, ast in matches]
         logger.debug(variables)
         var_strs = [f"{var}: {PtToJson().visit(variables[var])}" for var in variables if variables[var] is not None]
@@ -133,11 +214,25 @@ class JsonListener(Pyttern_listener):
             "code_pos": pos
         })
 
-    def on_match(self, _, __):
+    def on_match(self, _: Any, __: Any) -> None:
+        """Mark the most recent state record as an accepted match.
+
+        Args:
+            _: Unused matcher instance.
+            __: Unused match record.
+        """
         self.data[-1]["match"] = True
 
 
-def try_processors(code):
+def try_processors(code: str) -> str:
+    """Attempt to parse code against supported languages to detect valid syntax.
+
+    Args:
+        code: Source code snippet.
+
+    Returns:
+        str: JSON string with status 'ok' or 'error'.
+    """
     languages = ["python", "java"]
     for lang in languages:
         try:
@@ -147,6 +242,7 @@ def try_processors(code):
         except Exception as e:
             logger.error(f"Error with {lang}: {e}")
     return json.dumps({"status": "error", "message": "Cannot recognize the language"})
+
 
 
 """ Web endpoints """
@@ -752,7 +848,7 @@ def parse_subpattern():
         logger.error(f"Error parsing subpattern: {e}")
         return json.dumps({"status": "error", "message": str(e)})
     if len(subpatterns) < 1:
-      return json.dumps({"status": "error", "message": "No subpattern found"})
+        return json.dumps({"status": "error", "message": "No subpattern found"})
 
     subpattern_names = [subpattern.name for subpattern in subpatterns]
     return json.dumps({"status": "ok", "names": subpattern_names})

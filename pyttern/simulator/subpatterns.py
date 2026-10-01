@@ -114,20 +114,16 @@ def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         
     return results
 
-def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
-    """
-    Evaluates an Existential Union (OR) across multiple structural transformations.
-    
-    Args:
-        transformations (Dict[str, PDA]): The transformation graphs representing the OR branches.
-        siblings (List[ParserRuleContext]): The sequence of sibling nodes S(v).
-        m_sub (Environment): The local environment containing bound arguments.
-        p (int): The maximum index of the sibling sequence.
-        
-    Returns:
-        Set[Tuple[Environment, int]]: The pure set union of all base evaluations.
-    """
 def _tau_calls_not(tau) -> bool:
+    """
+    Checks whether a transformation PDA directly invokes a NOT subpattern.
+
+    Args:
+        tau (PDA or dict): The transformation graph to inspect.
+
+    Returns:
+        bool: True if the automaton calls a NOT subpattern, False otherwise.
+    """
     from ..subpattern.SubPattern import loaded_subpatterns
     from .pda.transition import CallTransition
     if isinstance(tau, dict):
@@ -143,11 +139,24 @@ def _tau_calls_not(tau) -> bool:
     return False
 
 def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
+    """
+    Evaluates an Existential Union (OR) across multiple structural transformations.
+
+    Args:
+        transformations (Dict[str, PDA]): The transformation graphs representing the OR branches.
+        siblings (List[ParserRuleContext]): The sequence of sibling nodes S(v).
+        m_sub (Environment): The local environment containing bound arguments.
+        p (int): The maximum index of the sibling sequence.
+
+    Returns:
+        Set[Tuple[Environment, int]]: The pure set union of all base evaluations.
+    """
     results = set()
     is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
     for trans_name, tau in transformations.items():
-        logger.trace(f"Computing OR for trans {trans_name}")
+        logger.trace(f"Computing OR for branch '{trans_name}'")
         if _tau_calls_not(tau):
+            logger.trace(f"Branch '{trans_name}' contains NOT call; anchoring match at siblings[0]")
             if len(siblings) > 0:
                 match_set = Matcher.match(tau, siblings[0], False, m_sub)
                 for match in match_set.matches:
@@ -157,22 +166,23 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
                     for k in range(start_k, end_k):
                         results.add((m_out, k))
         else:
+            logger.trace(f"Branch '{trans_name}' evaluating across sibling sequence")
             results = results.union(eval_base(tau, siblings, m_sub))
-        
+
     return results
 
 def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
     """
     Evaluates a Universal Intersection (AND) with incremental branch pruning.
-    
+
     Args:
         transformations (Dict[str, PDA]): The transformation graphs required to match concurrently.
         siblings (List[ParserRuleContext]): The sequence of sibling nodes S(v).
         m_sub (Environment): The local environment containing bound arguments.
         p (int): The maximum index of the sibling sequence.
-        
+
     Returns:
-        Set[Tuple[Environment, int]]: A set of valid configurations (m_merged, k) representing 
+        Set[Tuple[Environment, int]]: A set of valid configurations (m_merged, k) representing
         the set intersection over valid block sizes 'k' and the set union over environment mappings.
     """
     import itertools
@@ -195,6 +205,7 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
                                 continue
                             if k1 != k2 and (v1 is v2 or (isinstance(v1, ParserRuleContext) and v1 == v2)):
                                 conflict = True
+                                logger.trace(f"AND conflict: variables '{k1}' and '{k2}' bind to identical node at sibling index {indices[idx1]}")
                                 break
                         if conflict:
                             break
@@ -254,11 +265,16 @@ def eval_operator(
 
 def join_dicts(m_a: dict, m_b: dict) -> dict:
     """
-    Joins two dictionaries m_a and m_b such as:
-    (m_a ⊕ m_b)(t) = m_b(t) if m_b(t) is none None else m_a(t)
-    :param m_a: first dictionary with "default" values
-    :param m_b: second dictionary with "override" values
-    :return: the joined dictionary
+    Joins two dictionaries with priority given to non-None values in m_b.
+
+    (m_a ⊕ m_b)(t) = m_b(t) if m_b(t) is not None else m_a(t)
+
+    Args:
+        m_a (dict): Base dictionary with fallback default values.
+        m_b (dict): Overriding dictionary with specialized values.
+
+    Returns:
+        dict: The unified dictionary.
     """
     result = m_a.copy()
     for key, value in m_b.items():
@@ -269,27 +285,35 @@ def join_dicts(m_a: dict, m_b: dict) -> dict:
 
 def mapping(params: list, args: list) -> dict:
     """
-    Create the mapping m_(i->j) from the subpattern parameters (u_1, ..., u_k) to the arguments (t_1, ..., t_k):
-    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
-    :param params: parameters of the PDA called (P_j)
-    :param args: Variables of the PDA calling (P_i)
-    :return: the mapping m_(i->j)
-    """
+    Creates parameter-to-argument mapping m_(i->j) from formal parameters to caller arguments.
 
+    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
+
+    Args:
+        params (list): Formal parameter names of the called subpattern (P_j).
+        args (list): Argument variable names passed by caller pattern (P_i).
+
+    Returns:
+        dict: The parameter to argument mapping.
+
+    Raises:
+        ValueError: If params and args lengths do not match.
+    """
     if len(params) != len(args):
         raise ValueError("Parameters and arguments must have the same length")
     return dict(zip(params, args))
 
-def composition(mapping, bindings):
+
+def composition(mapping: dict, bindings: dict) -> dict:
     """
-    The composition of a mapping m_(i->j) with a bindings m_j is defined as:
-    m_(i->j)[m_j] such as:
-    m_(i->j) = {u_p -> t_p | 1 <= p <= k}
-    m_j = {t_p -> v_p | 1 <= p <= k}
-    m_(i->j)[m_j] = {u_p -> v_p | 1 <= p <= k}
-    :param mapping: a mapping m_(i->j)
-    :param bindings: The current mapping m_j
-    :return: The composition m_(i->j)[m_j]
+    Composes a formal-to-caller mapping with an active variable environment.
+
+    Args:
+        mapping (dict): Parameter mapping m_(i->j).
+        bindings (dict or Environment): Current variable assignments.
+
+    Returns:
+        dict: Composed bindings mapping formal variables directly to values.
     """
     result = {}
     for u, t in mapping.items():
@@ -297,14 +321,24 @@ def composition(mapping, bindings):
             result[u] = bindings[t]
     return result
 
-def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args) -> list[tuple[Environment, int]]:
-    """
-    Calls a subpattern against the current node.
 
-    :param subpattern: The subpattern object.
-    :param current_node: The current node in the parse tree.
-    :param caller_env: The current variable bindings.
-    :return: A list of binding dicts.
+def call_subpattern(
+    subpattern: BaseSubPattern,
+    current_node: ParserRuleContext,
+    caller_env: Environment,
+    args: list[str]
+) -> list[tuple[Environment, int]]:
+    """
+    Executes a subpattern call against the given AST node and caller environment.
+
+    Args:
+        subpattern (BaseSubPattern): The subpattern instance to invoke.
+        current_node (ParserRuleContext): Active node in the target parse tree.
+        caller_env (Environment): Active variable environment in the caller.
+        args (list[str]): Argument variable names passed in the call transition.
+
+    Returns:
+        list[tuple[Environment, int]]: List of valid (merged_environment, sibling_offset) configurations.
     """
     caller_env = Environment.from_dict(caller_env)
 
@@ -326,8 +360,10 @@ def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext,
 
     new_envs = []
     for new_env, k in results:
-        pretty_bindings = {k: (f"{v.__class__.__name__}: {v.getText()}" if v is not None else "None") for k,
-                v in new_env.items()}
+        pretty_bindings = {
+            var: (f"{val.__class__.__name__}: {val.getText() if hasattr(val, 'getText') else str(val)}" if val is not None else "None")
+            for var, val in new_env.items()
+        }
         logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
         m_i_to_j = mapping(args, subpattern.args_order)

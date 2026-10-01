@@ -1,7 +1,12 @@
+"""Graphviz-based visualizer for Pushdown Automaton (PDA) state machines."""
+
+from typing import Any
+
 import graphviz
+
 from ..simulator.pda.PDA import PDA
-from ..simulator.pda.transition import Transition, NodeTransition, NamedTransition, CallTransition
-from ..simulator.pda.PDA_alphabets import StackAlphabet, NavigationAlphabet
+from ..simulator.pda.PDA_alphabets import NavigationAlphabet, StackAlphabet
+from ..simulator.pda.transition import CallTransition, NamedTransition, NodeTransition, Transition
 
 COLOR_MAP = {
     "red": (255, 0, 0),
@@ -26,19 +31,28 @@ COLOR_MAP = {
     "darkgreen": (0, 100, 0),
 }
 
-def get_node_style(color_name):
+
+def get_node_style(color_name: str | None) -> dict[str, str]:
+    """Calculate Graphviz fill and contrasting font color styles for a given color.
+
+    Args:
+        color_name: CSS color name or hex string (e.g. '#FF0000').
+
+    Returns:
+        dict[str, str]: Graphviz node style attribute dictionary.
+    """
     if not color_name:
         return {}
-    
+
     color_name = color_name.lower()
     rgb = None
     if color_name.startswith("#"):
         try:
             h = color_name.lstrip('#')
             if len(h) == 3:
-                h = ''.join([c*2 for c in h])
-            rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        except:
+                h = ''.join([c * 2 for c in h])
+            rgb = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+        except Exception:
             rgb = (200, 200, 200)
     else:
         rgb = COLOR_MAP.get(color_name, (200, 200, 200))
@@ -46,13 +60,22 @@ def get_node_style(color_name):
     # Calculate luminance to decide between black and white text
     # Standard formula: 0.299*R + 0.587*G + 0.114*B
     luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2])
-    
+
     font_color = "white" if luminance < 140 else "black"
     fill_hex = '#%02x%02x%02x' % rgb
-    
+
     return {'style': 'filled', 'fillcolor': fill_hex, 'fontcolor': font_color}
 
-def format_stack(s):
+
+def format_stack(s: Any) -> str:
+    """Format a stack symbol or sequence of symbols into readable string notation.
+
+    Args:
+        s: Stack symbol enum, list of symbols, or primitive string.
+
+    Returns:
+        str: Formatted stack string or 'ε' for empty stack.
+    """
     if not s:
         return "ε"
     if isinstance(s, list):
@@ -63,7 +86,16 @@ def format_stack(s):
         return s.value if s.value else "ε"
     return str(s)
 
-def format_transition_label(t: Transition):
+
+def format_transition_label(t: Transition) -> str:
+    """Format a PDA transition into edge label text with condition and stack operations.
+
+    Args:
+        t: Transition instance.
+
+    Returns:
+        str: Multiline transition label string.
+    """
     # Condition
     cond = ""
     if isinstance(t.A, NodeTransition):
@@ -72,29 +104,38 @@ def format_transition_label(t: Transition):
         cond = f"<{t.A.name}>"
     elif isinstance(t.A, CallTransition):
         cond = f"{t.A.subpattern_name}({','.join(t.A.args)})"
-    
+
     # alpha -> beta
     alpha = format_stack(t.alpha)
     beta = format_stack(t.beta)
-    
+
     # Navigation
     nav = ", ".join([str(n) for n in t.t])
-    
+
     stack_op = f"{alpha} -> {beta}"
     label = f"{cond}, {stack_op}" if cond else stack_op
     return f"{label}\n{nav}"
 
-def parse_intervals(intervals_input):
+
+def parse_intervals(intervals_input: Any) -> list[tuple[int, int]] | None:
+    """Parse comma-separated interval strings into list of (start, end) tuples.
+
+    Args:
+        intervals_input: String expression like '0-5,10,12-15' or list of intervals.
+
+    Returns:
+        list[tuple[int, int]] | None: List of integer interval tuples or None if 'all'.
+    """
     if not intervals_input:
         return None
-    
+
     if isinstance(intervals_input, str):
         if intervals_input.lower() == "all":
             return None
         parts = intervals_input.split(',')
     else:
         parts = intervals_input
-        
+
     intervals = []
     for part in parts:
         part = str(part).strip()
@@ -112,7 +153,17 @@ def parse_intervals(intervals_input):
                 continue
     return intervals
 
-def is_in_intervals(val, intervals):
+
+def is_in_intervals(val: int, intervals: list[tuple[int, int]] | None) -> bool:
+    """Check whether an integer value falls within any inclusive interval.
+
+    Args:
+        val: Integer to test.
+        intervals: List of inclusive (start, end) bounds or None for all.
+
+    Returns:
+        bool: True if val is covered by the intervals.
+    """
     if intervals is None:
         return True
     for start, end in intervals:
@@ -120,13 +171,25 @@ def is_in_intervals(val, intervals):
             return True
     return False
 
-def find_next_visible(pda: PDA, start_state: int, intervals: list, visited=None):
+
+def find_next_visible(pda: PDA, start_state: int, intervals: list, visited: set | None = None) -> set[int]:
+    """Find visible states reachable from an omitted state through skipped transitions.
+
+    Args:
+        pda: Pushdown automaton.
+        start_state: Hidden intermediate state ID.
+        intervals: Allowed visible state intervals.
+        visited: Visited state IDs to prevent recursion cycles.
+
+    Returns:
+        set[int]: Set of reachable visible state IDs.
+    """
     if visited is None:
         visited = set()
     if start_state in visited:
         return set()
     visited.add(start_state)
-    
+
     results = set()
     transitions = pda.transitions.get(start_state, [])
     for t in transitions:
@@ -136,18 +199,33 @@ def find_next_visible(pda: PDA, start_state: int, intervals: list, visited=None)
             results.update(find_next_visible(pda, t.q_prime, intervals, visited))
     return results
 
-def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA", 
-                  wrap_at: int = None, 
-                  node_intervals: list = None,
-                  highlights: dict = None,
-                  font_size: int = 14):
-    
+
+def visualize_pda(
+    pda: PDA | dict[str, PDA],
+    output_path: str,
+    title: str = "PDA",
+    wrap_at: int | None = None,
+    node_intervals: list | str | None = None,
+    highlights: dict | None = None,
+    font_size: int = 14,
+) -> None:
+    """Render a PDA or dictionary of PDAs to a PDF file using Graphviz.
+
+    Args:
+        pda: Pushdown automaton or dictionary of named PDAs.
+        output_path: Target path for the output PDF (without extension).
+        title: Title of the generated diagram.
+        wrap_at: Maximum number of states per row before wrapping.
+        node_intervals: Filter intervals for visible states (e.g. '0-10,20-30' or 'all').
+        highlights: Dictionary mapping intervals to highlight color configurations.
+        font_size: Font size for state and transition labels.
+    """
     if isinstance(pda, PDA):
         pdas = {"__main__": pda}
     else:
         pdas = pda
 
-    def flatten_pda_dict(d, current_prefix=""):
+    def flatten_pda_dict(d: Any, current_prefix: str = "") -> dict[str, PDA]:
         flat = {}
         if isinstance(d, PDA):
             flat[current_prefix or "__main__"] = d
@@ -156,7 +234,7 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
                 name = current_prefix if k == "__main__" else k
                 if not name:
                     name = "__main__"
-                
+
                 if isinstance(val, PDA):
                     flat[name] = val
                 elif isinstance(val, dict):
@@ -185,17 +263,17 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
     dot = graphviz.Digraph(comment=title)
     dot.attr(pad='0.5')
     dot.edge_attr.update(fontsize=str(font_size))
-    
+
     # Scale spacing based on font size
     spacing = str(0.4 + (font_size / 40.0))
     dot.attr(nodesep=spacing)
     dot.attr(ranksep=spacing)
-    
+
     if wrap_at:
         dot.attr(rankdir='TB')
     else:
         dot.attr(rankdir='LR')
-        
+
     dot.attr(overlap='false')
     dot.attr(splines='true')
 
@@ -208,7 +286,7 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
             for h in parsed_highlights:
                 if h["intervals"] and main_intervals is not None:
                     main_intervals.extend(h["intervals"])
-            
+
             if main_intervals is not None:
                 first = current_pda.initial_state
                 last = current_pda.final_states
@@ -216,7 +294,7 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
                     main_intervals.append((first, first))
                 if not is_in_intervals(last, main_intervals):
                     main_intervals.append((last, last))
-            
+
             visible_states = [s for s in sorted(list(current_pda.states)) if is_in_intervals(s, main_intervals)]
         else:
             main_intervals = None
@@ -242,7 +320,27 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
 
     dot.render(output_path, format='pdf', cleanup=True)
 
-def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals, wrap_at, parsed_highlights):
+
+def _render_single_pda_to_graph(
+    graph: Any,
+    pda: PDA,
+    pda_name: str,
+    visible_states: list[int],
+    intervals: list[tuple[int, int]] | None,
+    wrap_at: int | None,
+    parsed_highlights: list[dict[str, Any]],
+) -> None:
+    """Render states and transitions of a single PDA onto a Graphviz graph or cluster.
+
+    Args:
+        graph: Target Graphviz Digraph or Subgraph.
+        pda: Pushdown automaton to render.
+        pda_name: Prefix name for namespacing node IDs.
+        visible_states: Filtered list of visible state IDs.
+        intervals: Allowed interval list.
+        wrap_at: Number of states before row break.
+        parsed_highlights: Color highlight specifications.
+    """
     node_to_row = {}
     if wrap_at:
         first_nodes_of_rows = []
@@ -255,23 +353,23 @@ def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals,
                 for state in chunk:
                     node_to_row[state] = row_idx
                     add_node_to_graph(s, state, pda, parsed_highlights, pda_name=pda_name)
-        
+
         for j in range(len(first_nodes_of_rows) - 1):
             n1 = str(first_nodes_of_rows[j]) if pda_name == "__main__" else f"{pda_name}_{first_nodes_of_rows[j]}"
-            n2 = str(first_nodes_of_rows[j+1]) if pda_name == "__main__" else f"{pda_name}_{first_nodes_of_rows[j+1]}"
+            n2 = str(first_nodes_of_rows[j + 1]) if pda_name == "__main__" else f"{pda_name}_{first_nodes_of_rows[j + 1]}"
             graph.edge(n1, n2, style='invis')
     else:
         for state in visible_states:
             add_node_to_graph(graph, state, pda, parsed_highlights, pda_name=pda_name)
 
-    processed_skips = set() 
+    processed_skips = set()
 
     for state in visible_states:
         for t in pda.transitions.get(state, []):
             if is_in_intervals(t.q_prime, intervals):
                 label = format_transition_label(t)
                 attr = {}
-                
+
                 if wrap_at:
                     row_q = node_to_row.get(t.q)
                     row_q_prime = node_to_row.get(t.q_prime)
@@ -280,18 +378,18 @@ def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals,
 
                 h_color = None
                 is_self = (t.q == t.q_prime)
-                
+
                 for h in parsed_highlights:
                     if is_in_intervals(t.q, h["intervals"]) and is_in_intervals(t.q_prime, h["intervals"]):
                         if not is_self or h["highlight_self"]:
                             h_color = h["color"]
                             break
-                
+
                 if h_color:
                     attr['color'] = h_color
                     attr['penwidth'] = '2.0'
                     attr['fontcolor'] = h_color
-                
+
                 node_q = str(t.q) if pda_name == "__main__" else f"{pda_name}_{t.q}"
                 node_qp = str(t.q_prime) if pda_name == "__main__" else f"{pda_name}_{t.q_prime}"
                 graph.edge(node_q, node_qp, label=label, **attr)
@@ -305,16 +403,34 @@ def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals,
                             row_v = node_to_row.get(v)
                             if row_q is not None and row_v is not None and row_q != row_v:
                                 attr['constraint'] = 'false'
-                        
+
                         node_state = str(state) if pda_name == "__main__" else f"{pda_name}_{state}"
                         node_v = str(v) if pda_name == "__main__" else f"{pda_name}_{v}"
                         graph.edge(node_state, node_v, **attr)
                         processed_skips.add((state, v))
 
-def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=12, pda_name="__main__"):
+
+def add_node_to_graph(
+    graph: Any,
+    state: int,
+    pda: PDA,
+    highlights_config: list[dict[str, Any]] | None = None,
+    node_font_size: int = 12,
+    pda_name: str = "__main__",
+) -> None:
+    """Format and add a single PDA state node to the Graphviz graph.
+
+    Args:
+        graph: Target Graphviz graph or cluster.
+        state: Integer state identifier.
+        pda: Parent PDA instance.
+        highlights_config: Optional highlight settings.
+        node_font_size: Font size for state text.
+        pda_name: Graphviz node prefix.
+    """
     width = str(0.3 + (node_font_size / 40.0) * 1.0)
     attr = {'shape': 'circle', 'fixedsize': 'true', 'width': width, 'fontsize': str(node_font_size)}
-    
+
     highlight_color = None
     if highlights_config:
         for h in highlights_config:
@@ -330,6 +446,7 @@ def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=
         attr.update(get_node_style(highlight_color))
     else:
         attr.update({'style': 'filled', 'fillcolor': 'lightblue', 'fontcolor': 'black'})
-        
+
     node_id = str(state) if pda_name == "__main__" else f"{pda_name}_{state}"
     graph.node(node_id, str(state), **attr)
+

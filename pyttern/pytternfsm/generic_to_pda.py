@@ -1,33 +1,71 @@
-import math
+"""Generic AST-to-Pushdown Automaton (PDA) compiler base class."""
+
 import abc
-import types
-from typing import TypeAlias, TypeVar
+import math
+from typing import Any, TypeVar
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
 from ..simulator.pda.PDA import PDA
 from ..simulator.pda.PDA_alphabets import NavigationAlphabet
-from ..simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
+from ..simulator.pda.transition import NamedTransition, NodeTransition, Transition, TransitionCondition
 
 T = TypeVar('T')
 
+
 class Generic_to_PDA(metaclass=abc.ABCMeta):
-    def __init__(self, grammar, skippable_nodes, remove_double_wildcard, tree_pruner):
+    """Abstract compiler translating an ANTLR parse tree pattern into a PDA graph.
+
+    Attributes:
+        pda: Pushdown Automaton being built.
+        current_state: Currently active state index during traversal.
+        depth: Current indentation / tree depth level.
+        move_to_B: Stack tracking depths for compound body transitions.
+        dict_pda: Mapping of compilation units (e.g. '__main__', subpatterns) to PDAs.
+        grammar: ANTLR parser grammar class.
+        skippable_nodes: Node class names that can be skipped via right-sibling transitions.
+        remove_double_wildcard: Tuple of node contexts where trailing wildcards are pruned.
+        tree_pruner: Tree pruner visitor instance.
+    """
+
+    def __init__(
+        self,
+        grammar: Any,
+        skippable_nodes: list[str],
+        remove_double_wildcard: list[Any] | tuple[Any, ...],
+        tree_pruner: Any,
+    ) -> None:
+        """Initialize the compiler with target grammar rules and configuration.
+
+        Args:
+            grammar: Parser class containing grammar rules and tokens.
+            skippable_nodes: List of AST node rule names that support self-loop skipping.
+            remove_double_wildcard: Collection of context classes for double wildcard elimination.
+            tree_pruner: Pruner visitor instance for preprocessing pattern trees.
+        """
         self.pda = PDA()
         self.current_state = self.pda.initial_state
         self.depth = 0
-        self.move_to_B = []
-        self.dict_pda = {}
+        self.move_to_B: list[int] = []
+        self.dict_pda: dict[str, PDA] = {}
         self.grammar = grammar
         self.skippable_nodes = skippable_nodes
         self.remove_double_wildcard = tuple(remove_double_wildcard)
         self.tree_pruner = tree_pruner
         self._restrict_stmt = False
-        self.__var_names = {}
+        self.__var_names: dict[str, Any] = {}
         self.__is_last_branch = True
 
-    def visit(self, tree):
+    def visit(self, tree: Any) -> dict[str, PDA]:
+        """Compile a pattern parse tree into a dictionary of PDAs.
+
+        Args:
+            tree: Root of the pattern parse tree.
+
+        Returns:
+            dict[str, PDA]: Dictionary containing compiled PDAs with '__main__' as entrypoint.
+        """
         logger.debug(f"Visiting tree: {tree}")
         self.dict_pda = {}
         self.__var_names = {}
@@ -37,12 +75,28 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         logger.trace(f"var_names: {self.__var_names}")
         self.dict_pda["__main__"] = self.pda
         return self.dict_pda
-    
+
     @abc.abstractmethod
-    def define_boundaries(self, ctx):
+    def define_boundaries(self, ctx: Any) -> tuple[int, int | float]:
+        """Compute minimum down and up tree traversal boundaries for a given context.
+
+        Args:
+            ctx: Current AST rule context.
+
+        Returns:
+            tuple[int, int | float]: A pair (down_bound, up_bound).
+        """
         pass
 
-    def visitChildren(self, node):
+    def visitChildren(self, node: Any) -> int:
+        """Visit child nodes of an AST rule and generate corresponding PDA transitions.
+
+        Args:
+            node: Current parse tree rule context.
+
+        Returns:
+            int: Resulting next state index after traversing children.
+        """
         logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
         children = node.children
@@ -59,15 +113,27 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         # Add self-transition to be able to skip statements
         if node.__class__.__name__ in self.skippable_nodes:
             if not self._restrict_stmt:
-                self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                            self.current_state, '')
+                self_transition = Transition(
+                    self.current_state,
+                    "",
+                    NodeTransition(''),
+                    [NavigationAlphabet.RIGHT_SIBLING],
+                    self.current_state,
+                    '',
+                )
                 self.pda.add_transition(self_transition)
             else:
                 self._restrict_stmt = False
 
         next_state = self.pda.new_state()
-        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
-                                [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
+        transition = Transition(
+            self.current_state,
+            "",
+            NodeTransition(node.__class__.__name__, down, up),
+            [NavigationAlphabet.LEFT_CHILD],
+            next_state,
+            'I',
+        )
         self.pda.add_transition(transition)
         self.current_state = next_state
 
@@ -87,8 +153,16 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             child.accept(self)
 
         return next_state
-    
-    def visitStatement(self, ctx):
+
+    def visitStatement(self, ctx: Any) -> Any:
+        """Visit statement context and route compound or number wildcards appropriately.
+
+        Args:
+            ctx: Statement rule context.
+
+        Returns:
+            Any: Target state or child visitation result.
+        """
         logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
         # Handle multiple compound wildcard
@@ -100,7 +174,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         lookahead_simple_wildcard = self.lookahead(ctx, self.grammar.Simple_wildcardContext)
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
-        
+
         # Handle number wildcard
         lookahead_number_wildcard = self.lookahead(ctx, self.grammar.Number_wildcardContext)
         if lookahead_number_wildcard:
@@ -108,19 +182,62 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         return self.visitChildren(ctx)
 
-    def visitExpr_wildcard(self, ctx):
+    def visitExpr_wildcard(self, ctx: Any) -> Any:
+        """Visit expression wildcard wrapper node.
+
+        Args:
+            ctx: Expression wildcard context.
+
+        Returns:
+            Any: Child visitor result.
+        """
         return ctx.getChild(0).accept(self)
 
-    def visitStmt_wildcard(self, ctx):
+    def visitStmt_wildcard(self, ctx: Any) -> Any:
+        """Visit statement wildcard wrapper node.
+
+        Args:
+            ctx: Statement wildcard context.
+
+        Returns:
+            Any: Child visitor result.
+        """
         return ctx.getChild(0).accept(self)
 
-    def visitCompound_wildcard(self, ctx):
+    def visitCompound_wildcard(self, ctx: Any) -> Any:
+        """Visit compound wildcard wrapper node.
+
+        Args:
+            ctx: Compound wildcard context.
+
+        Returns:
+            Any: Child visitor result.
+        """
         return ctx.getChild(0).accept(self)
 
-    def visitSimple_wildcard(self, ctx):
+    def visitSimple_wildcard(self, ctx: Any) -> int:
+        """Visit simple wildcard node and generate navigation transitions.
+
+        Args:
+            ctx: Simple wildcard context.
+
+        Returns:
+            int: Resulting state index.
+        """
         return self._add_up_transition(ctx)
 
-    def visitNumber_wildcard(self, ctx):
+    def visitNumber_wildcard(self, ctx: Any) -> int:
+        """Visit bounded numeric wildcard node ($[min, max]) and create repetition paths.
+
+        Args:
+            ctx: Number wildcard context.
+
+        Returns:
+            int: Target state index.
+
+        Raises:
+            ValueError: If the lower bound exceeds the upper bound.
+        """
         numbers_node = ctx.getChild(0, self.grammar.Wildcard_numberContext)
         low, high = self.visitWildcard_number(numbers_node)
         logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
@@ -132,8 +249,14 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         for _ in range(1, low):
             # Add transitions for low - 1
             next_state = self.pda.new_state()
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
+            transition = Transition(
+                self.current_state,
+                '',
+                NodeTransition(''),
+                [NavigationAlphabet.RIGHT_SIBLING],
+                next_state,
+                '',
+            )
             self.pda.add_transition(transition)
             self.current_state = next_state
 
@@ -150,8 +273,14 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             next_state = self.pda.new_state()
 
             # There is a sibling
-            transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                           next_state, '')
+            transition = Transition(
+                self.current_state,
+                '',
+                NodeTransition(''),
+                [NavigationAlphabet.RIGHT_SIBLING],
+                next_state,
+                '',
+            )
             self.pda.add_transition(transition)
 
             # No more siblings
@@ -162,29 +291,58 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.current_state = dummy_state
         return self._add_up_transition(ctx)
 
-    def visitWildcard_number(self, ctx):
-        # Return the low and high limits of the wildcard
+
+    def visitWildcard_number(self, ctx: Any) -> tuple[int, int | float]:
+        """Extract low and high integer range bounds from a wildcard number context.
+
+        Args:
+            ctx: Wildcard number rule context.
+
+        Returns:
+            tuple[int, int | float]: (low_bound, high_bound) limit tuple.
+        """
         low = int(ctx.getChild(1).getText())
         high = int(ctx.getChild(3).getText()) if ctx.getChild(3) and ctx.getChild(3).getText().isdigit() else math.inf
 
         if ctx.COMMA() is None:
             high = low
-        
+
         logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
         if low > high:
             logger.error(f"Invalid wildcard number: low={low} > high={high}")
             return 1, 1
-        
+
         return low, high
 
-    def visitList_wildcard(self, ctx):
-        # Adding self-transition to search for the next element
-        self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                               self.current_state, '')
+    def visitList_wildcard(self, ctx: Any) -> int:
+        """Add a right-sibling self-loop transition to match arbitrary sibling list items.
+
+        Args:
+            ctx: List wildcard context.
+
+        Returns:
+            int: Current state index.
+        """
+        self_transition = Transition(
+            self.current_state,
+            '',
+            NodeTransition(''),
+            [NavigationAlphabet.RIGHT_SIBLING],
+            self.current_state,
+            '',
+        )
         self.pda.add_transition(self_transition)
         return self.current_state
 
-    def visitTerminal(self, node):
+    def visitTerminal(self, node: Any) -> int:
+        """Visit terminal AST leaf node and emit transition matching the node text/name.
+
+        Args:
+            node: Terminal node or context acting as a terminal.
+
+        Returns:
+            int: Resulting state index.
+        """
         if isinstance(node, TerminalNode):
             logger.trace(f"Visiting terminal {node}")
             node_text = str(node).strip()
@@ -198,17 +356,29 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         return self._add_up_transition(node, node_transition)
 
-    def visitVar_wildcard(self, ctx):
+    def visitVar_wildcard(self, ctx: Any) -> int:
+        """Visit named wildcard variable ($variable) and register variable binding.
+
+        Args:
+            ctx: Named variable wildcard context.
+
+        Returns:
+            int: Resulting state index.
+        """
         label = ctx.getText()
-        # if label not in self.__var_names:
-        #     uuid_label = str(uuid.uuid4())[:8]
-        #     self.__var_names[label] = f"{label}_{uuid_label}"
-        # label = self.__var_names[label]
         self.pda.named_wildcards.add(label)
         self._add_up_transition(ctx, NamedTransition(f"{label}"))
         return self.current_state
 
-    def visitContains_wildcard(self, ctx):
+    def visitContains_wildcard(self, ctx: Any) -> Any:
+        """Visit containment wildcard ($contains(...)) with body traversal transitions.
+
+        Args:
+            ctx: Contains wildcard context.
+
+        Returns:
+            Any: Target state index after visiting body.
+        """
         self.add_body_transition()
 
         logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
@@ -216,19 +386,41 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return prune_tree.getChild(2).accept(self)
 
     @abc.abstractmethod
-    def visitSimple_compound_wildcard(self, ctx):
+    def visitSimple_compound_wildcard(self, ctx: Any) -> Any:
+        """Visit simple compound wildcard ($*). Must be implemented by subclasses.
+
+        Args:
+            ctx: Simple compound wildcard context.
+        """
         pass
 
     @abc.abstractmethod
-    def visitMultiple_compound_wildcard(self, ctx):
+    def visitMultiple_compound_wildcard(self, ctx: Any) -> Any:
+        """Visit multiple compound wildcard ($**). Must be implemented by subclasses.
+
+        Args:
+            ctx: Multiple compound wildcard context.
+        """
         pass
 
-    def visitGenericMultiple_compound_wildcard(self, ctx, blockChild):
+    def visitGenericMultiple_compound_wildcard(self, ctx: Any, blockChild: Any) -> int:
+        """Compile a multi-compound body wildcard with pushdown stack frame markers.
+
+        Args:
+            ctx: Multi-compound wildcard context.
+            blockChild: Child AST block statement to traverse within the compound scope.
+
+        Returns:
+            int: Target state index.
+
+        Raises:
+            Exception: If blockChild is None.
+        """
         # Transition to push B on the stack
         dummy_state = Generic_to_PDA.add_body_transition(self)
 
         # Explore
-        if blockChild == None:
+        if blockChild is None:
             raise Exception("Body of multiple compound wildcard cannot be empty")
         ret = blockChild.accept(self)
 
@@ -237,8 +429,15 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         return ret
 
-    def add_body_transition(self, allow_multiple_compound=True):
-        # Push B on the stack
+    def add_body_transition(self, allow_multiple_compound: bool = True) -> int:
+        """Push a block frame symbol 'B' on the stack and create compound navigation loops.
+
+        Args:
+            allow_multiple_compound: Whether to add full sibling/child exploratory cycles.
+
+        Returns:
+            int: State index representing the compound body entry.
+        """
         dummy_state = self.pda.new_state()
         dummy_transition = Transition(self.current_state, "", NodeTransition(''), [], dummy_state, 'B')
         self.pda.add_transition(dummy_transition)
@@ -252,25 +451,41 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             child_transition = Transition(self.current_state, "", NodeTransition(''), [], next_state, '')
             self.pda.add_transition(child_transition)
 
-            self_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                        next_state, '')
+            self_transition = Transition(
+                next_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING], next_state, ''
+            )
             self.pda.add_transition(self_transition)
-            back_transition = Transition(next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                        self.current_state, 'I')
+            back_transition = Transition(
+                next_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD], self.current_state, 'I'
+            )
             self.pda.add_transition(back_transition)
             self.current_state = next_state
 
         return dummy_state
 
+    def _add_up_transition(self, node: Any, label: TransitionCondition | None = None) -> int:
+        """Add ascend/parent navigation transitions matching current stack indentation depth.
 
-    def _add_up_transition(self, node, label:TransitionCondition=None):
+        Args:
+            node: Current parse tree node being ascended from.
+            label: Transition condition symbol or None for an empty node transition.
+
+        Returns:
+            int: Newly created target state index.
+        """
         if label is None:
             label = NodeTransition('')
 
         if self._is_last_node():
             logger.debug(f"Node {node} is the last node in the tree, adding transition to the end")
-            self_transition = Transition(self.current_state, '', NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                         self.current_state, '')
+            self_transition = Transition(
+                self.current_state,
+                '',
+                NodeTransition(''),
+                [NavigationAlphabet.RIGHT_SIBLING],
+                self.current_state,
+                '',
+            )
             self.pda.add_transition(self_transition)
 
             last_state = self.pda.new_state()
@@ -279,24 +494,45 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             self.current_state = last_state
             return last_state
 
-
         if len(self.move_to_B) > 0:
             return self._add_up_to_B_transition(label)
 
         return self._add_up_default_transition(label)
 
-    def _add_up_default_transition(self, label:TransitionCondition):
+    def _add_up_default_transition(self, label: TransitionCondition) -> int:
+        """Add standard parent ascent popping 'I' symbols based on current depth.
+
+        Args:
+            label: Transition condition to evaluate.
+
+        Returns:
+            int: Target state index.
+        """
         next_state = self.pda.new_state()
         to_pop = 'I' * self.depth
         to_up = [NavigationAlphabet.PARENT] * self.depth
         self.depth = 0
-        transition = Transition(self.current_state, to_pop, label, to_up +
-                                [NavigationAlphabet.RIGHT_SIBLING], next_state, '')
+        transition = Transition(
+            self.current_state,
+            to_pop,
+            label,
+            to_up + [NavigationAlphabet.RIGHT_SIBLING],
+            next_state,
+            '',
+        )
         self.pda.add_transition(transition)
         self.current_state = next_state
         return next_state
 
-    def _add_up_to_B_transition(self, label:TransitionCondition):
+    def _add_up_to_B_transition(self, label: TransitionCondition) -> int:
+        """Add upward navigation popping to the nearest compound body 'B' stack frame.
+
+        Args:
+            label: Transition condition to evaluate.
+
+        Returns:
+            int: Intermediate match state index.
+        """
         depth = self.move_to_B.pop()
         self.depth = depth
 
@@ -309,8 +545,9 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.current_state = match_state
 
         # Move up as many times as there I on the stack and consume them
-        up_transition = Transition(self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT],
-                                                               self.current_state, '')
+        up_transition = Transition(
+            self.current_state, 'I', NodeTransition(''), [NavigationAlphabet.PARENT], self.current_state, ''
+        )
         self.pda.add_transition(up_transition)
 
         # Consume the B from the stack
@@ -328,10 +565,23 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
 
         return match_state
 
-    def _is_last_node(self):
+    def _is_last_node(self) -> bool:
+        """Check whether the current branch is the final branch of the pattern tree.
+
+        Returns:
+            bool: True if on the terminal branch.
+        """
         return self.__is_last_branch
 
-    def handle_empty_list(self, ctx):
+    def handle_empty_list(self, ctx: Any) -> Any:
+        """Handle zero-element matching when list wildcard is present in list context.
+
+        Args:
+            ctx: Parse tree context containing a potential list.
+
+        Returns:
+            Any: Target state index or child visit result.
+        """
         list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
@@ -340,13 +590,16 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self.visitChildren(ctx)
 
     @staticmethod
-    def lookahead(ctx, clazz: type[T], predicate=None) -> T:
-        """
-        Check if one of the descendants of ctx is an instance of clazz. Stop if ctx has more than one child.
-        :param ctx:
-        :param clazz:
-        :param predicate:
-        :return: The first instance of clazz found in the descendant of ctx or None if not found.
+    def lookahead(ctx: Any, clazz: type[T] | tuple[type[T], ...], predicate: Any = None) -> T | None:
+        """Search descendants of ctx for an instance of clazz along a single-child chain.
+
+        Args:
+            ctx: Root context node to search downward from.
+            clazz: Expected class type or tuple of class types.
+            predicate: Optional filter callable returning bool.
+
+        Returns:
+            T | None: First matching descendant node, or None if not found.
         """
         if isinstance(ctx, clazz):
             return ctx
@@ -359,15 +612,19 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return Generic_to_PDA.lookahead(ctx.children[0], clazz)
 
     @staticmethod
-    def lookbehind(ctx, clazz):
-        """
-        Check if one of the ancestors of ctx is instance of clazz.
-        :param ctx:
-        :param clazz:
-        :return: The first instance of clazz found in the ancestors of ctx or None if not found.
+    def lookbehind(ctx: Any, clazz: type[T] | tuple[type[T], ...]) -> T | None:
+        """Traverse ancestor parentCtx references to find an instance of clazz.
+
+        Args:
+            ctx: Starting context node.
+            clazz: Expected ancestor class type or tuple of types.
+
+        Returns:
+            T | None: First matching ancestor node, or None if root reached.
         """
         if isinstance(ctx, clazz):
             return ctx
         if not hasattr(ctx, 'parentCtx'):
             return None
         return Generic_to_PDA.lookbehind(ctx.parentCtx, clazz)
+

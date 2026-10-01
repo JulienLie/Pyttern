@@ -1,6 +1,10 @@
+"""
+Java language processor for Pyttern.
+"""
+
 import io
 
-from antlr4 import CommonTokenStream
+from antlr4 import CommonTokenStream, InputStream
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
@@ -12,26 +16,51 @@ from ..pytternfsm.java.tree_pruner import TreePruner
 
 
 class JavaProcessor(BaseProcessor):
-    def generate_tree_from_stream(self, stream):
-        logger.debug("Generating tree")
+    """
+    Language processor implementation for Java and Jattern (Java patterns).
+    """
+
+    def generate_tree_from_stream(self, stream: InputStream):
+        """
+        Parses Java source from an ANTLR stream and returns a pruned parse tree.
+
+        Args:
+            stream (InputStream): The ANTLR stream containing Java source code.
+
+        Returns:
+            ParserRuleContext: The pruned Java compilation unit parse tree.
+        """
+        logger.debug("Generating Java parse tree")
         lexer = JavaLexer(stream)
-        stream = CommonTokenStream(lexer)
-        java_parser = JavaParser(stream)
+        token_stream = CommonTokenStream(lexer)
+        java_parser = JavaParser(token_stream)
 
         error = io.StringIO()
-
         java_parser.removeErrorListeners()
         error_listener = Python3ErrorListener(error)
         java_parser.addErrorListener(error_listener)
 
         tree = java_parser.compilationUnit()
-        
         pruned_tree = TreePruner().visit(tree)
-
         return pruned_tree
 
     def create_pda(self, pattern_tree):
+        """
+        Compiles a Java pattern parse tree into a Pushdown Automaton.
+
+        Args:
+            pattern_tree (ParserRuleContext): The Java pattern parse tree.
+
+        Returns:
+            dict[str, PDA]: A dictionary containing compiled PDA instances.
+        """
         return Java_to_PDA().visit(pattern_tree)
 
-    def get_language_extensions(self):
+    def get_language_extensions(self) -> list[str]:
+        """
+        Returns supported file extensions for Java and Jattern files.
+
+        Returns:
+            list[str]: Supported extensions ['java', 'jav', 'jat'].
+        """
         return ["java", "jav", "jat"]

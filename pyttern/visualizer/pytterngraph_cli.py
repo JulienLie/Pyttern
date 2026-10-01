@@ -1,17 +1,23 @@
-import sys
-import os
+"""CLI tool for generating graphical PDF visualizations of PDAs and Parse Trees."""
+
 import argparse
-import yaml
+import os
+import sys
+
 from loguru import logger
-from pyttern.language_processors.python_processor import PythonProcessor
-from pyttern.language_processors.languages import Languages
+import yaml
+
 from pyttern.language_processors import get_processor
+from pyttern.language_processors.languages import Languages
+from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 from pyttern.visualizer.pda_visualizer import visualize_pda
 from pyttern.visualizer.pt_visualizer import visualize_parse_tree
-from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
-def main():
+
+def main() -> None:
+    """Parse CLI options and render PDA or Parse Tree diagrams as PDF."""
     parser = argparse.ArgumentParser(description="Pyttern Graph Tool: Visualize PDA structure or Parse Tree from code/patterns.")
+
     parser.add_argument("input", nargs="?", help="Input file (python or pyttern).")
     parser.add_argument("output", nargs="?", help="Output PDF filename.")
     parser.add_argument("--config", help="Path to a YAML configuration file for options.")
@@ -53,13 +59,20 @@ def main():
             sys.exit(1)
 
     # CLI arguments override everything else
-    if args.input: options["input"] = args.input
-    if args.output: options["output"] = args.output
-    if args.lang: options["lang"] = args.lang
-    if args.type: options["type"] = args.type.lower()
-    if args.wrap_at is not None: options["wrap_at"] = args.wrap_at
-    if args.nodes: options["nodes"] = args.nodes
-    if args.font_size: options["font_size"] = args.font_size
+    if args.input:
+        options["input"] = args.input
+    if args.output:
+        options["output"] = args.output
+    if args.lang:
+        options["lang"] = args.lang
+    if args.type:
+        options["type"] = args.type.lower()
+    if args.wrap_at is not None:
+        options["wrap_at"] = args.wrap_at
+    if args.nodes:
+        options["nodes"] = args.nodes
+    if args.font_size:
+        options["font_size"] = args.font_size
 
     # Validation
     if not options["input"]:

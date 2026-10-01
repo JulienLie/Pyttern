@@ -10,6 +10,18 @@ from .pda.transition import NodeTransition, NamedTransition, CallTransition
 from ..subpattern.SubPattern import loaded_subpatterns
 from ..pytternfsm.python.match_set import MatchSet, Match
 
+def _describe_node(node) -> str:
+    """Helper to format AST nodes cleanly in debug logs."""
+    if node is None:
+        return "None"
+    if isinstance(node, TerminalNode):
+        return f"Terminal('{node}')"
+    text = node.getText() if hasattr(node, 'getText') else str(node)
+    text_short = (text[:30] + "...") if len(text) > 30 else text
+    text_short = text_short.replace("\n", "\\n")
+    return f"{node.__class__.__name__}['{text_short}']"
+
+
 class Matcher:
     def __init__(self, pdas: dict[str, PDA], parse_tree: Tree):
         self.pda = pdas["__main__"]
@@ -32,17 +44,19 @@ class Matcher:
     @staticmethod
     def match(pda: dict[str, PDA], parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
         """
-        Matches a given parse tree against a Pushdown Automaton (PDA) and returns the resulting matches.
+        Matches a given parse tree against a Pushdown Automaton (PDA) and returns matches.
 
-        :param pda: The Pushdown Automaton (PDA) to use for matching.
-        :param parse_tree: The parse tree to match against the PDA.
-        :param stop_at_first: A boolean indicating whether to stop after the first match is found. Defaults to False.
-        :param bindings: An optional dictionary of initial variable bindings. Defaults to None.
-        :return: A MatchSet object containing the results of the matching process.
+        Args:
+            pda (dict[str, PDA]): Pushdown Automaton mapping with '__main__' as entrypoint.
+            parse_tree (ParserRuleContext): The target parse tree to match against.
+            stop_at_first (bool, optional): Whether to stop after the first match. Defaults to False.
+            bindings (dict or Environment, optional): Initial variable bindings. Defaults to None.
+
+        Returns:
+            MatchSet: Collection of match results.
         """
-
         matcher = Matcher(pda, parse_tree)
-        logger.debug("Starting match")
+        logger.debug(f"Starting match on root node {_describe_node(parse_tree)}")
         matcher.start(bindings)
         while len(matcher.configurations) > 0:
             matcher.step()
@@ -52,6 +66,15 @@ class Matcher:
         return matcher.match_set
 
     def start(self, initial_bindings=None):
+        """
+        Initializes the matcher with the initial configuration and variable bindings.
+
+        Args:
+            initial_bindings (dict or Environment, optional): Initial variable bindings.
+
+        Returns:
+            Matcher: Self instance for chaining.
+        """
         bindings = {t: None for t in self.pda.named_wildcards}
         if initial_bindings is not None:
             if isinstance(initial_bindings, Environment):
@@ -65,17 +88,19 @@ class Matcher:
         return self
 
     def step(self):
-        logger.trace(f"Step {self.n_step}")
         if len(self.configurations) == 0:
             raise Warning("No more configurations to process")
         current_config = self.configurations.pop()
-        logger.trace(f"Checking config: {current_config}")
         current_state, current_node, stack, var, matches = current_config
+        logger.trace(
+            f"Step {self.n_step}: state={current_state}, node={_describe_node(current_node)}, "
+            f"stack='{stack}', bindings={var}"
+        )
         for listener in self._listeners:
             listener.step(self, current_state, current_node, stack, var, matches)
 
         if current_state == self.pda.final_states:
-            logger.debug("Match found")
+            logger.debug(f"Match found at step {self.n_step} with bindings: {var}")
             match = Match(self.n_step, var, matches)
             self.match_set.record(match)
             for listener in self._listeners:
@@ -170,12 +195,15 @@ class Matcher:
 
     def call_subpattern(self, transition: CallTransition, current_node: ParserRuleContext, bindings):
         """
-        Calls a subpattern transition (CallTransition) against the current node.
+        Executes a subpattern call transition against the current AST node.
 
-        :param transition: The transition object.
-        :param current_node: The current node in the parse tree.
-        :param bindings: The current variable bindings.
-        :return: A list of binding dicts.
+        Args:
+            transition (CallTransition): Subpattern call transition specification.
+            current_node (ParserRuleContext): Active node in the target AST.
+            bindings (Environment): Current variable bindings.
+
+        Returns:
+            list[tuple[Environment, int]]: Valid (environment, sibling_skip) pairs.
         """
         from . import subpatterns
 
@@ -190,13 +218,22 @@ class Matcher:
         
         return subpatterns.call_subpattern(subp, current_node, bindings, args)
 
-
     def _get_next_node(self, node, directions):
+        """
+        Navigates from the given AST node along the specified sequence of directions.
+
+        Args:
+            node (ParserRuleContext): Starting AST node.
+            directions (list[NavigationAlphabet]): Navigation directions (PARENT, LEFT_CHILD, RIGHT_SIBLING).
+
+        Returns:
+            ParserRuleContext or None: The destination AST node, or None if navigation fails.
+        """
         current_node = node
         for direction in directions:
             match direction:
                 case NavigationAlphabet.RIGHT_SIBLING:
-                    if current_node == self.parse_tree:
+                    if current_node is self.parse_tree:
                         return None
                     try:
                         parent = current_node.parentCtx
@@ -216,13 +253,23 @@ class Matcher:
                     except IndexError:
                         return None
                 case NavigationAlphabet.PARENT:
-                    if current_node == self.parse_tree:
+                    if current_node is self.parse_tree:
                         return None
                     current_node = current_node.parentCtx
         return current_node
 
     @staticmethod
-    def _match_node(input, A: NodeTransition):
+    def _match_node(input, A: NodeTransition) -> bool:
+        """
+        Checks whether an AST node matches the given node transition condition.
+
+        Args:
+            input (Tree or TerminalNode): Candidate node from the AST.
+            A (NodeTransition): Expected node label and child count bounds.
+
+        Returns:
+            bool: True if input matches transition condition A.
+        """
         name = A.name
         down, up = A.down, A.up
         if name == "":
@@ -234,6 +281,15 @@ class Matcher:
 
     @staticmethod
     def _unwrap(tree):
+        """
+        Unwraps single-child AST wrapper nodes down towards NameContext.
+
+        Args:
+            tree (Tree): Starting parse tree node.
+
+        Returns:
+            Tree: Deepest single-child descendant or NameContext.
+        """
         from ..antlr.python import Python3Parser
         while tree is not None and not isinstance(tree, TerminalNode) and hasattr(tree, 'children') and len(tree.children) == 1:
             if isinstance(tree, Python3Parser.NameContext):
@@ -242,7 +298,17 @@ class Matcher:
         return tree
 
     @staticmethod
-    def _match_tree(tree1, tree2):
+    def _match_tree(tree1, tree2) -> bool:
+        """
+        Recursively checks structural and value equivalence between two AST trees.
+
+        Args:
+            tree1 (Tree or object): First node or tree.
+            tree2 (Tree or object): Second node or tree.
+
+        Returns:
+            bool: True if the two trees are structurally identical.
+        """
         logger.trace(f'Matching {tree1} and {tree2}')
         if tree1 is None or tree2 is None:
             return False
