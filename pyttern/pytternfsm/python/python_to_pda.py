@@ -21,8 +21,13 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             grammar.Double_wildcardContext
         ]
         tree_pruner = TreePruner()
+        self._subpattern_call_counter = 0
         
         super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
+
+    def _next_call_id(self) -> int:
+        self._subpattern_call_counter += 1
+        return self._subpattern_call_counter
 
     def define_boundaries(self, ctx):
         """
@@ -89,7 +94,12 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return self.visitChildren(ctx)
 
     def visitFile_input(self, ctx):
-        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        lookahead_compound = self.lookahead(ctx, Python3Parser.Compound_subpattern_callContext)
+        if lookahead_compound is not None:
+            subpattern_call = lookahead_compound.subpattern_call()
+        else:
+            subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+
         logger.trace(f"Checking for subpatterns in {ctx.getText()} -> {subpattern_call}")
 
         if subpattern_call:
@@ -97,9 +107,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             subpattern = loaded_subpatterns.get(name)
             logger.debug(f"Handling {subpattern} at block level")
 
-            context = SubPatternCallContext(ctx, None)
-            transformations = subpattern.compile(context)
-            self.dict_pda.update(transformations)
+            body = lookahead_compound.block() if lookahead_compound is not None else None
 
             args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
             if args_nodes is not None:
@@ -107,7 +115,12 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            call_id = self._next_call_id()
+            context = SubPatternCallContext(ctx, body=body, args=args_names, call_id=call_id)
+            transformations = subpattern.compile(context)
+            self.dict_pda.update(transformations)
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, call_id=call_id)
             self.current_state = new_state
             return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
 
@@ -121,7 +134,12 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
-        lookahead_call_transition = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        lookahead_compound = self.lookahead(ctx, Python3Parser.Compound_subpattern_callContext)
+        if lookahead_compound is not None:
+            lookahead_call_transition = lookahead_compound.subpattern_call()
+        else:
+            lookahead_call_transition = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+
         if lookahead_call_transition:
             name = lookahead_call_transition.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
@@ -129,9 +147,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
                 logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
                 raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
 
-            context = SubPatternCallContext(ctx, None)
-            transformations = subpattern.compile(context)
-            self.dict_pda.update(transformations)
+            body = lookahead_compound.block() if lookahead_compound is not None else None
 
             args_nodes = lookahead_call_transition.subpattern_args().subpattern_arg() if lookahead_call_transition.subpattern_args() is not None else None
             if args_nodes is not None:
@@ -139,7 +155,12 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            call_id = self._next_call_id()
+            context = SubPatternCallContext(ctx, body=body, args=args_names, call_id=call_id)
+            transformations = subpattern.compile(context)
+            self.dict_pda.update(transformations)
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, call_id=call_id)
             self.current_state = new_state
 
             self._restrict_stmt = True
@@ -251,14 +272,20 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         else:
             args_names = []
 
-        body = ctx.block()
+        if hasattr(ctx, "block") and ctx.block() is not None:
+            body = ctx.block()
+        elif hasattr(ctx.parentCtx, "block") and ctx.parentCtx.block() is not None:
+            body = ctx.parentCtx.block()
+        else:
+            body = None
 
         subpattern = loaded_subpatterns[subpattern_name]
 
         ast_ctx = ctx.parentCtx
         while "wildcard" in ast_ctx.__class__.__name__:
             ast_ctx = ast_ctx.parentCtx
-        context = SubPatternCallContext(ast_ctx, body=body) # first parent in also subpattern
+        call_id = self._next_call_id()
+        context = SubPatternCallContext(ast_ctx, body=body, args=args_names, call_id=call_id) # first parent in also subpattern
 
         # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(context)
@@ -272,5 +299,5 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         # logger.trace("Restricting self transition on next stmt")
 
 
-        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+        self.current_state = subpattern.generate_pda(self.pda, args_names, self.current_state, call_id=call_id)
         return self._add_up_transition(ctx)

@@ -1,0 +1,3 @@
+def ?():
+    ?$Loop(?i, ?v):
+        ?.append(?v)

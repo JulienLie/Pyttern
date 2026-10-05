@@ -56,18 +56,38 @@ class SubPattern_Visitor(Python3ParserVisitor):
         """
         Visits subpattern statement definitions and constructs the SubPattern instance.
         """
-        vals = flatten(self.visitChildren(ctx))
-        name, type_cls, args = vals[0]
+        header = self.visitSubpattern(ctx.subpattern())
+        if len(header) == 4:
+            name, type_cls, args, body_var = header
+        else:
+            name, type_cls, args = header
+            body_var = None
+
         args_order = list(args.keys())
         self.current_subpattern = type_cls(
-            name, args, args_order, code=get_original_text(ctx).strip()
+            name, args, args_order, code=get_original_text(ctx).strip(), body_var=body_var
         )
-        transformations = vals[1:]
-        for transformation in transformations:
-            t_name, t_pda = transformation
+        for t_ctx in ctx.transformation():
+            t_name, t_pda = self.visitTransformation(t_ctx)
             self.current_subpattern.add_transformation(t_name, t_pda)
         logger.trace(self.current_subpattern)
         return self.current_subpattern
+
+    def visitSubpattern(self, ctx: Python3Parser.SubpatternContext):
+        if ctx.compound_subpattern():
+            return self.visitCompound_subpattern(ctx.compound_subpattern())
+        elif ctx.simple_subpattern():
+            return self.visitSimple_subpattern(ctx.simple_subpattern())
+        return self.visitChildren(ctx)
+
+    def visitCompound_subpattern(self, ctx: Python3Parser.Compound_subpatternContext) -> tuple[str, type, dict, str]:
+        name, type_cls, args = self.visitSimple_subpattern(ctx.simple_subpattern())
+        body_var_node = ctx.atom_wildcard()
+        body_var = body_var_node.getText().replace('?', '')
+        return name, type_cls, args, body_var
+
+    def visitBlockEnd(self, ctx: Any) -> None:
+        return None
 
     def visitSimple_subpattern(self, ctx: Python3Parser.Simple_subpatternContext) -> tuple[str, type, dict]:
         """

@@ -69,7 +69,7 @@ varargslist: (vfpdef ('=' expr)? (',' vfpdef ('=' expr)?)* (',' (
 );
 vfpdef: name | expr_wildcard | number_wildcard | list_wildcard;
 
-stmt: (subpattern_call NEWLINE) | (contains_wildcard NEWLINE) | simple_stmts | compound_stmt;
+stmt: compound_stmt | (subpattern_call NEWLINE) | (contains_wildcard NEWLINE) | simple_stmts;
 simple_stmts: simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 simple_stmt: (stmt_wildcard | expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
@@ -102,7 +102,7 @@ global_stmt: 'global' (name | atom_wildcard) (',' (name | atom_wildcard))*;
 nonlocal_stmt: 'nonlocal' name (',' name)*;
 assert_stmt: 'assert' expr (',' expr)?;
 
-compound_stmt: compound_wildcard | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt | match_stmt;
+compound_stmt: compound_subpattern_call | compound_wildcard | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt | match_stmt;
 async_stmt: ASYNC (funcdef | with_stmt | for_stmt);
 if_stmt: 'if' expr ':' block ('elif' expr ':' block)* ('else' ':' block)?;
 while_stmt: 'while' expr ':' block ('else' ':' block)?;
@@ -266,13 +266,14 @@ multiple_compound_wildcard: WILDCARD (':' '*' | '*' ':') block;
 list_wildcard: WILDCARD '*';
 
 // syntax of subpattern
-subpattern_call: WILDCARD SUB_PATTERN NAME '(' subpattern_args? ')' (':' block)?;
+subpattern_call: WILDCARD SUB_PATTERN NAME '(' subpattern_args? ')';
+compound_subpattern_call: subpattern_call ':' block;
 
 subpattern_stmts: subpattern transformation+;
 subpattern: compound_subpattern | (simple_subpattern NEWLINE);
 subpattern_args: subpattern_arg (',' subpattern_arg)*;
 subpattern_arg: (atom_wildcard | atom) ('=' expr)?;
-simple_subpattern: SUB_PATTERN ('&'|'|'|'!') NAME '(' subpattern_args? ')';
-compound_subpattern: simple_subpattern ':' block;
+simple_subpattern: SUB_PATTERN ('&'|'|'|'!') NAME ('(' subpattern_args? ')')?;
+compound_subpattern: simple_subpattern ':' atom_wildcard NEWLINE;
 
 transformation: BALISE NAME NEWLINE stmt;

@@ -181,6 +181,7 @@ class Matcher:
 
         subpattern_name = transition.subpattern_name
         args = transition.args
+        call_id = getattr(transition, "call_id", None)
 
         subp = loaded_subpatterns.get(subpattern_name)
         if not subp:
@@ -188,7 +189,7 @@ class Matcher:
             logger.debug(f"Loaded subpatterns: {loaded_subpatterns.keys()}, callable subpatterns: {self.callable.keys()}")
             return []
         
-        return subpatterns.call_subpattern(subp, current_node, bindings, args)
+        return subpatterns.call_subpattern(subp, current_node, bindings, args, call_id=call_id)
 
 
     def _get_next_node(self, node, directions):

@@ -1,4 +1,4 @@
-from typing import Dict, Set, Tuple, List
+from typing import Dict, Set, Tuple, List, Optional
 
 from antlr4 import ParserRuleContext
 from loguru import logger
@@ -297,20 +297,22 @@ def composition(mapping, bindings):
             result[u] = bindings[t]
     return result
 
-def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args) -> list[tuple[Environment, int]]:
+def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args, call_id: Optional[int] = None) -> list[tuple[Environment, int]]:
     """
     Calls a subpattern against the current node.
 
     :param subpattern: The subpattern object.
     :param current_node: The current node in the parse tree.
     :param caller_env: The current variable bindings.
+    :param args: The arguments passed to the subpattern call.
+    :param call_id: Optional call ID for call-specific compiled transformations.
     :return: A list of binding dicts.
     """
     caller_env = Environment.from_dict(caller_env)
 
     subpattern_name = subpattern.name
     op = subpattern.type
-    transformations = subpattern.get_compiled_transf()
+    transformations = subpattern.get_compiled_transf(call_id=call_id)
 
     m_j_to_i = mapping(subpattern.args_order, args)
     comp = composition(m_j_to_i, caller_env)
@@ -332,6 +334,9 @@ def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext,
 
         m_i_to_j = mapping(args, subpattern.args_order)
         comp = composition(m_i_to_j, new_env)
+        for k_var, v_val in new_env.items():
+            if k_var not in subpattern.args:
+                comp[k_var] = v_val
         new_binding = caller_env.merge(comp)
         if new_binding is not None:
             new_envs.append((new_binding, k))
