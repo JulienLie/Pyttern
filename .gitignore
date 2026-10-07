@@ -10,3 +10,4 @@ bin/
 **/.antlr/
 .agents/
 .vscode/
+build/

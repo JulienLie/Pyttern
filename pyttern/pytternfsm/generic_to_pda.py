@@ -45,9 +45,10 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
     def visitChildren(self, node):
         logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
-        children = node.children
-        if len(children) == 0:
+        if not node.children:
             return self.visitTerminal(node)
+
+        children = list(node.children)
 
         down, up = self.define_boundaries(node)
 
