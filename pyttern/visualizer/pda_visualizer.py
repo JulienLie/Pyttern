@@ -67,11 +67,20 @@ def format_transition_label(t: Transition):
     # Condition
     cond = ""
     if isinstance(t.A, NodeTransition):
-        cond = t.A.name.replace("Context", "")
+        name = getattr(t.A.name, "rule_name", t.A.name)
+        cond = str(name).replace("Context", "")
+        if t.A.down != 1 or t.A.up != 1:
+            cond = f"{cond}/{t.A.down},{t.A.up}" if cond else f"/{t.A.down},{t.A.up}"
     elif isinstance(t.A, NamedTransition):
         cond = f"<{t.A.name}>"
     elif isinstance(t.A, CallTransition):
         cond = f"{t.A.subpattern_name}({','.join(t.A.args)})"
+    elif hasattr(t.A, "rule_name"):
+        cond = str(t.A.rule_name).replace("Context", "")
+    elif isinstance(t.A, str):
+        cond = t.A.replace("Context", "")
+    elif t.A is not None:
+        cond = str(t.A).replace("Context", "")
     
     # alpha -> beta
     alpha = format_stack(t.alpha)
@@ -235,7 +244,8 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
 
         # Connect subpatterns horizontally using invisible edges from the previous initial state
         if current_pda.states:
-            current_initial = "0" if pda_name_clean == "__main__" else f"{pda_name_clean}_0"
+            init_s = str(current_pda.initial_state)
+            current_initial = init_s if pda_name_clean == "__main__" else f"{pda_name_clean}_{init_s}"
             if last_pda_initial is not None:
                 dot.edge(last_pda_initial, current_initial, style='invis')
             last_pda_initial = current_initial

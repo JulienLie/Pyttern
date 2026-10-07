@@ -1,4 +1,5 @@
 // Generated from /home/julien/Documents/phd/Pyttern/pyttern/antlr/python/Python3Parser.g4 by ANTLR 4.13.1
+#include "Python3ParserBase.h"
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -877,96 +878,6 @@ public interface Python3ParserListener extends ParseTreeListener {
 	 */
 	void exitKeyword_pattern(Python3Parser.Keyword_patternContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link Python3Parser#test}.
-	 * @param ctx the parse tree
-	 */
-	void enterTest(Python3Parser.TestContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#test}.
-	 * @param ctx the parse tree
-	 */
-	void exitTest(Python3Parser.TestContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#test_nocond}.
-	 * @param ctx the parse tree
-	 */
-	void enterTest_nocond(Python3Parser.Test_nocondContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#test_nocond}.
-	 * @param ctx the parse tree
-	 */
-	void exitTest_nocond(Python3Parser.Test_nocondContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#lambdef}.
-	 * @param ctx the parse tree
-	 */
-	void enterLambdef(Python3Parser.LambdefContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#lambdef}.
-	 * @param ctx the parse tree
-	 */
-	void exitLambdef(Python3Parser.LambdefContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#lambdef_nocond}.
-	 * @param ctx the parse tree
-	 */
-	void enterLambdef_nocond(Python3Parser.Lambdef_nocondContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#lambdef_nocond}.
-	 * @param ctx the parse tree
-	 */
-	void exitLambdef_nocond(Python3Parser.Lambdef_nocondContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#or_test}.
-	 * @param ctx the parse tree
-	 */
-	void enterOr_test(Python3Parser.Or_testContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#or_test}.
-	 * @param ctx the parse tree
-	 */
-	void exitOr_test(Python3Parser.Or_testContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#and_test}.
-	 * @param ctx the parse tree
-	 */
-	void enterAnd_test(Python3Parser.And_testContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#and_test}.
-	 * @param ctx the parse tree
-	 */
-	void exitAnd_test(Python3Parser.And_testContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#not_test}.
-	 * @param ctx the parse tree
-	 */
-	void enterNot_test(Python3Parser.Not_testContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#not_test}.
-	 * @param ctx the parse tree
-	 */
-	void exitNot_test(Python3Parser.Not_testContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#comparison}.
-	 * @param ctx the parse tree
-	 */
-	void enterComparison(Python3Parser.ComparisonContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#comparison}.
-	 * @param ctx the parse tree
-	 */
-	void exitComparison(Python3Parser.ComparisonContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link Python3Parser#comp_op}.
-	 * @param ctx the parse tree
-	 */
-	void enterComp_op(Python3Parser.Comp_opContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link Python3Parser#comp_op}.
-	 * @param ctx the parse tree
-	 */
-	void exitComp_op(Python3Parser.Comp_opContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link Python3Parser#star_expr}.
 	 * @param ctx the parse tree
 	 */
@@ -986,6 +897,16 @@ public interface Python3ParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExpr(Python3Parser.ExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link Python3Parser#comp_op}.
+	 * @param ctx the parse tree
+	 */
+	void enterComp_op(Python3Parser.Comp_opContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link Python3Parser#comp_op}.
+	 * @param ctx the parse tree
+	 */
+	void exitComp_op(Python3Parser.Comp_opContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link Python3Parser#atom_expr}.
 	 * @param ctx the parse tree

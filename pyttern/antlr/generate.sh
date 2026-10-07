@@ -25,7 +25,7 @@ for d in "$SCRIPT_DIR"/*/ ; do
     python3 transformGrammar.py
   fi
   echo "Generating lexer and parser"
-  java -jar "$ANTLR_JAR" -Dlanguage=Python3 -visitor *.g4
+  java -jar "$ANTLR_JAR" -Dlanguage=Cpp -visitor *.g4
   echo "Done!"
   cd "$SCRIPT_DIR"
 done

@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal, Any, Optional
 
-from pyttern.antlr.python import Python3Parser
-
 @dataclass(frozen=True)
 class SubPatternCallContext:
     ast_ctx: Any

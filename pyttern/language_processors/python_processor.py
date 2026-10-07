@@ -1,21 +1,27 @@
 import io
-from functools import lru_cache
 
 from antlr4 import CommonTokenStream, InputStream
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
 from ..Pyttern_listener import ConsolePytternListener
-from ..antlr.python import Python3Parser
-from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
 from ..pytternfsm.python.python_to_pda import Python_to_PDA
-from ..pytternfsm.python.tree_pruner import TreePruner
 
+try:
+    from pyttern import _pyttern_cpp
+    HAS_CPP_PARSER = True
+except:
+    HAS_CPP_PARSER = False
 
 class PythonProcessor(BaseProcessor):
 
     def generate_tree_from_code(self, code):
+        if HAS_CPP_PARSER:
+            return _pyttern_cpp.parse_code(code)
+        return self.__generate_tree_from_code(code)
+
+    def __generate_tree_from_code(self, code):
         code = code.strip()
         code += "\n"
         stream = InputStream(code)

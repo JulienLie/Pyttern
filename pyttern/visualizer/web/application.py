@@ -1,13 +1,14 @@
 import json
 from functools import wraps
 
-from antlr4 import ParseTreeVisitor
 from cachelib import FileSystemCache
 from flasgger import Swagger
 from flask import Flask, request, session, flash, get_flashed_messages, send_from_directory, Response
 from flask_session import Session
 from loguru import logger
 
+from ..._pyttern_cpp import Node
+from ...pytternfsm.node_visitor import NodeVisitor
 from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
 from ...subpattern.SubPattern import loaded_subpatterns
@@ -37,35 +38,63 @@ swagger = Swagger(app, template_file='swagger_template.yml')
 """ Helper classes and methods """
 
 
-class PtToJson(ParseTreeVisitor):
-    def visitChildren(self, node):
-        elem = {"name": node.__class__.__name__, "children": [], "id": hash(node)}
+class PtToJson(NodeVisitor):
+    def visit(self, node: Node):
+        if node is None:
+            return None
+        if getattr(node, "is_terminal", False) or getattr(node, "rule_name", "") == "TerminalNode":
+            is_err = getattr(node, "rule_name", "") == "ErrorNode"
+            text = node.getText() if hasattr(node, "getText") else getattr(node, "symbol", getattr(node, "text", ""))
+            return {
+                "name": "ErrorNode" if is_err else "TerminalNode",
+                "symbol": text,
+                "children": [],
+                "id": hash(node)
+            }
+        return self.visitChildren(node)
+
+    def visitChildren(self, node: Node):
+        elem = {
+            "name": getattr(node, "rule_name", node.__class__.__name__),
+            "children": [],
+            "id": hash(node)
+        }
         if hasattr(node, "start") and node.start is not None:
             elem["start"] = (node.start.line, node.start.column)
         if hasattr(node, "stop") and node.stop is not None:
             elem["end"] = (node.stop.line, node.stop.column)
-        result = self.defaultResult()
-        n = node.getChildCount()
-        for i in range(n):
-            if not self.shouldVisitNextChild(node, result):
-                return result
 
-            c = node.getChild(i)
-            childResult = c.accept(self)
-            result = self.aggregateResult(result, childResult)
+        children = getattr(node, "children", None)
+        if children is None and hasattr(node, "getChildCount"):
+            children = [node.getChild(i) for i in range(node.getChildCount())]
+        elif children is None:
+            children = []
+
+        result = []
+        for c in children:
+            childResult = self.visit(c)
+            if childResult is not None:
+                result.append(childResult)
         elem["children"] = result
         return elem
 
     def visitTerminal(self, node):
+        text = getattr(getattr(node, 'symbol', None), 'text', None)
+        if text is None:
+            text = node.getText() if hasattr(node, "getText") else getattr(node, "text", str(node))
         return {
-            "name": node.__class__.__name__,
-            "symbol": node.symbol.text,
+            "name": "TerminalNode",
+            "symbol": text,
             "children": [],
             'id': hash(node)
         }
 
+    def visitTerminalNode(self, node):
+        return self.visitTerminal(node)
+
     def visitErrorNode(self, node):
-        return {"name": node.__class__.__name__, "children": [], id: hash(node)}
+        text = node.getText() if hasattr(node, "getText") else getattr(node, "text", str(node))
+        return {"name": "ErrorNode", "symbol": text, "children": [], "id": hash(node)}
 
     def defaultResult(self):
         return []

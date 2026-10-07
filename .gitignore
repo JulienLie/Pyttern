@@ -10,3 +10,6 @@ bin/
 **/.antlr/
 .agents/
 .vscode/
+build/
+dist/
+*.so

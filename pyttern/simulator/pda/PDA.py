@@ -21,6 +21,8 @@ class PDAEncoder(json.JSONEncoder):
             return str(o.name)
         if isinstance(o, TransitionCondition):
             return o.to_json()
+        if hasattr(o, "rule_name"):
+            return getattr(o, "rule_name", str(o))
         return super().default(o)
 
 @dataclass

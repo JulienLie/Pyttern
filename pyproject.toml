@@ -5,10 +5,10 @@ description = ""
 authors = ["julien <julien.lienard@uclouvain.be>"]
 readme = "README.md"
 packages = [{include = "pyttern"}]
+build = "build.py"
 
 [tool.poetry.dependencies]
 python = ">3.10"
-antlr4-python3-runtime="4.13.2"
 cachelib="^0.13.0"
 Flask="^3.1.3"
 Flask-Session="^0.8.0"
@@ -31,6 +31,8 @@ pytest-timeout = "^2.4.0"
 
 [tool.poetry.group.dev.dependencies]
 shiv = "^1.0.8"
+pybind11 = "^3.1.0"
+pybind11-stubgen = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core"]

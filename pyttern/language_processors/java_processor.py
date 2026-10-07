@@ -8,7 +8,6 @@ from ..antlr.java.JavaLexer import JavaLexer
 from ..antlr.java.JavaParser import JavaParser
 from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.java.java_to_pda import Java_to_PDA
-from ..pytternfsm.java.tree_pruner import TreePruner
 
 
 class JavaProcessor(BaseProcessor):

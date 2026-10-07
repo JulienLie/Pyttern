@@ -1,4 +1,5 @@
 // Generated from /home/julien/Documents/phd/Pyttern/pyttern/antlr/python/Python3Lexer.g4 by ANTLR 4.13.1
+#include "Python3LexerBase.h"
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -195,49 +196,49 @@ public class Python3Lexer extends Python3LexerBase {
 	private void NEWLINE_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 0:
-			self.onNewLine();
+			this->onNewLine();
 			break;
 		}
 	}
 	private void OPEN_PAREN_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 1:
-			self.openBrace();
+			this->openBrace();
 			break;
 		}
 	}
 	private void CLOSE_PAREN_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 2:
-			self.closeBrace();
+			this->closeBrace();
 			break;
 		}
 	}
 	private void OPEN_BRACK_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 3:
-			self.openBrace();
+			this->openBrace();
 			break;
 		}
 	}
 	private void CLOSE_BRACK_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 4:
-			self.closeBrace();
+			this->closeBrace();
 			break;
 		}
 	}
 	private void OPEN_BRACE_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 5:
-			self.openBrace();
+			this->openBrace();
 			break;
 		}
 	}
 	private void CLOSE_BRACE_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 6:
-			self.closeBrace();
+			this->closeBrace();
 			break;
 		}
 	}
@@ -252,7 +253,7 @@ public class Python3Lexer extends Python3LexerBase {
 	private boolean NEWLINE_sempred(RuleContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 0:
-			return self.atStartOfInput();
+			return this->atStartOfInput();
 		}
 		return true;
 	}

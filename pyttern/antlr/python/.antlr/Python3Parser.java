@@ -1,4 +1,5 @@
 // Generated from /home/julien/Documents/phd/Pyttern/pyttern/antlr/python/Python3Parser.g4 by ANTLR 4.13.1
+#include "Python3ParserBase.h"
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
@@ -211,6 +212,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_single_input; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSingle_input(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSingle_input(this);
+		}
 	}
 
 	public final Single_inputContext single_input() throws RecognitionException {
@@ -273,6 +282,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_file_input; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterFile_input(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitFile_input(this);
+		}
 	}
 
 	public final File_inputContext file_input() throws RecognitionException {
@@ -379,6 +396,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_eval_input; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterEval_input(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitEval_input(this);
+		}
 	}
 
 	public final Eval_inputContext eval_input() throws RecognitionException {
@@ -436,6 +461,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern_input; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_input(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_input(this);
+		}
 	}
 
 	public final Subpattern_inputContext subpattern_input() throws RecognitionException {
@@ -504,6 +537,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_decorator; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDecorator(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDecorator(this);
+		}
 	}
 
 	public final DecoratorContext decorator() throws RecognitionException {
@@ -566,6 +607,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_decorators; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDecorators(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDecorators(this);
+		}
 	}
 
 	public final DecoratorsContext decorators() throws RecognitionException {
@@ -620,6 +669,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_decorated; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDecorated(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDecorated(this);
+		}
 	}
 
 	public final DecoratedContext decorated() throws RecognitionException {
@@ -677,6 +734,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_async_funcdef; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAsync_funcdef(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAsync_funcdef(this);
+		}
 	}
 
 	public final Async_funcdefContext async_funcdef() throws RecognitionException {
@@ -729,6 +794,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_funcdef; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterFuncdef(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitFuncdef(this);
+		}
 	}
 
 	public final FuncdefContext funcdef() throws RecognitionException {
@@ -823,6 +896,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_parameters; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterParameters(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitParameters(this);
+		}
 	}
 
 	public final ParametersContext parameters() throws RecognitionException {
@@ -1141,6 +1222,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_tfpdef; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTfpdef(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTfpdef(this);
+		}
 	}
 
 	public final TfpdefContext tfpdef() throws RecognitionException {
@@ -1232,6 +1321,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_varargslist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterVarargslist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitVarargslist(this);
+		}
 	}
 
 	public final VarargslistContext varargslist() throws RecognitionException {
@@ -1540,6 +1637,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_vfpdef; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterVfpdef(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitVfpdef(this);
+		}
 	}
 
 	public final VfpdefContext vfpdef() throws RecognitionException {
@@ -1609,6 +1714,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStmt(this);
+		}
 	}
 
 	public final StmtContext stmt() throws RecognitionException {
@@ -1684,6 +1797,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_simple_stmts; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_stmts(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_stmts(this);
+		}
 	}
 
 	public final Simple_stmtsContext simple_stmts() throws RecognitionException {
@@ -1772,6 +1893,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_simple_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_stmt(this);
+		}
 	}
 
 	public final Simple_stmtContext simple_stmt() throws RecognitionException {
@@ -1882,6 +2011,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_expr_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterExpr_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitExpr_stmt(this);
+		}
 	}
 
 	public final Expr_stmtContext expr_stmt() throws RecognitionException {
@@ -2044,6 +2181,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_annassign; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAnnassign(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAnnassign(this);
+		}
 	}
 
 	public final AnnassignContext annassign() throws RecognitionException {
@@ -2104,6 +2249,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_testlist_star_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTestlist_star_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTestlist_star_expr(this);
+		}
 	}
 
 	public final Testlist_star_exprContext testlist_star_expr() throws RecognitionException {
@@ -2244,6 +2397,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_augassign; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAugassign(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAugassign(this);
+		}
 	}
 
 	public final AugassignContext augassign() throws RecognitionException {
@@ -2286,6 +2447,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_del_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDel_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDel_stmt(this);
+		}
 	}
 
 	public final Del_stmtContext del_stmt() throws RecognitionException {
@@ -2318,6 +2487,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_pass_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterPass_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitPass_stmt(this);
+		}
 	}
 
 	public final Pass_stmtContext pass_stmt() throws RecognitionException {
@@ -2362,6 +2539,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_flow_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterFlow_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitFlow_stmt(this);
+		}
 	}
 
 	public final Flow_stmtContext flow_stmt() throws RecognitionException {
@@ -2428,6 +2613,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_break_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterBreak_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitBreak_stmt(this);
+		}
 	}
 
 	public final Break_stmtContext break_stmt() throws RecognitionException {
@@ -2458,6 +2651,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_continue_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterContinue_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitContinue_stmt(this);
+		}
 	}
 
 	public final Continue_stmtContext continue_stmt() throws RecognitionException {
@@ -2491,6 +2692,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_return_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterReturn_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitReturn_stmt(this);
+		}
 	}
 
 	public final Return_stmtContext return_stmt() throws RecognitionException {
@@ -2534,6 +2743,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_yield_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterYield_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitYield_stmt(this);
+		}
 	}
 
 	public final Yield_stmtContext yield_stmt() throws RecognitionException {
@@ -2571,6 +2788,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_raise_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterRaise_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitRaise_stmt(this);
+		}
 	}
 
 	public final Raise_stmtContext raise_stmt() throws RecognitionException {
@@ -2629,6 +2854,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_import_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImport_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImport_stmt(this);
+		}
 	}
 
 	public final Import_stmtContext import_stmt() throws RecognitionException {
@@ -2677,6 +2910,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_import_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImport_name(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImport_name(this);
+		}
 	}
 
 	public final Import_nameContext import_name() throws RecognitionException {
@@ -2727,6 +2968,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_import_from; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImport_from(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImport_from(this);
+		}
 	}
 
 	public final Import_fromContext import_from() throws RecognitionException {
@@ -2856,6 +3105,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_import_as_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImport_as_name(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImport_as_name(this);
+		}
 	}
 
 	public final Import_as_nameContext import_as_name() throws RecognitionException {
@@ -2905,6 +3162,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_dotted_as_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDotted_as_name(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDotted_as_name(this);
+		}
 	}
 
 	public final Dotted_as_nameContext dotted_as_name() throws RecognitionException {
@@ -2957,6 +3222,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_import_as_names; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImport_as_names(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImport_as_names(this);
+		}
 	}
 
 	public final Import_as_namesContext import_as_names() throws RecognitionException {
@@ -3026,6 +3299,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_dotted_as_names; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDotted_as_names(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDotted_as_names(this);
+		}
 	}
 
 	public final Dotted_as_namesContext dotted_as_names() throws RecognitionException {
@@ -3082,6 +3363,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_dotted_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDotted_name(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDotted_name(this);
+		}
 	}
 
 	public final Dotted_nameContext dotted_name() throws RecognitionException {
@@ -3145,6 +3434,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_global_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterGlobal_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitGlobal_stmt(this);
+		}
 	}
 
 	public final Global_stmtContext global_stmt() throws RecognitionException {
@@ -3240,6 +3537,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_nonlocal_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterNonlocal_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitNonlocal_stmt(this);
+		}
 	}
 
 	public final Nonlocal_stmtContext nonlocal_stmt() throws RecognitionException {
@@ -3296,6 +3601,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assert_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAssert_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAssert_stmt(this);
+		}
 	}
 
 	public final Assert_stmtContext assert_stmt() throws RecognitionException {
@@ -3373,6 +3686,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_compound_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCompound_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCompound_stmt(this);
+		}
 	}
 
 	public final Compound_stmtContext compound_stmt() throws RecognitionException {
@@ -3490,6 +3811,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_async_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAsync_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAsync_stmt(this);
+		}
 	}
 
 	public final Async_stmtContext async_stmt() throws RecognitionException {
@@ -3565,6 +3894,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_if_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterIf_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitIf_stmt(this);
+		}
 	}
 
 	public final If_stmtContext if_stmt() throws RecognitionException {
@@ -3650,6 +3987,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_while_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterWhile_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitWhile_stmt(this);
+		}
 	}
 
 	public final While_stmtContext while_stmt() throws RecognitionException {
@@ -3719,6 +4064,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_for_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterFor_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitFor_stmt(this);
+		}
 	}
 
 	public final For_stmtContext for_stmt() throws RecognitionException {
@@ -3792,6 +4145,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_try_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTry_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTry_stmt(this);
+		}
 	}
 
 	public final Try_stmtContext try_stmt() throws RecognitionException {
@@ -3909,6 +4270,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_with_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterWith_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitWith_stmt(this);
+		}
 	}
 
 	public final With_stmtContext with_stmt() throws RecognitionException {
@@ -3968,6 +4337,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_with_item; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterWith_item(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitWith_item(this);
+		}
 	}
 
 	public final With_itemContext with_item() throws RecognitionException {
@@ -4021,6 +4398,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_except_clause; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterExcept_clause(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitExcept_clause(this);
+		}
 	}
 
 	public final Except_clauseContext except_clause() throws RecognitionException {
@@ -4103,6 +4488,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_block; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterBlock(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitBlock(this);
+		}
 	}
 
 	public final BlockContext block() throws RecognitionException {
@@ -4211,6 +4604,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_match_stmt; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMatch_stmt(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMatch_stmt(this);
+		}
 	}
 
 	public final Match_stmtContext match_stmt() throws RecognitionException {
@@ -4275,6 +4676,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subject_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubject_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubject_expr(this);
+		}
 	}
 
 	public final Subject_exprContext subject_expr() throws RecognitionException {
@@ -4340,6 +4749,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_star_named_expressions; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStar_named_expressions(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStar_named_expressions(this);
+		}
 	}
 
 	public final Star_named_expressionsContext star_named_expressions() throws RecognitionException {
@@ -4398,6 +4815,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_star_named_expression; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStar_named_expression(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStar_named_expression(this);
+		}
 	}
 
 	public final Star_named_expressionContext star_named_expression() throws RecognitionException {
@@ -4473,6 +4898,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_case_block; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCase_block(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCase_block(this);
+		}
 	}
 
 	public final Case_blockContext case_block() throws RecognitionException {
@@ -4523,6 +4956,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_guard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterGuard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitGuard(this);
+		}
 	}
 
 	public final GuardContext guard() throws RecognitionException {
@@ -4560,6 +5001,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_patterns; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterPatterns(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitPatterns(this);
+		}
 	}
 
 	public final PatternsContext patterns() throws RecognitionException {
@@ -4608,6 +5057,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterPattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitPattern(this);
+		}
 	}
 
 	public final PatternContext pattern() throws RecognitionException {
@@ -4657,6 +5114,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_as_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAs_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAs_pattern(this);
+		}
 	}
 
 	public final As_patternContext as_pattern() throws RecognitionException {
@@ -4700,6 +5165,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_or_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterOr_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitOr_pattern(this);
+		}
 	}
 
 	public final Or_patternContext or_pattern() throws RecognitionException {
@@ -4770,6 +5243,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_closed_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterClosed_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitClosed_pattern(this);
+		}
 	}
 
 	public final Closed_patternContext closed_pattern() throws RecognitionException {
@@ -4866,6 +5347,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_literal_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterLiteral_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitLiteral_pattern(this);
+		}
 	}
 
 	public final Literal_patternContext literal_pattern() throws RecognitionException {
@@ -4881,7 +5370,7 @@ public class Python3Parser extends Python3ParserBase {
 				setState(926);
 				signed_number();
 				setState(927);
-				if (!( self.CannotBePlusMinus() )) throw new FailedPredicateException(this, " self.CannotBePlusMinus() ");
+				if (!( this->CannotBePlusMinus() )) throw new FailedPredicateException(this, " this->CannotBePlusMinus() ");
 				}
 				break;
 			case 2:
@@ -4950,6 +5439,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_literal_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterLiteral_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitLiteral_expr(this);
+		}
 	}
 
 	public final Literal_exprContext literal_expr() throws RecognitionException {
@@ -4965,7 +5462,7 @@ public class Python3Parser extends Python3ParserBase {
 				setState(936);
 				signed_number();
 				setState(937);
-				if (!( self.CannotBePlusMinus() )) throw new FailedPredicateException(this, " self.CannotBePlusMinus() ");
+				if (!( this->CannotBePlusMinus() )) throw new FailedPredicateException(this, " this->CannotBePlusMinus() ");
 				}
 				break;
 			case 2:
@@ -5030,6 +5527,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_complex_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterComplex_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitComplex_number(this);
+		}
 	}
 
 	public final Complex_numberContext complex_number() throws RecognitionException {
@@ -5082,6 +5587,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_signed_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSigned_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSigned_number(this);
+		}
 	}
 
 	public final Signed_numberContext signed_number() throws RecognitionException {
@@ -5132,6 +5645,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_signed_real_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSigned_real_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSigned_real_number(this);
+		}
 	}
 
 	public final Signed_real_numberContext signed_real_number() throws RecognitionException {
@@ -5179,6 +5700,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_real_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterReal_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitReal_number(this);
+		}
 	}
 
 	public final Real_numberContext real_number() throws RecognitionException {
@@ -5209,6 +5738,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_imaginary_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterImaginary_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitImaginary_number(this);
+		}
 	}
 
 	public final Imaginary_numberContext imaginary_number() throws RecognitionException {
@@ -5241,6 +5778,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_capture_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCapture_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCapture_pattern(this);
+		}
 	}
 
 	public final Capture_patternContext capture_pattern() throws RecognitionException {
@@ -5273,6 +5818,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_pattern_capture_target; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterPattern_capture_target(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitPattern_capture_target(this);
+		}
 	}
 
 	public final Pattern_capture_targetContext pattern_capture_target() throws RecognitionException {
@@ -5284,7 +5837,7 @@ public class Python3Parser extends Python3ParserBase {
 			setState(972);
 			name();
 			setState(973);
-			if (!( self.CannotBeDotLpEq() )) throw new FailedPredicateException(this, " self.CannotBeDotLpEq() ");
+			if (!( this->CannotBeDotLpEq() )) throw new FailedPredicateException(this, " this->CannotBeDotLpEq() ");
 			}
 		}
 		catch (RecognitionException re) {
@@ -5305,6 +5858,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_wildcard_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterWildcard_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitWildcard_pattern(this);
+		}
 	}
 
 	public final Wildcard_patternContext wildcard_pattern() throws RecognitionException {
@@ -5337,6 +5898,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_value_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterValue_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitValue_pattern(this);
+		}
 	}
 
 	public final Value_patternContext value_pattern() throws RecognitionException {
@@ -5348,7 +5917,7 @@ public class Python3Parser extends Python3ParserBase {
 			setState(977);
 			attr();
 			setState(978);
-			if (!( self.CannotBeDotLpEq() )) throw new FailedPredicateException(this, " self.CannotBeDotLpEq() ");
+			if (!( this->CannotBeDotLpEq() )) throw new FailedPredicateException(this, " this->CannotBeDotLpEq() ");
 			}
 		}
 		catch (RecognitionException re) {
@@ -5378,6 +5947,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_attr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAttr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAttr(this);
+		}
 	}
 
 	public final AttrContext attr() throws RecognitionException {
@@ -5436,6 +6013,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_name_or_attr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterName_or_attr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitName_or_attr(this);
+		}
 	}
 
 	public final Name_or_attrContext name_or_attr() throws RecognitionException {
@@ -5483,6 +6068,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_group_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterGroup_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitGroup_pattern(this);
+		}
 	}
 
 	public final Group_patternContext group_pattern() throws RecognitionException {
@@ -5526,6 +6119,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sequence_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSequence_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSequence_pattern(this);
+		}
 	}
 
 	public final Sequence_patternContext sequence_pattern() throws RecognitionException {
@@ -5602,6 +6203,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_open_sequence_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterOpen_sequence_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitOpen_sequence_pattern(this);
+		}
 	}
 
 	public final Open_sequence_patternContext open_sequence_pattern() throws RecognitionException {
@@ -5654,6 +6263,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_maybe_sequence_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMaybe_sequence_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMaybe_sequence_pattern(this);
+		}
 	}
 
 	public final Maybe_sequence_patternContext maybe_sequence_pattern() throws RecognitionException {
@@ -5719,6 +6336,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_maybe_star_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMaybe_star_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMaybe_star_pattern(this);
+		}
 	}
 
 	public final Maybe_star_patternContext maybe_star_pattern() throws RecognitionException {
@@ -5781,6 +6406,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_star_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStar_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStar_pattern(this);
+		}
 	}
 
 	public final Star_patternContext star_pattern() throws RecognitionException {
@@ -5839,6 +6472,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapping_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMapping_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMapping_pattern(this);
+		}
 	}
 
 	public final Mapping_patternContext mapping_pattern() throws RecognitionException {
@@ -5954,6 +6595,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_items_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterItems_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitItems_pattern(this);
+		}
 	}
 
 	public final Items_patternContext items_pattern() throws RecognitionException {
@@ -6012,6 +6661,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_key_value_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterKey_value_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitKey_value_pattern(this);
+		}
 	}
 
 	public final Key_value_patternContext key_value_pattern() throws RecognitionException {
@@ -6072,6 +6729,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_double_star_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDouble_star_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDouble_star_pattern(this);
+		}
 	}
 
 	public final Double_star_patternContext double_star_pattern() throws RecognitionException {
@@ -6118,6 +6783,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_class_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterClass_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitClass_pattern(this);
+		}
 	}
 
 	public final Class_patternContext class_pattern() throws RecognitionException {
@@ -6241,6 +6914,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_positional_patterns; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterPositional_patterns(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitPositional_patterns(this);
+		}
 	}
 
 	public final Positional_patternsContext positional_patterns() throws RecognitionException {
@@ -6299,6 +6980,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_keyword_patterns; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterKeyword_patterns(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitKeyword_patterns(this);
+		}
 	}
 
 	public final Keyword_patternsContext keyword_patterns() throws RecognitionException {
@@ -6354,6 +7043,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_keyword_pattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterKeyword_pattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitKeyword_pattern(this);
+		}
 	}
 
 	public final Keyword_patternContext keyword_pattern() throws RecognitionException {
@@ -6391,6 +7088,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_star_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStar_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStar_expr(this);
+		}
 	}
 
 	public final Star_exprContext star_expr() throws RecognitionException {
@@ -6473,6 +7178,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterExpr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitExpr(this);
+		}
 	}
 
 	public final ExprContext expr() throws RecognitionException {
@@ -6783,6 +7496,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_comp_op; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterComp_op(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitComp_op(this);
+		}
 	}
 
 	public final Comp_opContext comp_op() throws RecognitionException {
@@ -6902,6 +7623,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_atom_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAtom_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAtom_expr(this);
+		}
 	}
 
 	public final Atom_exprContext atom_expr() throws RecognitionException {
@@ -6989,6 +7718,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_atom; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAtom(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAtom(this);
+		}
 	}
 
 	public final AtomContext atom() throws RecognitionException {
@@ -7186,6 +7923,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_name; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterName(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitName(this);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -7249,6 +7994,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_testlist_comp; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTestlist_comp(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTestlist_comp(this);
+		}
 	}
 
 	public final Testlist_compContext testlist_comp() throws RecognitionException {
@@ -7384,6 +8137,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_trailer; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTrailer(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTrailer(this);
+		}
 	}
 
 	public final TrailerContext trailer() throws RecognitionException {
@@ -7482,6 +8243,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subscriptlist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubscriptlist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubscriptlist(this);
+		}
 	}
 
 	public final SubscriptlistContext subscriptlist() throws RecognitionException {
@@ -7551,6 +8320,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subscript_; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubscript_(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubscript_(this);
+		}
 	}
 
 	public final Subscript_Context subscript_() throws RecognitionException {
@@ -7628,6 +8405,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sliceop; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSliceop(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSliceop(this);
+		}
 	}
 
 	public final SliceopContext sliceop() throws RecognitionException {
@@ -7684,6 +8469,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_exprlist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterExprlist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitExprlist(this);
+		}
 	}
 
 	public final ExprlistContext exprlist() throws RecognitionException {
@@ -7827,6 +8620,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_testlist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTestlist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTestlist(this);
+		}
 	}
 
 	public final TestlistContext testlist() throws RecognitionException {
@@ -7941,6 +8742,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_dictorsetmaker; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDictorsetmaker(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDictorsetmaker(this);
+		}
 	}
 
 	public final DictorsetmakerContext dictorsetmaker() throws RecognitionException {
@@ -8249,6 +9058,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classdef; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterClassdef(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitClassdef(this);
+		}
 	}
 
 	public final ClassdefContext classdef() throws RecognitionException {
@@ -8349,6 +9166,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arglist; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterArglist(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitArglist(this);
+		}
 	}
 
 	public final ArglistContext arglist() throws RecognitionException {
@@ -8463,6 +9288,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_argument; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterArgument(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitArgument(this);
+		}
 	}
 
 	public final ArgumentContext argument() throws RecognitionException {
@@ -8549,6 +9382,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_comp_iter; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterComp_iter(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitComp_iter(this);
+		}
 	}
 
 	public final Comp_iterContext comp_iter() throws RecognitionException {
@@ -8606,6 +9447,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_comp_for; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterComp_for(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitComp_for(this);
+		}
 	}
 
 	public final Comp_forContext comp_for() throws RecognitionException {
@@ -8669,6 +9518,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_comp_if; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterComp_if(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitComp_if(this);
+		}
 	}
 
 	public final Comp_ifContext comp_if() throws RecognitionException {
@@ -8714,6 +9571,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_encoding_decl; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterEncoding_decl(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitEncoding_decl(this);
+		}
 	}
 
 	public final Encoding_declContext encoding_decl() throws RecognitionException {
@@ -8747,6 +9612,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_yield_expr; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterYield_expr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitYield_expr(this);
+		}
 	}
 
 	public final Yield_exprContext yield_expr() throws RecognitionException {
@@ -8794,6 +9667,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_yield_arg; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterYield_arg(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitYield_arg(this);
+		}
 	}
 
 	public final Yield_argContext yield_arg() throws RecognitionException {
@@ -8862,6 +9743,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_strings; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStrings(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStrings(this);
+		}
 	}
 
 	public final StringsContext strings() throws RecognitionException {
@@ -8911,6 +9800,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_wildcard_number; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterWildcard_number(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitWildcard_number(this);
+		}
 	}
 
 	public final Wildcard_numberContext wildcard_number() throws RecognitionException {
@@ -8977,6 +9874,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_stmt_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterStmt_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitStmt_wildcard(this);
+		}
 	}
 
 	public final Stmt_wildcardContext stmt_wildcard() throws RecognitionException {
@@ -9052,6 +9957,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_expr_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterExpr_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitExpr_wildcard(this);
+		}
 	}
 
 	public final Expr_wildcardContext expr_wildcard() throws RecognitionException {
@@ -9114,6 +10027,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_atom_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterAtom_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitAtom_wildcard(this);
+		}
 	}
 
 	public final Atom_wildcardContext atom_wildcard() throws RecognitionException {
@@ -9157,6 +10078,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_simple_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_wildcard(this);
+		}
 	}
 
 	public final Simple_wildcardContext simple_wildcard() throws RecognitionException {
@@ -9190,6 +10119,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_number_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterNumber_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitNumber_wildcard(this);
+		}
 	}
 
 	public final Number_wildcardContext number_wildcard() throws RecognitionException {
@@ -9223,6 +10160,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_double_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterDouble_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitDouble_wildcard(this);
+		}
 	}
 
 	public final Double_wildcardContext double_wildcard() throws RecognitionException {
@@ -9256,6 +10201,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_var_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterVar_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitVar_wildcard(this);
+		}
 	}
 
 	public final Var_wildcardContext var_wildcard() throws RecognitionException {
@@ -9296,6 +10249,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_contains_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterContains_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitContains_wildcard(this);
+		}
 	}
 
 	public final Contains_wildcardContext contains_wildcard() throws RecognitionException {
@@ -9351,6 +10312,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_compound_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCompound_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCompound_wildcard(this);
+		}
 	}
 
 	public final Compound_wildcardContext compound_wildcard() throws RecognitionException {
@@ -9401,6 +10370,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_simple_compound_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_compound_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_compound_wildcard(this);
+		}
 	}
 
 	public final Simple_compound_wildcardContext simple_compound_wildcard() throws RecognitionException {
@@ -9450,6 +10427,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_multiple_compound_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterMultiple_compound_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitMultiple_compound_wildcard(this);
+		}
 	}
 
 	public final Multiple_compound_wildcardContext multiple_compound_wildcard() throws RecognitionException {
@@ -9505,6 +10490,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_list_wildcard; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterList_wildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitList_wildcard(this);
+		}
 	}
 
 	public final List_wildcardContext list_wildcard() throws RecognitionException {
@@ -9548,6 +10541,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern_call; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_call(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_call(this);
+		}
 	}
 
 	public final Subpattern_callContext subpattern_call() throws RecognitionException {
@@ -9617,6 +10618,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern_stmts; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_stmts(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_stmts(this);
+		}
 	}
 
 	public final Subpattern_stmtsContext subpattern_stmts() throws RecognitionException {
@@ -9668,6 +10677,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern(this);
+		}
 	}
 
 	public final SubpatternContext subpattern() throws RecognitionException {
@@ -9724,6 +10741,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern_args; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_args(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_args(this);
+		}
 	}
 
 	public final Subpattern_argsContext subpattern_args() throws RecognitionException {
@@ -9780,6 +10805,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_subpattern_arg; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSubpattern_arg(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSubpattern_arg(this);
+		}
 	}
 
 	public final Subpattern_argContext subpattern_arg() throws RecognitionException {
@@ -9846,6 +10879,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_simple_subpattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterSimple_subpattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitSimple_subpattern(this);
+		}
 	}
 
 	public final Simple_subpatternContext simple_subpattern() throws RecognitionException {
@@ -9909,6 +10950,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_compound_subpattern; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterCompound_subpattern(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitCompound_subpattern(this);
+		}
 	}
 
 	public final Compound_subpatternContext compound_subpattern() throws RecognitionException {
@@ -9948,6 +10997,14 @@ public class Python3Parser extends Python3ParserBase {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_transformation; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).enterTransformation(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof Python3ParserListener ) ((Python3ParserListener)listener).exitTransformation(this);
+		}
 	}
 
 	public final TransformationContext transformation() throws RecognitionException {
@@ -9995,28 +11052,28 @@ public class Python3Parser extends Python3ParserBase {
 	private boolean literal_pattern_sempred(Literal_patternContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 0:
-			return  self.CannotBePlusMinus() ;
+			return  this->CannotBePlusMinus() ;
 		}
 		return true;
 	}
 	private boolean literal_expr_sempred(Literal_exprContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 1:
-			return  self.CannotBePlusMinus() ;
+			return  this->CannotBePlusMinus() ;
 		}
 		return true;
 	}
 	private boolean pattern_capture_target_sempred(Pattern_capture_targetContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 2:
-			return  self.CannotBeDotLpEq() ;
+			return  this->CannotBeDotLpEq() ;
 		}
 		return true;
 	}
 	private boolean value_pattern_sempred(Value_patternContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 3:
-			return  self.CannotBeDotLpEq() ;
+			return  this->CannotBeDotLpEq() ;
 		}
 		return true;
 	}

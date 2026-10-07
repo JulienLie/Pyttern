@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import io
 
-from antlr4 import InputStream, CommonTokenStream
 from loguru import logger
+
+from .._pyttern_cpp import Node, parse_subpattern
 
 from .SubPattern import BaseSubPattern
 from .subpattern_visitor import SubPattern_Visitor
-from ..antlr.python import Python3Parser
-from ..antlr.python.Python3Lexer import Python3Lexer
 from ..language_processors import Languages
-from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
-from ..pytternfsm.python.tree_pruner import TreePruner
+from ..pyttern_error_listener import PytternErrorListener
 
 
-def string_to_subpattern_tree(subpattern_string: str) -> Any:
+def string_to_subpattern_tree(subpattern_string: str) -> Node:
     """
     Parses a raw subpattern string into a pruned ANTLR ParseTree.
 
@@ -22,21 +20,7 @@ def string_to_subpattern_tree(subpattern_string: str) -> Any:
     :return: The pruned ANTLR ParseTree.
     """
     logger.info("Generating subpattern tree")
-    stream = InputStream(subpattern_string)
-    lexer = Python3Lexer(stream)
-    stream = CommonTokenStream(lexer)
-    py_parser = Python3Parser(stream)
-
-    error = io.StringIO()
-
-    py_parser.removeErrorListeners()
-    error_listener = Python3ErrorListener(error)
-    py_parser.addErrorListener(error_listener)
-
-    tree = py_parser.subpattern_input()
-    pruned_tree = TreePruner().visit(tree)
-
-    return pruned_tree
+    return parse_subpattern(subpattern_string)
 
 
 def parse_subpattern_from_string(

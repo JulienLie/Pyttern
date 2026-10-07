@@ -1,65 +1,65 @@
 import math
 
-from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
-from .tree_pruner import BlockEndContext, TreePruner
-from ...antlr.python import Python3ParserVisitor, Python3Parser
+from pyttern._pyttern_cpp import Node
+
 from ...subpattern.SubPattern import loaded_subpatterns, SubPatternCallContext
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, NamedTransition, Transition
 from ..generic_to_pda import Generic_to_PDA
 
-class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
+class Python_to_PDA(Generic_to_PDA):
     def __init__(self):
-        grammar = Python3Parser
         skippable_nodes = [
-                "StmtContext"
-            ]
-        remove_double_wildcard = [
-            grammar.List_wildcardContext,
-            grammar.Double_wildcardContext
+            "Stmt",
+            "StmtContext"
         ]
-        tree_pruner = TreePruner()
+        remove_double_wildcard = [
+            "List_wildcard",
+            "Double_wildcard"
+        ]
         
-        super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
+        super().__init__(skippable_nodes, remove_double_wildcard)
 
-    def define_boundaries(self, ctx):
+    def define_boundaries(self, ctx: Node):
         """
         Define the boundaries for the current context.
         :param ctx: The context to define boundaries for.
         :return: A tuple of (down, up) boundaries.
         """
-        logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
+        rule_name = getattr(ctx, "rule_name", ctx.__class__.__name__)
+        logger.trace(f"Defining boundaries for {rule_name} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
-        if isinstance(ctx, (self.grammar.File_inputContext, self.grammar.BlockContext)):
-            logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
+        if rule_name in ("File_input", "Block"):
+            logger.trace(f"Context {rule_name} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif isinstance(ctx, self.grammar.If_stmtContext):
-            logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
+        elif rule_name in ("If_stmt"):
+            logger.trace(f"Context {rule_name} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
-        elif isinstance(ctx, self.grammar.ExprContext): # TODO: generalize this probably
-            logger.trace(f"Context {ctx.__class__.__name__} is an Expression context, setting boundaries to 1 and inf")
+        elif rule_name in ("Expr"): # TODO: generalize this probably
+            logger.trace(f"Context {rule_name} is an Expression context, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
             for child in ctx.children:
-                if self.lookahead(child, (self.grammar.Double_wildcardContext, self.grammar.List_wildcardContext, self.grammar.Subpattern_callContext)) is not None:
-                    logger.trace(f"Child {child.__class__.__name__} is a double wildcard or subpattern call, setting boundaries to 0 and inf")
+                if self.lookahead(child, ("Double_wildcard", "List_wildcard", "Subpattern_call")) is not None:
+                    child_rule = getattr(child, "rule_name", child.__class__.__name__)
+                    logger.trace(f"Child {child_rule} is a double wildcard or subpattern call, setting boundaries to 0 and inf")
                     up = math.inf
                     continue
 
-                only_wildcard = lambda c: "wildcard" in c.__class__.__name__
+                only_wildcard = lambda c: "wildcard" in getattr(c, "rule_name", c.__class__.__name__).lower()
                 everything = lambda _: True
-                predicate = everything if "list" in ctx.__class__.__name__ else only_wildcard
+                predicate = everything if "list" in rule_name.lower() else only_wildcard
 
-                simple_node = self.lookahead(child, self.grammar.Number_wildcardContext, predicate)
+                simple_node = self.lookahead(child, "Number_wildcard", predicate)
                 if simple_node is not None:
-                    numbers_node = simple_node.getChild(0, self.grammar.Wildcard_numberContext)
+                    numbers_node = simple_node.getChild(0, "Wildcard_number")
                     if numbers_node is not None:
-                        logger.trace(f"Child {child.__class__.__name__} has wildcard numbers, visiting numbers node")
+                        logger.trace(f"Child {getattr(child, 'rule_name', child.__class__.__name__)} has wildcard numbers, visiting numbers node")
                         min_n, max_n = numbers_node.accept(self)
                         up += max_n
                         down += min_n
@@ -70,9 +70,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return down, up
     
     def _find_direct_subpattern_calls(self, node):
-        if isinstance(node, Python3Parser.Subpattern_callContext):
+        if node.rule_name in ("Subpattern_call"):
             return [node]
-        if isinstance(node, Python3Parser.BlockContext):
+        if node.rule_name in ("Block"):
             return []
         if not hasattr(node, 'children') or node.children is None:
             return []
@@ -81,7 +81,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             calls.extend(self._find_direct_subpattern_calls(child))
         return calls
 
-    def visitBlockEnd(self, ctx: BlockEndContext):
+    def visitBlockEnd(self, ctx: Node):
         logger.debug("Visiting BlockEnd")
         node = self.current_state
         self_transition = Transition(node, "", NodeTransition(""), [NavigationAlphabet.RIGHT_SIBLING], node, "")
@@ -89,7 +89,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return self.visitChildren(ctx)
 
     def visitFile_input(self, ctx):
-        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        subpattern_call = self.lookahead(ctx, "Subpattern_call")
         logger.trace(f"Checking for subpatterns in {ctx.getText()} -> {subpattern_call}")
 
         if subpattern_call:
@@ -109,19 +109,19 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
             new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
             self.current_state = new_state
-            return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
+            return self._add_up_transition(NodeTransition(getattr(ctx, "rule_name", ctx.__class__.__name__)))
 
-        return super().visitFile_input(ctx)
+        return self.visitChildren(ctx)
 
-    def visitStmt(self, ctx:Python3Parser.StmtContext):
+    def visitStmt(self, ctx:Node):
         # Handle double wildcard as Stmt
         logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
-        lookahead_double_wildcard = self.lookahead(ctx, self.grammar.Double_wildcardContext)
+        lookahead_double_wildcard = self.lookahead(ctx, "Double_wildcard")
         if lookahead_double_wildcard:
             return self.visitDouble_wildcard(lookahead_double_wildcard)
 
-        lookahead_call_transition = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        lookahead_call_transition = self.lookahead(ctx, "Subpattern_call")
         if lookahead_call_transition:
             name = lookahead_call_transition.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
@@ -148,15 +148,15 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         return super().visitStatement(ctx)
 
-    def visitAtom_wildcard(self, ctx:Python3Parser.Atom_wildcardContext):
+    def visitAtom_wildcard(self, ctx: Node):
         return ctx.getChild(0).accept(self)
 
-    def visitExpr(self, ctx: Python3Parser.ExprContext):
-        wildcard = self.lookahead(ctx, (Python3Parser.Number_wildcardContext))
+    def visitExpr(self, ctx: Node):
+        wildcard = self.lookahead(ctx, "Number_wildcard")
         if wildcard is not None:
             return wildcard.accept(self)
 
-        subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
+        subpattern_call = self.lookahead(ctx, "Subpattern_call")
         if subpattern_call is not None:
             name = subpattern_call.NAME().getText()
             subpattern = loaded_subpatterns.get(name)
@@ -176,32 +176,32 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
 
 
-    def visitSimple_compound_wildcard(self, ctx:Python3Parser.Simple_compound_wildcardContext):
+    def visitSimple_compound_wildcard(self, ctx:Node):
         # Go to children
         child_state = self.pda.new_state()
         child_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.LEFT_CHILD],
-                                                                             child_state, 'I')
+                                                                            child_state, 'I')
         self.pda.add_transition(child_transition)
         self.current_state = child_state
         self.depth += 1
 
         # Find body node
         self_transition = Transition(child_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
-                                                                     child_state, '')
+                                                                    child_state, '')
         self.pda.add_transition(self_transition)
 
         # Explore body
-        return ctx.getChild(0, self.grammar.BlockContext).accept(self)
+        return ctx.getChild(0, "Block").accept(self)
 
-    def visitDouble_wildcard(self, ctx:Python3Parser.Double_wildcardContext):
+    def visitDouble_wildcard(self, ctx:Node):
         # Handle a case when the double wildcard is the only statement
-        parent_block = self.lookbehind(ctx, self.grammar.BlockContext)
+        parent_block = self.lookbehind(ctx, "Block")
         if parent_block is None:
             logger.error("Double wildcard not in a block")
             return self.current_state
 
         last_child = parent_block.getChild(parent_block.getChildCount() - 1)
-        maybe_this = self.lookahead(last_child, self.grammar.Double_wildcardContext)
+        maybe_this = self.lookahead(last_child, "Double_wildcard")
         if  maybe_this is not None and maybe_this == ctx:
             # If the double wildcard is the last statement of the block, we need to add a transition to the end of the
             # block
@@ -209,17 +209,17 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         return self.current_state
 
 
-    def visitParameters(self, ctx:Python3Parser.ParametersContext):
+    def visitParameters(self, ctx:Node):
         return self.handle_empty_list(ctx)
 
-    def visitVarargslist(self, ctx:Python3Parser.VarargslistContext):
+    def visitVarargslist(self, ctx:Node):
         return self.handle_empty_list(ctx)
 
-    def visitArgument(self, ctx:Python3Parser.ArgumentContext):
+    def visitArgument(self, ctx:Node):
         return self.handle_empty_list(ctx)
 
-    def visitVar_wildcard(self, ctx:Python3Parser.Var_wildcardContext):
-        label = ctx.NAME().getText()
+    def visitVar_wildcard(self, ctx:Node):
+        label = ctx.getChild(1).getText()
         # if label not in self.__var_names:
         #     uuid_label = str(uuid.uuid4())[:8]
         #     self.__var_names[label] = f"{label}_{uuid_label}"
@@ -228,23 +228,18 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         self._add_up_transition(ctx, NamedTransition(f"{label}"))
         return self.current_state
 
-    def visitMultiple_compound_wildcard(self, ctx:Python3Parser.Multiple_compound_wildcardContext):
+    def visitMultiple_compound_wildcard(self, ctx:Node):
         # Get the body of the compound wildcard, then let the superclass handle the rest
-        blockChild = ctx.getChild(0, self.grammar.BlockContext)
+        blockChild = ctx.getChild(0, "Block")
 
         return super().visitGenericMultiple_compound_wildcard(ctx, blockChild)
 
-    def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
+    def visitSubpattern_call(self, ctx:Node):
         subpattern_name = ctx.NAME().getText()
         logger.debug(f"Calling subpattern {subpattern_name}")
         if subpattern_name not in loaded_subpatterns:
             raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
 
-        # TODO: change handling of subpattern args
-        # Should be able to handle 3 types -> maybe check types from subpattern?
-        # 1: simple var wildcard -> can stay the same
-        # 2: expr -> change all var in expr then compile
-        # 3: stmts -> change all var in stmts then compile
         args_nodes = ctx.subpattern_args().subpattern_arg() if ctx.subpattern_args() is not None else None
         if args_nodes is not None:
             args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes]  # Remove the leading '?'
@@ -256,11 +251,10 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         subpattern = loaded_subpatterns[subpattern_name]
 
         ast_ctx = ctx.parentCtx
-        while "wildcard" in ast_ctx.__class__.__name__:
+        while ast_ctx is not None and "wildcard" in getattr(ast_ctx, "rule_name", ast_ctx.__class__.__name__).lower():
             ast_ctx = ast_ctx.parentCtx
         context = SubPatternCallContext(ast_ctx, body=body) # first parent in also subpattern
 
-        # TODO: same as before, change compilation in relation to subpattern args 
         transformations = subpattern.compile(context)
         self.dict_pda.update(transformations)
         n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)

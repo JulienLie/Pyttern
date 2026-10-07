@@ -4,7 +4,6 @@ from loguru import logger
 
 from ...antlr.java.JavaParserVisitor import JavaParserVisitor
 from ...antlr.java.JavaParser import JavaParser
-from .tree_pruner import TreePruner
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, Transition
 from ..generic_to_pda import Generic_to_PDA

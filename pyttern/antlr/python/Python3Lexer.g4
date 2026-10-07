@@ -39,7 +39,7 @@ options {
     superClass=Python3LexerBase;
 }
 
-// Insert here @header for C++ lexer.
+@header {#include "Python3LexerBase.h"}
 
 /*
  * lexer rules
@@ -108,10 +108,10 @@ DEFINE: 'define';
 
 
 NEWLINE
- : ( {self.atStartOfInput()}?   SPACES
+ : ( {this->atStartOfInput()}?   SPACES
    | ( '\r'? '\n' | '\r' | '\f' ) SPACES?
    )
-   {self.onNewLine();}
+   {this->onNewLine();}
  ;
 
 /// identifier   ::=  id_start id_continue*
@@ -168,15 +168,15 @@ IMAG_NUMBER
 DOT : '.';
 ELLIPSIS : '...';
 STAR : '*';
-OPEN_PAREN : '(' {self.openBrace();};
-CLOSE_PAREN : ')' {self.closeBrace();};
+OPEN_PAREN : '(' {this->openBrace();};
+CLOSE_PAREN : ')' {this->closeBrace();};
 COMMA : ',';
 COLON : ':';
 SEMI_COLON : ';';
 POWER : '**';
 ASSIGN : '=';
-OPEN_BRACK : '[' {self.openBrace();};
-CLOSE_BRACK : ']' {self.closeBrace();};
+OPEN_BRACK : '[' {this->openBrace();};
+CLOSE_BRACK : ']' {this->closeBrace();};
 OR_OP : '|';
 XOR : '^';
 AND_OP : '&';
@@ -188,8 +188,8 @@ DIV : '/';
 MOD : '%';
 IDIV : '//';
 NOT_OP : '~';
-OPEN_BRACE : '{' {self.openBrace();};
-CLOSE_BRACE : '}' {self.closeBrace();};
+OPEN_BRACE : '{' {this->openBrace();};
+CLOSE_BRACE : '}' {this->closeBrace();};
 LESS_THAN : '<';
 GREATER_THAN : '>';
 EQUALS : '==';

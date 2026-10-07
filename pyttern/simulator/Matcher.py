@@ -1,5 +1,10 @@
-from antlr4.ParserRuleContext import ParserRuleContext
-from antlr4.tree.Tree import TerminalNode, Tree
+try:
+    from antlr4.ParserRuleContext import ParserRuleContext
+    from antlr4.tree.Tree import TerminalNode, Tree
+except ImportError:
+    ParserRuleContext = object
+    TerminalNode = ()
+    Tree = ()
 from loguru import logger
 
 from pyttern.simulator.configuration import Environment
@@ -227,16 +232,20 @@ class Matcher:
         down, up = A.down, A.up
         if name == "":
             return True
-        if isinstance(input, TerminalNode):
-            return str(input) == name
+        is_term = getattr(input, "is_terminal", False) or (isinstance(TerminalNode, type) and isinstance(input, TerminalNode))
+        if is_term:
+            input_text = input.getText() if hasattr(input, "getText") else str(input)
+            return input_text == name
 
-        return input.__class__.__name__ == name and down <= input.getChildCount() <= up
+        input_name = getattr(input, "rule_name", input.__class__.__name__)
+        matches_name = (input_name == name) or (input_name + "Context" == name) or (name + "Context" == input_name) or (input_name.replace("Context", "") == name.replace("Context", ""))
+        return matches_name and down <= input.getChildCount() <= up
 
     @staticmethod
     def _unwrap(tree):
-        from ..antlr.python import Python3Parser
-        while tree is not None and not isinstance(tree, TerminalNode) and hasattr(tree, 'children') and len(tree.children) == 1:
-            if isinstance(tree, Python3Parser.NameContext):
+        while tree is not None and not getattr(tree, "is_terminal", False) and hasattr(tree, 'children') and len(tree.children) == 1:
+            rule = getattr(tree, "rule_name", tree.__class__.__name__)
+            if rule in ("Name", "NameContext"):
                 break
             tree = tree.children[0]
         return tree
@@ -246,19 +255,21 @@ class Matcher:
         logger.trace(f'Matching {tree1} and {tree2}')
         if tree1 is None or tree2 is None:
             return False
-        from antlr4.tree.Tree import Tree
-        if not isinstance(tree1, Tree) or not isinstance(tree2, Tree):
-            return tree1 == tree2
-        if isinstance(tree1, TerminalNode) and isinstance(tree2, TerminalNode):
-            return str(tree1) == str(tree2)
-        if isinstance(tree1, TerminalNode) or isinstance(tree2, TerminalNode):
+        is_term1 = getattr(tree1, "is_terminal", False) or (isinstance(TerminalNode, type) and isinstance(tree1, TerminalNode))
+        is_term2 = getattr(tree2, "is_terminal", False) or (isinstance(TerminalNode, type) and isinstance(tree2, TerminalNode))
+        if is_term1 and is_term2:
+            t1_text = tree1.getText() if hasattr(tree1, "getText") else str(tree1)
+            t2_text = tree2.getText() if hasattr(tree2, "getText") else str(tree2)
+            return t1_text == t2_text
+        if is_term1 or is_term2:
             return False
-        from ..antlr.python import Python3Parser
-        if isinstance(tree1, Python3Parser.NameContext) and isinstance(tree2, Python3Parser.ExprContext):
+        r1 = getattr(tree1, "rule_name", tree1.__class__.__name__).replace("Context", "")
+        r2 = getattr(tree2, "rule_name", tree2.__class__.__name__).replace("Context", "")
+        if r1 == "Name" and r2 == "Expr":
             unwrapped = Matcher._unwrap(tree2)
-            if isinstance(unwrapped, Python3Parser.NameContext):
+            if getattr(unwrapped, "rule_name", unwrapped.__class__.__name__).replace("Context", "") == "Name":
                 return Matcher._match_tree(tree1, unwrapped)
-        if tree1.__class__.__name__ != tree2.__class__.__name__:
+        if r1 != r2:
             return False
         if len(tree1.children) != len(tree2.children):
             return False

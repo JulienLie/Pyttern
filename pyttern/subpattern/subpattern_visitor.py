@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from typing import Any, Optional
-from antlr4.tree.Tree import TerminalNodeImpl
 from loguru import logger
 
+from .._pyttern_cpp import Node
+from ..pytternfsm.node_visitor import NodeVisitor
+
 from .SubPattern import AndSubPattern, BaseSubPattern, NotSubPattern, OrSubPattern
-from ..antlr.python import Python3ParserVisitor, Python3Parser
 
 
 def flatten(lst: list[Any]) -> list[Any]:
@@ -35,7 +36,7 @@ def get_original_text(ctx: Any) -> str:
     return token_source.getText(ctx.start.start, ctx.stop.stop)
 
 
-class SubPattern_Visitor(Python3ParserVisitor):
+class SubPattern_Visitor(NodeVisitor):
     """
     ANTLR visitor that traverses subpattern ASTs and constructs concrete SubPattern instances.
     """
@@ -45,14 +46,14 @@ class SubPattern_Visitor(Python3ParserVisitor):
         self.override = override
         self.current_subpattern: Optional[BaseSubPattern] = None
 
-    def visitSubpattern_input(self, ctx: Python3Parser.Subpattern_inputContext) -> list[BaseSubPattern]:
+    def visitSubpattern_input(self, ctx: Node) -> list[BaseSubPattern]:
         """
         Visits top-level subpattern input and collects all parsed SubPattern objects.
         """
         results = self.visitChildren(ctx)
         return [res for res in results if isinstance(res, BaseSubPattern)]
 
-    def visitSubpattern_stmts(self, ctx: Python3Parser.Subpattern_stmtsContext) -> BaseSubPattern:
+    def visitSubpattern_stmts(self, ctx: Node) -> BaseSubPattern:
         """
         Visits subpattern statement definitions and constructs the SubPattern instance.
         """
@@ -69,7 +70,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         logger.trace(self.current_subpattern)
         return self.current_subpattern
 
-    def visitSimple_subpattern(self, ctx: Python3Parser.Simple_subpatternContext) -> tuple[str, type, dict]:
+    def visitSimple_subpattern(self, ctx: Node) -> tuple[str, type, dict]:
         """
         Visits the subpattern header (e.g. $|Name(?arg)) and returns (name, subpattern_class, args).
         """
@@ -95,7 +96,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         logger.trace(f"Subpattern {name} with args {args}")
         return name, type_cls, args
 
-    def visitSubpattern_arg(self, ctx: Python3Parser.Subpattern_argContext) -> dict[str, Any]:
+    def visitSubpattern_arg(self, ctx: Node) -> dict[str, Any]:
         """
         Visits a formal argument definition in a subpattern header.
         """
@@ -107,7 +108,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         bind = ctx.getChild(2)
         return {name: bind}
 
-    def visitTransformation(self, ctx: Python3Parser.TransformationContext) -> tuple[str, Any]:
+    def visitTransformation(self, ctx: Node) -> tuple[str, Any]:
         """
         Visits a transformation branch ($# TransformationName).
         """
@@ -117,7 +118,7 @@ class SubPattern_Visitor(Python3ParserVisitor):
         logger.trace(f"Transformation {name} with stmt {parse_tree}")
         return name, parse_tree
 
-    def visitTerminal(self, node: TerminalNodeImpl) -> str:
+    def visitTerminal(self, node: Node) -> str:
         """
         Returns text representation of a terminal AST node.
         """

@@ -1,28 +1,24 @@
 import math
 import abc
-import types
-from typing import TypeAlias, TypeVar
 
 from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
+from .node_visitor import NodeVisitor
+from .._pyttern_cpp import Node
 from ..simulator.pda.PDA import PDA
 from ..simulator.pda.PDA_alphabets import NavigationAlphabet
 from ..simulator.pda.transition import NodeTransition, TransitionCondition, NamedTransition, Transition
 
-T = TypeVar('T')
-
-class Generic_to_PDA(metaclass=abc.ABCMeta):
-    def __init__(self, grammar, skippable_nodes, remove_double_wildcard, tree_pruner):
+class Generic_to_PDA(NodeVisitor, metaclass=abc.ABCMeta):
+    def __init__(self, skippable_nodes, remove_double_wildcard):
         self.pda = PDA()
         self.current_state = self.pda.initial_state
         self.depth = 0
         self.move_to_B = []
         self.dict_pda = {}
-        self.grammar = grammar
         self.skippable_nodes = skippable_nodes
         self.remove_double_wildcard = tuple(remove_double_wildcard)
-        self.tree_pruner = tree_pruner
         self._restrict_stmt = False
         self.__var_names = {}
         self.__is_last_branch = True
@@ -43,7 +39,8 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         pass
 
     def visitChildren(self, node):
-        logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
+        rule_name = getattr(node, "rule_name", node.__class__.__name__)
+        logger.trace(f"Visiting {rule_name} {hash(node)}: {node.getText()}")
 
         children = node.children
         if len(children) == 0:
@@ -57,7 +54,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
             logger.trace("Remove double wildcard")
 
         # Add self-transition to be able to skip statements
-        if node.__class__.__name__ in self.skippable_nodes:
+        if rule_name in self.skippable_nodes or rule_name + "Context" in self.skippable_nodes or rule_name.replace("Context", "") in self.skippable_nodes:
             if not self._restrict_stmt:
                 self_transition = Transition(self.current_state, "", NodeTransition(''), [NavigationAlphabet.RIGHT_SIBLING],
                                             self.current_state, '')
@@ -66,7 +63,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
                 self._restrict_stmt = False
 
         next_state = self.pda.new_state()
-        transition = Transition(self.current_state, "", NodeTransition(node.__class__.__name__, down, up),
+        transition = Transition(self.current_state, "", NodeTransition(rule_name, down, up),
                                 [NavigationAlphabet.LEFT_CHILD], next_state, 'I')
         self.pda.add_transition(transition)
         self.current_state = next_state
@@ -92,17 +89,17 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         logger.trace(f"Visiting Stmt {hash(ctx)}: {ctx.getText()}")
 
         # Handle multiple compound wildcard
-        lookahead_multiple_body = self.lookahead(ctx, self.grammar.Multiple_compound_wildcardContext)
+        lookahead_multiple_body = self.lookahead(ctx, "Multiple_compound_wildcard")
         if lookahead_multiple_body:
             return self.visitMultiple_compound_wildcard(lookahead_multiple_body)
 
         # Handle simple compound wildcard
-        lookahead_simple_wildcard = self.lookahead(ctx, self.grammar.Simple_wildcardContext)
+        lookahead_simple_wildcard = self.lookahead(ctx, "Simple_wildcard")
         if lookahead_simple_wildcard:
             return self.visitSimple_wildcard(lookahead_simple_wildcard)
         
         # Handle number wildcard
-        lookahead_number_wildcard = self.lookahead(ctx, self.grammar.Number_wildcardContext)
+        lookahead_number_wildcard = self.lookahead(ctx, "Number_wildcard")
         if lookahead_number_wildcard:
             return self.visitNumber_wildcard(lookahead_number_wildcard)
 
@@ -121,7 +118,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self._add_up_transition(ctx)
 
     def visitNumber_wildcard(self, ctx):
-        numbers_node = ctx.getChild(0, self.grammar.Wildcard_numberContext)
+        numbers_node = ctx.getChild(0, "Wildcard_number")
         low, high = self.visitWildcard_number(numbers_node)
         logger.trace(f"Visiting Simple_wildcard with numbers: low={low}, high={high}")
 
@@ -162,12 +159,12 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.current_state = dummy_state
         return self._add_up_transition(ctx)
 
-    def visitWildcard_number(self, ctx):
+    def visitWildcard_number(self, ctx: Node):
         # Return the low and high limits of the wildcard
         low = int(ctx.getChild(1).getText())
         high = int(ctx.getChild(3).getText()) if ctx.getChild(3) and ctx.getChild(3).getText().isdigit() else math.inf
 
-        if ctx.COMMA() is None:
+        if "," in [child.getText() for child in ctx.getChildren()]:
             high = low
         
         logger.trace(f"Visiting Wildcard_number: low={low}, high={high}")
@@ -185,14 +182,15 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self.current_state
 
     def visitTerminal(self, node):
-        if isinstance(node, TerminalNode):
+        if getattr(node, "rule_name", "") in {"TerminalNode"} or getattr(node, "is_terminal", False):
             logger.trace(f"Visiting terminal {node}")
-            node_text = str(node).strip()
+            node_text = node.getText() if hasattr(node, "getText") else str(node).strip()
             node_transition = NodeTransition(node_text)
         else:
-            logger.trace(f"Visiting {node.__class__.__name__} as terminal")
-            node_text = f"{node.__class__.__name__}/0,0"
-            node_transition = NodeTransition(node.__class__.__name__, 0, 0)
+            rule_name = getattr(node, "rule_name", node.__class__.__name__)
+            logger.trace(f"Visiting {rule_name} as terminal")
+            node_text = f"{rule_name}/0,0"
+            node_transition = NodeTransition(rule_name, 0, 0)
 
         logger.trace(f"is last branch: {self.__is_last_branch}, current node: {node}, node text: {node_text}")
 
@@ -212,8 +210,8 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         self.add_body_transition()
 
         logger.trace(f"Type of contains wildcard: {ctx.getChild(2).__class__.__name__}")
-        prune_tree = self.tree_pruner.visit(ctx)
-        return prune_tree.getChild(2).accept(self)
+        #prune_tree = self.tree_pruner.visit(ctx)
+        return ctx.getChild(2).accept(self)
 
     @abc.abstractmethod
     def visitSimple_compound_wildcard(self, ctx):
@@ -332,7 +330,7 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self.__is_last_branch
 
     def handle_empty_list(self, ctx):
-        list_wildcard = self.lookahead(ctx, self.grammar.List_wildcardContext)
+        list_wildcard = self.lookahead(ctx, "List_wildcard")
         if list_wildcard is not None:
             # If the list wildcard is the only statement in the list, we need to add a transition to handle 0 elements
             logger.trace("Handling empty list")
@@ -340,34 +338,48 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         return self.visitChildren(ctx)
 
     @staticmethod
-    def lookahead(ctx, clazz: type[T], predicate=None) -> T:
+    def _get_target_names(clazz):
+        if isinstance(clazz, (tuple, list, set)):
+            names = set()
+            for c in clazz:
+                names.update(Generic_to_PDA._get_target_names(c))
+            return names
+        if isinstance(clazz, type):
+            return {clazz.__name__, clazz.__name__.replace("Context", "")}
+        s = str(clazz)
+        return {s, s.replace("Context", ""), s + "Context"}
+
+    @staticmethod
+    def lookahead(ctx: Node, clazz, predicate=None) -> Node:
         """
         Check if one of the descendants of ctx is an instance of clazz. Stop if ctx has more than one child.
-        :param ctx:
-        :param clazz:
-        :param predicate:
-        :return: The first instance of clazz found in the descendant of ctx or None if not found.
         """
-        if isinstance(ctx, clazz):
+        if ctx is None:
+            return None
+        rule_name = getattr(ctx, "rule_name", ctx.__class__.__name__)
+        target_names = Generic_to_PDA._get_target_names(clazz)
+        if rule_name in target_names or ctx.__class__.__name__ in target_names:
             return ctx
+
         if not hasattr(ctx, 'children'):
             return None
         if len(ctx.children) != 1:
             return None
         if predicate is not None and not predicate(ctx):
             return None
-        return Generic_to_PDA.lookahead(ctx.children[0], clazz)
+        return Generic_to_PDA.lookahead(ctx.children[0], clazz, predicate)
 
     @staticmethod
     def lookbehind(ctx, clazz):
         """
         Check if one of the ancestors of ctx is instance of clazz.
-        :param ctx:
-        :param clazz:
-        :return: The first instance of clazz found in the ancestors of ctx or None if not found.
         """
-        if isinstance(ctx, clazz):
+        if ctx is None:
+            return None
+        rule_name = getattr(ctx, "rule_name", ctx.__class__.__name__)
+        target_names = Generic_to_PDA._get_target_names(clazz)
+        if rule_name in target_names or ctx.__class__.__name__ in target_names:
             return ctx
-        if not hasattr(ctx, 'parentCtx'):
+        if not hasattr(ctx, 'parentCtx') or ctx.parentCtx is None:
             return None
         return Generic_to_PDA.lookbehind(ctx.parentCtx, clazz)

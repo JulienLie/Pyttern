@@ -1,5 +1,10 @@
 import graphviz
-from antlr4.tree.Tree import TerminalNode, ErrorNode
+
+try:
+    from antlr4.tree.Tree import TerminalNode, ErrorNode
+except ImportError:
+    TerminalNode = ()
+    ErrorNode = ()
 
 try:
     from ..antlr.python import Python3Parser
@@ -121,7 +126,10 @@ def find_subpattern_calls(node):
         return calls
     
     is_sub_call = False
-    if getattr(node, '__class__', None) and node.__class__.__name__ == 'Subpattern_callContext':
+    rule_name = getattr(node, "rule_name", "")
+    if rule_name in ("Subpattern_call", "Subpattern_callContext"):
+        is_sub_call = True
+    elif getattr(node, '__class__', None) and node.__class__.__name__ == 'Subpattern_callContext':
         is_sub_call = True
     elif Python3Parser is not None and isinstance(node, getattr(Python3Parser, 'Subpattern_callContext', ())):
         is_sub_call = True
@@ -131,6 +139,14 @@ def find_subpattern_calls(node):
             name_node = node.NAME()
             if name_node is not None:
                 calls.append(name_node.getText())
+        elif hasattr(node, "getChildCount") and node.getChildCount() > 0:
+            first_child = node.getChild(0)
+            if first_child is not None:
+                calls.append(first_child.getText())
+        elif hasattr(node, "children") and len(node.children) > 0:
+            first_child = node.children[0]
+            if first_child is not None:
+                calls.append(getattr(first_child, "text", str(first_child)))
 
     if hasattr(node, "children") and isinstance(node.children, (list, tuple)):
         for child in node.children:
@@ -317,15 +333,27 @@ def _render_single_tree_to_graph(graph, tree, tree_name, intervals, parsed_highl
         }
         
         content = ""
-        if isinstance(node, TerminalNode):
-            content = getattr(getattr(node, 'symbol', None), 'text', str(node))
-            attr['shape'] = 'ellipse'
-        elif isinstance(node, ErrorNode):
-            content = f"Error: {node.getText()}"
+        is_term = getattr(node, "is_terminal", False) or (isinstance(TerminalNode, type) and isinstance(node, TerminalNode))
+        is_err = (getattr(node, "rule_name", "") == "ErrorNode") or (isinstance(ErrorNode, type) and isinstance(node, ErrorNode))
+
+        if is_err:
+            text = node.getText() if hasattr(node, "getText") else getattr(node, "text", str(node))
+            content = f"Error: {text}"
             attr['shape'] = 'ellipse'
             attr['fillcolor'] = 'red'
+        elif is_term:
+            if hasattr(node, 'symbol'):
+                content = getattr(node.symbol, 'text', str(node))
+            elif hasattr(node, 'getText'):
+                content = node.getText()
+            else:
+                content = getattr(node, 'text', str(node))
+            attr['shape'] = 'ellipse'
         else:
-            name = node.__class__.__name__.replace("Context", "")
+            if hasattr(node, "rule_name"):
+                name = node.rule_name.replace("Context", "")
+            else:
+                name = node.__class__.__name__.replace("Context", "")
             content = f"<{name}>"
         
         if h_color:
