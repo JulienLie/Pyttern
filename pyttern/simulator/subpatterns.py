@@ -1,15 +1,23 @@
+import itertools
 from typing import Dict, Set, Tuple, List
 
 from antlr4 import ParserRuleContext
 from loguru import logger
 
 from ..antlr.python import Python3Parser
-
 from ..subpattern.SubPattern import BaseSubPattern
-
 from .Matcher import Matcher
 from .pda import PDA
 from .configuration import Environment
+
+
+def _is_trace_enabled() -> bool:
+    return any(h._levelno <= 5 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
+
+def _is_debug_enabled() -> bool:
+    return any(h._levelno <= 10 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
 
 def get_siblings(node: ParserRuleContext) -> List[ParserRuleContext]:
     """
@@ -28,7 +36,7 @@ def get_siblings(node: ParserRuleContext) -> List[ParserRuleContext]:
         parent = parent.parentCtx
     if parent is None:
         return [prec]
-    children = list(parent.getChildren())
+    children = parent.children if parent.children is not None else list(parent.getChildren())
     node_index = children.index(prec)
     return children[node_index:]
 
@@ -50,8 +58,10 @@ def search(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -> S
             - int: The exact index 'i' in the 'siblings' list where the match was accepted.
     """
     results = set()
+    debug_enabled = _is_debug_enabled()
     for i, node in enumerate(siblings):
-        logger.debug(f"Searching results in {tau} at {node} with variables: {m_sub}")
+        if debug_enabled:
+            logger.debug(f"Searching results in {tau} at {node} with variables: {m_sub}")
         match_set = Matcher.match(tau, node, False, m_sub)
         for match in match_set.matches:
             results.add((Environment.from_dict(match.bindings), i))
@@ -124,19 +134,26 @@ def _tau_calls_not(tau) -> bool:
     Returns:
         bool: True if the automaton calls a NOT subpattern, False otherwise.
     """
-    from ..subpattern.SubPattern import loaded_subpatterns
-    from .pda.transition import CallTransition
     if isinstance(tau, dict):
         tau = tau.get('__main__', next(iter(tau.values()))) if len(tau) > 0 else None
     if tau is None or not hasattr(tau, 'states'):
         return False
+    if hasattr(tau, '_calls_not') and tau._calls_not is not None:
+        return tau._calls_not
+    from ..subpattern.SubPattern import loaded_subpatterns
+    from .pda.transition import CallTransition
+    res = False
     for s in tau.states:
         for tr in tau.get_transitions(s):
             if isinstance(tr.A, CallTransition):
                 called = loaded_subpatterns.get(tr.A.subpattern_name)
                 if called and called.type == 'NOT':
-                    return True
-    return False
+                    res = True
+                    break
+        if res:
+            break
+    tau._calls_not = res
+    return res
 
 def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
     """
@@ -153,10 +170,13 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
     """
     results = set()
     is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
+    trace_enabled = _is_trace_enabled()
     for trans_name, tau in transformations.items():
-        logger.trace(f"Computing OR for branch '{trans_name}'")
+        if trace_enabled:
+            logger.trace(f"Computing OR for branch '{trans_name}'")
         if _tau_calls_not(tau):
-            logger.trace(f"Branch '{trans_name}' contains NOT call; anchoring match at siblings[0]")
+            if trace_enabled:
+                logger.trace(f"Branch '{trans_name}' contains NOT call; anchoring match at siblings[0]")
             if len(siblings) > 0:
                 match_set = Matcher.match(tau, siblings[0], False, m_sub)
                 for match in match_set.matches:
@@ -166,8 +186,9 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
                     for k in range(start_k, end_k):
                         results.add((m_out, k))
         else:
-            logger.trace(f"Branch '{trans_name}' evaluating across sibling sequence")
-            results = results.union(eval_base(tau, siblings, m_sub))
+            if trace_enabled:
+                logger.trace(f"Branch '{trans_name}' evaluating across sibling sequence")
+            results.update(eval_base(tau, siblings, m_sub))
 
     return results
 
@@ -185,11 +206,11 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         Set[Tuple[Environment, int]]: A set of valid configurations (m_merged, k) representing
         the set intersection over valid block sizes 'k' and the set union over environment mappings.
     """
-    import itertools
     results = set()
     trans_list = list(transformations.values()) if isinstance(transformations, dict) else transformations
     all_matches = [search(tau, siblings, m_sub) for tau in trans_list]
 
+    trace_enabled = _is_trace_enabled()
     for combo in itertools.product(*all_matches):
         envs, indices = zip(*combo)
         conflict = False
@@ -205,7 +226,8 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
                                 continue
                             if k1 != k2 and (v1 is v2 or (isinstance(v1, ParserRuleContext) and v1 == v2)):
                                 conflict = True
-                                logger.trace(f"AND conflict: variables '{k1}' and '{k2}' bind to identical node at sibling index {indices[idx1]}")
+                                if trace_enabled:
+                                    logger.trace(f"AND conflict: variables '{k1}' and '{k2}' bind to identical node at sibling index {indices[idx1]}")
                                 break
                         if conflict:
                             break
@@ -350,21 +372,25 @@ def call_subpattern(
     comp = composition(m_j_to_i, caller_env)
     m_j_epsilon = {u: None for u, _ in subpattern.args.items()}
     m_sub = Environment.from_dict(join_dicts(m_j_epsilon, comp))
-    logger.trace(f"Calling subpattern {subpattern_name} on node {current_node} with bindings {m_sub}")
+    if _is_trace_enabled():
+        logger.trace(f"Calling subpattern {subpattern_name} on node {current_node} with bindings {m_sub}")
 
     results = eval_operator(op, transformations, current_node, m_sub)
 
     if len(results) == 0:
-        logger.trace(f"subpattern {subpattern_name} did not match")
+        if _is_trace_enabled():
+            logger.trace(f"subpattern {subpattern_name} did not match")
         return []
 
     new_envs = []
+    debug_enabled = _is_debug_enabled()
     for new_env, k in results:
-        pretty_bindings = {
-            var: (f"{val.__class__.__name__}: {val.getText() if hasattr(val, 'getText') else str(val)}" if val is not None else "None")
-            for var, val in new_env.items()
-        }
-        logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
+        if debug_enabled:
+            pretty_bindings = {
+                var: (f"{val.__class__.__name__}: {val.getText() if hasattr(val, 'getText') else str(val)}" if val is not None else "None")
+                for var, val in new_env.items()
+            }
+            logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
         m_i_to_j = mapping(args, subpattern.args_order)
         comp = composition(m_i_to_j, new_env)

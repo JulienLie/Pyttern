@@ -50,13 +50,9 @@ class BlockEndContext(RuleContext):
         Returns:
             Any: Result of the visit invocation.
         """
-        logger.debug(f"Accepting {self} in {visitor}")
         if hasattr(visitor, "visitBlockEnd"):
-            logger.debug(f"{visitor} has visitBlockEnd")
             return visitor.visitBlockEnd(self)
-        else:
-            logger.debug(f"{visitor} does not have visitBlockEnd")
-            return visitor.visitChildren(self)
+        return visitor.visitChildren(self)
 
 
 class TreePruner(GenericTreePruner, Python3ParserVisitor):

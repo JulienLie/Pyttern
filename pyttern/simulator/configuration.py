@@ -13,6 +13,20 @@ from loguru import logger
 _PRIVATE_TOKEN = object()
 
 
+_Matcher = None
+_Python3Parser = None
+
+
+def _get_matcher_and_parser():
+    global _Matcher, _Python3Parser
+    if _Matcher is None:
+        from .Matcher import Matcher
+        from ..antlr.python import Python3Parser
+        _Matcher = Matcher
+        _Python3Parser = Python3Parser
+    return _Matcher, _Python3Parser
+
+
 @dataclass(frozen=True)
 class Environment:
     """
@@ -20,6 +34,7 @@ class Environment:
     """
 
     mapping: dict[str, object]
+    _cached_hash: int | None = None
 
     def __init__(self, mapping: dict[str, object], *, _secret: object = None):
         if _secret is not _PRIVATE_TOKEN:
@@ -27,6 +42,7 @@ class Environment:
                 "Environment constructor is private. Use Environment.empty() or merge()."
             )
         object.__setattr__(self, 'mapping', mapping)
+        object.__setattr__(self, '_cached_hash', None)
 
     @classmethod
     def _create(cls, mapping: dict[str, object]) -> 'Environment':
@@ -81,14 +97,17 @@ class Environment:
         Returns:
             Optional[Environment]: Merged environment if compatible, None on conflict.
         """
+        if not self.mapping:
+            return other if isinstance(other, Environment) else Environment.from_dict(other)
         if not isinstance(other, Environment):
             other = Environment.from_dict(other)
-        from .Matcher import Matcher
-        from ..antlr.python import Python3Parser
+        if not other.mapping:
+            return self
+        Matcher, Python3Parser = _get_matcher_and_parser()
         for key, val in self.mapping.items():
             if val is not None and key in other.mapping and other.mapping[key] is not None:
                 other_val = other.mapping[key]
-                if val == other_val:
+                if val is other_val or val == other_val:
                     continue
                 if isinstance(val, Tree) and isinstance(other_val, Tree):
                     if Matcher._match_tree(val, other_val) or Matcher._match_tree(other_val, val):
@@ -212,15 +231,19 @@ class Environment:
         return False
 
     def __hash__(self) -> int:
-        items = []
-        for k in sorted(self.mapping.keys()):
-            v = self.mapping[k]
-            try:
-                h = hash(v)
-            except TypeError:
-                h = id(v)
-            items.append((k, h))
-        return hash(tuple(items))
+        h = self._cached_hash
+        if h is None:
+            items = []
+            for k in sorted(self.mapping.keys()):
+                v = self.mapping[k]
+                try:
+                    vh = hash(v)
+                except TypeError:
+                    vh = id(v)
+                items.append((k, vh))
+            h = hash(tuple(items))
+            object.__setattr__(self, '_cached_hash', h)
+        return h
 
     @staticmethod
     def _format_val(n: object) -> str | None:

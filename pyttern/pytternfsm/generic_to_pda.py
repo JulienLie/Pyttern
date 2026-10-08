@@ -14,6 +14,14 @@ from ..simulator.pda.transition import NamedTransition, NodeTransition, Transiti
 T = TypeVar('T')
 
 
+def _is_trace_enabled() -> bool:
+    return any(h._levelno <= 5 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
+
+def _is_debug_enabled() -> bool:
+    return any(h._levelno <= 10 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
+
 class Generic_to_PDA(metaclass=abc.ABCMeta):
     """Abstract compiler translating an ANTLR parse tree pattern into a PDA graph.
 
@@ -66,13 +74,15 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         Returns:
             dict[str, PDA]: Dictionary containing compiled PDAs with '__main__' as entrypoint.
         """
-        logger.debug(f"Visiting tree: {tree}")
+        if _is_debug_enabled():
+            logger.debug(f"Visiting tree: {tree}")
         self.dict_pda = {}
         self.__var_names = {}
         super().visit(tree)
         self.depth = 0
         self.pda.final_states = self.current_state
-        logger.trace(f"var_names: {self.__var_names}")
+        if _is_trace_enabled():
+            logger.trace(f"var_names: {self.__var_names}")
         self.dict_pda["__main__"] = self.pda
         return self.dict_pda
 
@@ -97,7 +107,8 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         Returns:
             int: Resulting next state index after traversing children.
         """
-        logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
+        if _is_trace_enabled():
+            logger.trace(f"Visiting {node.__class__.__name__} {hash(node)}: {node.getText()}")
 
         children = node.children
         if len(children) == 0:
@@ -601,15 +612,17 @@ class Generic_to_PDA(metaclass=abc.ABCMeta):
         Returns:
             T | None: First matching descendant node, or None if not found.
         """
-        if isinstance(ctx, clazz):
-            return ctx
-        if not hasattr(ctx, 'children'):
-            return None
-        if len(ctx.children) != 1:
-            return None
-        if predicate is not None and not predicate(ctx):
-            return None
-        return Generic_to_PDA.lookahead(ctx.children[0], clazz)
+        curr = ctx
+        while curr is not None:
+            if isinstance(curr, clazz):
+                return curr
+            children = getattr(curr, 'children', None)
+            if children is None or len(children) != 1:
+                return None
+            if predicate is not None and not predicate(curr):
+                return None
+            curr = children[0]
+        return None
 
     @staticmethod
     def lookbehind(ctx: Any, clazz: type[T] | tuple[type[T], ...]) -> T | None:

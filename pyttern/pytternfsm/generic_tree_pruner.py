@@ -122,5 +122,6 @@ class GenericTreePruner:
         """
         if nextResult is None:
             return aggregate
-        return aggregate + [nextResult]
+        aggregate.append(nextResult)
+        return aggregate
 

@@ -13,6 +13,14 @@ from ...subpattern.SubPattern import SubPatternCallContext, loaded_subpatterns
 from ..generic_to_pda import Generic_to_PDA
 
 
+def _is_trace_enabled() -> bool:
+    return any(h._levelno <= 5 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
+
+def _is_debug_enabled() -> bool:
+    return any(h._levelno <= 10 for h in logger._core.handlers.values()) if logger._core.handlers else False
+
+
 class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     """Compiles Python AST patterns into Pushdown Automata (PDAs)."""
 
@@ -39,18 +47,23 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         Returns:
             tuple[int, int | float]: (down_limit, up_limit) bounds.
         """
-        logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
+        trace_enabled = _is_trace_enabled()
+        if trace_enabled:
+            logger.trace(f"Defining boundaries for {ctx.__class__.__name__} {hash(ctx)}: {ctx.getText()}")
         down = up = 0
         if isinstance(ctx, (self.grammar.File_inputContext, self.grammar.BlockContext)):
-            logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
+            if trace_enabled:
+                logger.trace(f"Context {ctx.__class__.__name__} is a file input or block, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         elif isinstance(ctx, self.grammar.If_stmtContext):
-            logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
+            if trace_enabled:
+                logger.trace(f"Context {ctx.__class__.__name__} is an if statement, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         elif isinstance(ctx, self.grammar.ExprContext):  # TODO: generalize this probably
-            logger.trace(f"Context {ctx.__class__.__name__} is an Expression context, setting boundaries to 1 and inf")
+            if trace_enabled:
+                logger.trace(f"Context {ctx.__class__.__name__} is an Expression context, setting boundaries to 1 and inf")
             down = 1
             up = math.inf
         else:
@@ -141,7 +154,8 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             Any: Compiled PDA entry transition result or standard child visit.
         """
         subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
-        logger.trace(f"Checking for subpatterns in {ctx.getText()} -> {subpattern_call}")
+        if _is_trace_enabled():
+            logger.trace(f"Checking for subpatterns in {ctx.getText()} -> {subpattern_call}")
 
         if subpattern_call:
             name = subpattern_call.NAME().getText()

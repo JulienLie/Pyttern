@@ -63,6 +63,11 @@ def parse_subpattern_from_string(
     return subpatterns
 
 
+import os
+
+_subpattern_file_cache: dict[tuple[str, float, Languages, bool], list[BaseSubPattern]] = {}
+
+
 def parse_subpattern_from_file(file: str, language: Languages, override: bool = True) -> list[BaseSubPattern]:
     """Parse subpatterns from a file on disk.
 
@@ -78,10 +83,24 @@ def parse_subpattern_from_file(file: str, language: Languages, override: bool = 
         ValueError: If the file format is invalid or no subpattern is found.
     """
     logger.debug(f"Parsing subpattern from file: {file}")
+    try:
+        mtime = os.path.getmtime(file)
+    except OSError:
+        mtime = 0.0
+    cache_key = (os.path.abspath(file), mtime, language, override)
+    if cache_key in _subpattern_file_cache:
+        subpatterns = _subpattern_file_cache[cache_key]
+        if override:
+            from .SubPattern import loaded_subpatterns
+            for sp in subpatterns:
+                loaded_subpatterns[sp.name] = sp
+        return subpatterns
 
     with open(file, 'r', encoding="UTF-8") as f:
         code = f.read()
-        return parse_subpattern_from_string(code, language, override)
+        res = parse_subpattern_from_string(code, language, override)
+        _subpattern_file_cache[cache_key] = res
+        return res
 
 
 def parse_diagnostics(code: str) -> list[dict]:

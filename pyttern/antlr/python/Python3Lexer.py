@@ -9,9 +9,9 @@ else:
 
 
 if "." in __name__:
-    from .Python3LexerBase import Python3LexerBase
+    from .Python3LexerBase import Python3LexerBase, Python3LexerATNSimulator
 else:
-    from Python3LexerBase import Python3LexerBase
+    from Python3LexerBase import Python3LexerBase, Python3LexerATNSimulator
 
 def serializedATN():
     return [
@@ -736,7 +736,7 @@ class Python3Lexer(Python3LexerBase):
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.13.2")
-        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
+        self._interp = Python3LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None
 

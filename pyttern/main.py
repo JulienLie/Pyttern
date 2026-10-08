@@ -40,6 +40,7 @@ class PytternMatcher:
             for processor in self._language_processors.values()
             for ext in processor.get_language_extensions()
         }
+        self._pattern_cache: dict[tuple[str, float], dict[str, Any]] = {}
 
     def _get_processor_for_file(self, file_name: str) -> Any:
         """Retrieve language processor corresponding to a file extension.
@@ -227,10 +228,19 @@ class PytternMatcher:
             logger.debug(f"Pattern is a directory, compiling composite pattern from '{pattern_path}'")
             pattern_tree = self._dir_to_pattern_tree(pattern_path, processor)
         else:  # single file
-            logger.debug(f"Pattern is a single file, compiling from '{pattern_path}'")
-            tree = processor.generate_tree_from_file(pattern_path)
-            fsm = processor.create_pda(tree)
-            pattern_tree = {'name': os.path.basename(pattern_path), 'result': fsm}
+            try:
+                mtime = os.path.getmtime(pattern_path)
+            except OSError:
+                mtime = 0.0
+            cache_key = (os.path.abspath(pattern_path), mtime)
+            if cache_key in self._pattern_cache:
+                pattern_tree = self._pattern_cache[cache_key]
+            else:
+                logger.debug(f"Pattern is a single file, compiling from '{pattern_path}'")
+                tree = processor.generate_tree_from_file(pattern_path)
+                fsm = processor.create_pda(tree)
+                pattern_tree = {'name': os.path.basename(pattern_path), 'result': fsm}
+                self._pattern_cache[cache_key] = pattern_tree
 
         # Compile code
         code_tree = processor.generate_tree_from_file(code_path)

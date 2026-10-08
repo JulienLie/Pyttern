@@ -23,7 +23,7 @@ class PDAEncoder(json.JSONEncoder):
             Any: Serialized JSON object or fallback to standard encoder.
         """
         if isinstance(o, PDA):
-            json_object = o.__dict__.copy()
+            json_object = {k: v for k, v in o.__dict__.items() if not k.startswith("_")}
             for elem in json_object:
                 if isinstance(json_object[elem], set):
                     json_object[elem] = list(json_object[elem])
@@ -54,6 +54,7 @@ class PDA:
     transitions: dict[int, list[Transition]] = field(default_factory=lambda: {0: []})
     initial_state: int = 0
     final_states: int = 0
+    _calls_not: bool | None = field(default=None, repr=False)
 
     def new_state(self) -> int:
         """Create and register a new state in the automaton.

@@ -108,6 +108,7 @@ class BaseSubPattern(ABC):
     code: str
     transformations: dict[str, ParseTree] = field(default_factory=dict)
     __compiled_transformations: dict[str, PDA] = field(default_factory=dict)
+    __compiled_cache: dict[str, dict[str, PDA]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Register the subpattern in the global loaded subpatterns registry."""
@@ -121,6 +122,7 @@ class BaseSubPattern(ABC):
             transformation: Uncompiled parse tree for this branch.
         """
         self.transformations[name] = transformation
+        self.__compiled_cache.clear()
 
     def compile(self, context: SubPatternCallContext) -> dict[str, PDA]:
         """Compile all transformation branches into pushdown automata (PDAs).
@@ -134,12 +136,14 @@ class BaseSubPattern(ABC):
         Raises:
             Exception: If a transformation tree cannot be pruned to the target context.
         """
+        ctx_name = context.ast_ctx.__class__.__name__ if context.ast_ctx is not None else "None"
+        if ctx_name in self.__compiled_cache:
+            self.__compiled_transformations = self.__compiled_cache[ctx_name]
+            return self.__compiled_transformations
+
         from ..pytternfsm.python.python_to_pda import Python_to_PDA
 
-        if len(self.__compiled_transformations) > 0:
-            logger.warning(f"Recompiling subpattern {self.name}, this might be a mistake.")
-        self.__compiled_transformations = {}
-        ctx_name = context.ast_ctx.__class__.__name__ if context.ast_ctx is not None else "None"
+        compiled: dict[str, PDA] = {}
         logger.debug(
             f"Compiling subpattern '{self.name}' ({self.type}) with {len(self.transformations)} "
             f"transformation(s) against context {ctx_name}"
@@ -149,8 +153,10 @@ class BaseSubPattern(ABC):
             if pruned_trans is None:
                 raise Exception(f"Cannot prune tree {trans.getText()} to {ctx_name}")
             pda = Python_to_PDA().visit(pruned_trans)
-            self.__compiled_transformations[name] = pda
+            compiled[name] = pda
 
+        self.__compiled_transformations = compiled
+        self.__compiled_cache[ctx_name] = compiled
         return self.__compiled_transformations
 
     def get_compiled_transf(self) -> dict[str, PDA]:

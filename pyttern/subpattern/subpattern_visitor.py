@@ -188,4 +188,5 @@ class SubPattern_Visitor(Python3ParserVisitor):
         Returns:
             list: Appended results list.
         """
-        return aggregate + [nextResult]
+        aggregate.append(nextResult)
+        return aggregate
