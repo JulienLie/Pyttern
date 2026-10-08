@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyttern"
-version = "0.4.9"
+version = "0.4.10"
 description = ""
 authors = ["julien <julien.lienard@uclouvain.be>"]
 readme = "README.md"
