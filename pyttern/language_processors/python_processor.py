@@ -1,5 +1,4 @@
 import io
-from functools import lru_cache
 
 from antlr4 import CommonTokenStream, InputStream
 from loguru import logger
@@ -45,6 +44,79 @@ class PythonProcessor(BaseProcessor):
 
     def create_pda(self, pattern_tree):
         return Python_to_PDA().visit(pattern_tree)
+
+    @staticmethod
+    def _adapt_stmt_to_tfpdef(tree):
+        desc = tree
+        while desc and not isinstance(desc, Python3Parser.Expr_stmtContext):
+            children = list(desc.getChildren())
+            if len(children) != 1:
+                break
+            desc = children[0]
+
+        if desc and isinstance(desc, Python3Parser.Expr_stmtContext):
+            target_name = desc.getChild(0)
+            while target_name.getChildCount() == 1:
+                target_name = target_name.getChild(0)
+
+            if desc.getChildCount() > 1:
+                annassign = desc.getChild(1)
+                type_expr = annassign.getChild(0)
+                tfpdef = Python3Parser.TfpdefContext(None, parent=None, invokingState=-1)
+                tfpdef.children = [target_name, type_expr]
+                target_name.parentCtx = tfpdef
+                type_expr.parentCtx = tfpdef
+                return tfpdef
+            else:
+                tfpdef = Python3Parser.TfpdefContext(None, parent=None, invokingState=-1)
+                tfpdef.children = [target_name]
+                target_name.parentCtx = tfpdef
+                return tfpdef
+        return None
+
+    def prune_subpattern_tree(self, tree, ctx):
+        """
+        Prunes a subpattern transformation parse tree down to the target context type.
+        """
+        if ctx is not None and isinstance(ctx, (Python3Parser.ParametersContext, Python3Parser.TfpdefContext)):
+            adapted = self._adapt_stmt_to_tfpdef(tree)
+            if adapted is not None:
+                return adapted
+
+        target_cls = ctx if isinstance(ctx, type) else (ctx.__class__ if ctx is not None else None)
+        desc = tree
+        while desc and not isinstance(desc, target_cls):
+            children = list(desc.getChildren())
+            if len(children) != 1:
+                return None
+            desc = children[0]
+        return desc
+
+    def compile_subpattern(self, subpattern, context):
+        """
+        Compiles a subpattern definition into a Pushdown Automaton given a call context.
+
+        :param subpattern: The subpattern definition to compile.
+        :param context: The call context (SubPatternCallContext or AST node).
+        :return: A dictionary mapping transformation names to compiled PDA instances.
+        """
+        from ..subpattern.SubPattern import SubPatternCallContext
+
+        ast_ctx = context.ast_ctx if isinstance(context, SubPatternCallContext) else context
+        compiled = {}
+        for name, trans in subpattern.transformations.items():
+            pruned_trans = self.prune_subpattern_tree(trans, ast_ctx)
+            if pruned_trans is None:
+                ctx_name = ast_ctx.__class__.__name__ if ast_ctx is not None else "None"
+                raise ValueError(f"Cannot prune tree {trans.getText()} to {ctx_name}")
+            pda_result = Python_to_PDA().visit(pruned_trans)
+            if isinstance(pda_result, dict) and "__main__" in pda_result:
+                pda = pda_result["__main__"]
+            else:
+                pda = pda_result
+            compiled[name] = pda
+
+        return compiled
 
     def create_listener(self):
         return ConsolePytternListener()

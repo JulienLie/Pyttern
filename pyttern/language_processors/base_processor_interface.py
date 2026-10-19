@@ -1,12 +1,13 @@
-from functools import lru_cache
 from antlr4 import FileStream, InputStream
 from ..Pyttern_listener import ConsolePytternListener
 
 class BaseProcessor:
+    _instances: dict[type, "BaseProcessor"] = {}
+
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(BaseProcessor, cls).__new__(cls)
-        return cls.instance
+        if cls not in BaseProcessor._instances:
+            BaseProcessor._instances[cls] = super(BaseProcessor, cls).__new__(cls)
+        return BaseProcessor._instances[cls]
 
     def generate_tree_from_code(self, code):
         code = code.strip()
@@ -22,6 +23,16 @@ class BaseProcessor:
         return self.generate_tree_from_stream(file_input)
 
     def create_pda(self, pattern_tree):
+        raise NotImplementedError
+
+    def compile_subpattern(self, subpattern, context):
+        """
+        Compiles a subpattern definition into a Pushdown Automaton given a call context.
+
+        :param subpattern: The subpattern definition to compile.
+        :param context: The call context (SubPatternCallContext or AST node).
+        :return: A dictionary mapping transformation names to compiled PDA instances.
+        """
         raise NotImplementedError
 
     def create_matcher(self, fsm, code_tree):

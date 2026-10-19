@@ -85,6 +85,65 @@ class SubPatternCatalog:
     def items(self) -> ItemsView[str, BaseSubPattern]:
         return self._subpatterns.items()
 
+    @staticmethod
+    def _extract_context_type(context: Any) -> Any:
+        """
+        Extracts the AST context class type from a call context or AST node.
+        """
+        from .SubPattern import SubPatternCallContext
+
+        if isinstance(context, SubPatternCallContext):
+            ctx_node = context.ast_ctx
+        else:
+            ctx_node = context
+
+        if isinstance(ctx_node, type):
+            return ctx_node
+        if ctx_node is not None:
+            return ctx_node.__class__
+        return None
+
+    def get_compiled(self, name: str, context: Any) -> Optional[dict[str, Any]]:
+        """
+        Retrieves cached compiled transformations for a subpattern under a call context.
+
+        :param name: Name of the subpattern.
+        :param context: The call context or AST node.
+        :return: Dict of compiled PDA transformations, or None if not cached.
+        """
+        ctx_type = self._extract_context_type(context)
+        return self._compiled_cache.get((name, ctx_type))
+
+    def get_or_compile(
+        self, name: str, context: Any, processor: Any
+    ) -> dict[str, Any]:
+        """
+        Retrieves compiled transformations for a subpattern under a call context,
+        compiling via the language processor and caching if not already cached.
+
+        :param name: Name of the subpattern.
+        :param context: The call context (SubPatternCallContext or AST node).
+        :param processor: The language processor responsible for compiling the AST.
+        :return: Dict mapping transformation names to compiled PDA instances.
+        """
+        ctx_type = self._extract_context_type(context)
+        cache_key = (name, ctx_type)
+        if cache_key in self._compiled_cache:
+            logger.trace(f"Reusing cached compiled subpattern '{name}' for context {ctx_type}")
+            return self._compiled_cache[cache_key]
+
+        subpattern = self[name]
+        compiled = processor.compile_subpattern(subpattern, context)
+        self._compiled_cache[cache_key] = compiled
+        logger.trace(f"Compiled and cached subpattern '{name}' for context {ctx_type}")
+        return compiled
+
+    def clear_cache(self) -> None:
+        """
+        Clears the cache of compiled subpattern transformations.
+        """
+        self._compiled_cache.clear()
+
     def load_string(
         self,
         code: str,
