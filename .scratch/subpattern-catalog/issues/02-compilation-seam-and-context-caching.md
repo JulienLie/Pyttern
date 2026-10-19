@@ -1,0 +1,13 @@
+# 02: Language Processor Compilation Seam and Context-Keyed Caching
+
+**What to build:** Context-aware compilation of subpattern ASTs into Pushdown Automata through the language processor interface, caching compiled transformations inside the subpattern catalog keyed by `(subpattern_name, context_type)`. This ensures that calling a subpattern across different syntactic positions (e.g. block vs statement) compiles each variant cleanly without clobbering other call sites or emitting recompilation warnings.
+
+**Blocked by:** 01: Core Subpattern Catalog and Decoupled Subpattern Data Model
+
+**Status:** ready-for-agent
+
+- [ ] The language processor interface defines a method for compiling a subpattern definition into a Pushdown Automaton given a call context.
+- [ ] The Python language processor implements this method, pruning the subpattern transformation AST down to the calling context type and compiling it via the visitor.
+- [ ] The subpattern catalog maintains a cache of compiled transformations indexed by the subpattern name and the context AST type.
+- [ ] Repeated requests for the same subpattern in the same context type reuse the cached Pushdown Automata without re-compilation.
+- [ ] Invocations of the same subpattern in two different context types generate and cache independent Pushdown Automata without overwriting each other.

@@ -79,41 +79,16 @@ class BaseSubPattern(ABC):
     args_order: list[str]
     code: str
     transformations: dict[str, ParseTree] = field(default_factory=dict)
-    __compiled_transformations: dict[str, PDA] = field(default_factory=dict)
 
-    def __post_init__(self):
-        loaded_subpatterns[self.name] = self
-
-    def add_transformation(self, name: str, transformation: ParseTree):
+    def add_transformation(self, name: str, transformation: ParseTree) -> None:
         """
         Adds a transformation to the subpattern.
 
         :param name: The name of the transformation.
-        :param transformation: The transformation object of type PDA.
+        :param transformation: The transformation parse tree.
         """
         self.transformations[name] = transformation
 
-    def compile(self, context: SubPatternCallContext) -> dict[str, PDA]:
-        from ..pytternfsm.python.python_to_pda import Python_to_PDA
-        if len(self.__compiled_transformations) > 0:
-            logger.warning(f"Recompiling subpattern {self.name}, this might be a mistake.")
-        self.__compiled_transformations  = {}
-        for (name, trans) in self.transformations.items():
-            pruned_trans = prune(trans, context.ast_ctx)
-            if pruned_trans is None:
-                raise Exception(f"Cannot prune tree {trans.getText()} to {context.ast_ctx.__class__.__name__}")
-            pda = Python_to_PDA().visit(pruned_trans)
-            self.__compiled_transformations[name] = pda
-
-        return self.__compiled_transformations
-
-    def get_compiled_transf(self):
-        if len(self.__compiled_transformations) == 0:
-            logger.error(f"Subpattern {self.name} has not be compiled yet!")
-            raise Exception(f"Subpattern {self.name} has not be compiled yet!")
-        return self.__compiled_transformations
-
-    
     @property
     @abstractmethod
     def type(self) -> Literal["AND", "OR", "NOT"]:

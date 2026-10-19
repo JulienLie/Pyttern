@@ -138,7 +138,7 @@ def find_subpattern_calls(node):
             
     return calls
 
-def collect_subpattern_trees(root_tree, existing_keys=None):
+def collect_subpattern_trees(root_tree, existing_keys=None, catalog=None):
     if existing_keys is None:
         existing_keys = set()
     
@@ -154,7 +154,7 @@ def collect_subpattern_trees(root_tree, existing_keys=None):
             continue
         visited_subpatterns.add(sub_name)
         
-        sub = loaded_subpatterns.get(sub_name)
+        sub = catalog.get(sub_name) if catalog is not None else loaded_subpatterns.get(sub_name)
         if sub is None or not hasattr(sub, 'transformations'):
             continue
             
@@ -174,7 +174,8 @@ def collect_subpattern_trees(root_tree, existing_keys=None):
 
 def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree", 
                          font_size: int = 14, node_intervals: list = None, 
-                         highlights: dict = None, wrap_at: int = None):
+                         highlights: dict = None, wrap_at: int = None,
+                         catalog=None):
     
     if not isinstance(tree, dict):
         trees = {"__main__": tree}
@@ -186,7 +187,7 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     # Collect any called subpatterns not already in trees
     subpattern_trees = {}
     for t_name, t_node in list(trees.items()):
-        discovered = collect_subpattern_trees(t_node, existing_keys=set(trees.keys()) | set(subpattern_trees.keys()))
+        discovered = collect_subpattern_trees(t_node, existing_keys=set(trees.keys()) | set(subpattern_trees.keys()), catalog=catalog)
         subpattern_trees.update(discovered)
     trees.update(subpattern_trees)
 

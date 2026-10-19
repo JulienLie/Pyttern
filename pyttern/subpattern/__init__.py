@@ -6,6 +6,7 @@ from .SubPattern import (
     SubPatternCallContext,
     loaded_subpatterns,
 )
+from .catalog import SubPatternCatalog
 from .subpattern_parser import (
     parse_subpattern_from_file,
     parse_subpattern_from_string,
@@ -20,6 +21,7 @@ __all__ = [
     "OrSubPattern",
     "NotSubPattern",
     "SubPatternCallContext",
+    "SubPatternCatalog",
     "loaded_subpatterns",
     "parse_subpattern_from_file",
     "parse_subpattern_from_string",

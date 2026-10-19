@@ -747,6 +747,8 @@ def parse_subpattern():
     lang = Languages.PYTHON
     try:
         subpatterns = parse_subpattern_from_string(subpattern_code, lang)
+        for sp in subpatterns:
+            loaded_subpatterns[sp.name] = sp
         logger.debug(f"Parsed subpatterns: {subpatterns}")
     except Exception as e:
         logger.error(f"Error parsing subpattern: {e}")

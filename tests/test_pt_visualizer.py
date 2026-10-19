@@ -13,6 +13,7 @@ from pyttern.visualizer.pt_visualizer import (
 from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_string
+from pyttern.subpattern import SubPatternCatalog
 from pyttern.subpattern.SubPattern import loaded_subpatterns
 
 def test_get_node_style():
@@ -156,7 +157,8 @@ $# augAssign
 $# add_v
 ?x = ?x + 1
 """
-    parse_subpattern_from_string(subpattern_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    parse_subpattern_from_string(subpattern_code, Languages.PYTHON, catalog=catalog)
     
     pattern_code = """
 def foo(?x):
@@ -166,7 +168,7 @@ def foo(?x):
     processor = PythonProcessor()
     tree = processor.generate_tree_from_code(pattern_code)
     
-    visualize_parse_tree(tree, "dummy_path")
+    visualize_parse_tree(tree, "dummy_path", catalog=catalog)
     
     # Subgraphs for Incr::augAssign and Incr::add_v should be created
     mock_dot.subgraph.assert_any_call(name="cluster_Incr__augAssign")
@@ -191,7 +193,8 @@ $|Inner(?y)
 $# DoWork
 ?y = ?y + 1
 """
-    parse_subpattern_from_string(subpattern_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    parse_subpattern_from_string(subpattern_code, Languages.PYTHON, catalog=catalog)
     
     pattern_code = """
 def test(?val):
@@ -200,7 +203,7 @@ def test(?val):
     processor = PythonProcessor()
     tree = processor.generate_tree_from_code(pattern_code)
     
-    visualize_parse_tree(tree, "dummy_path")
+    visualize_parse_tree(tree, "dummy_path", catalog=catalog)
     
     # Outer::CallInner and Inner::DoWork should both be found and visualized
     mock_dot.subgraph.assert_any_call(name="cluster_Outer__CallInner")

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
+from typing import Any, Optional, TYPE_CHECKING
 
 from antlr4 import InputStream, CommonTokenStream
 from loguru import logger
@@ -12,6 +14,9 @@ from ..antlr.python.Python3Lexer import Python3Lexer
 from ..language_processors import Languages
 from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
 from ..pytternfsm.python.tree_pruner import TreePruner
+
+if TYPE_CHECKING:
+    from .catalog import SubPatternCatalog
 
 
 def string_to_subpattern_tree(subpattern_string: str) -> Any:
@@ -40,7 +45,10 @@ def string_to_subpattern_tree(subpattern_string: str) -> Any:
 
 
 def parse_subpattern_from_string(
-    code: str, language: Languages, override: bool = True
+    code: str,
+    language: Languages,
+    override: bool = True,
+    catalog: Optional[SubPatternCatalog] = None,
 ) -> list[BaseSubPattern]:
     """
     Parses subpattern definitions from a string.
@@ -48,6 +56,7 @@ def parse_subpattern_from_string(
     :param code: The string containing subpattern definitions.
     :param language: Target programming language.
     :param override: Whether to override existing subpatterns.
+    :param catalog: Optional catalog to register parsed subpatterns into.
     :return: List of parsed SubPattern objects.
     """
     logger.trace("Parsing subpattern from string")
@@ -55,16 +64,26 @@ def parse_subpattern_from_string(
     subpattern_tree = string_to_subpattern_tree(code)
     subpatterns = SubPattern_Visitor(override=override).visit(subpattern_tree)
 
+    if catalog is not None:
+        for subpattern in subpatterns:
+            catalog.register(subpattern, override=override)
+
     return subpatterns
 
 
-def parse_subpattern_from_file(file: str, language: Languages, override: bool = True) -> list[BaseSubPattern]:
+def parse_subpattern_from_file(
+    file: str | Path,
+    language: Languages,
+    override: bool = True,
+    catalog: Optional[SubPatternCatalog] = None,
+) -> list[BaseSubPattern]:
     """
-    Parses subpatterns from a file and returns the last parsed subpattern.
+    Parses subpatterns from a file and returns parsed subpatterns.
 
     :param file: The file containing subpattern definitions.
     :param language: The programming language of the subpatterns.
     :param override: Whether to override existing subpatterns with the same name.
+    :param catalog: Optional catalog to register parsed subpatterns into.
     :return: The list of parsed subpatterns.
     :raises ValueError: If the file format is invalid or no subpattern definition is found.
     """
@@ -72,7 +91,7 @@ def parse_subpattern_from_file(file: str, language: Languages, override: bool = 
 
     with open(file, 'r', encoding="UTF-8") as f:
         code = f.read()
-        return parse_subpattern_from_string(code, language, override)
+        return parse_subpattern_from_string(code, language, override, catalog=catalog)
 
 
 def parse_diagnostics(code: str) -> list[dict]:
