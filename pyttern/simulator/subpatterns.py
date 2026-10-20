@@ -33,7 +33,7 @@ def get_siblings(node: ParserRuleContext) -> List[ParserRuleContext]:
     return children[node_index:]
 
 
-def search(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -> Set[Tuple[Environment, int]]:
+def search(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment, catalog=None) -> Set[Tuple[Environment, int]]:
     """
     Executes a structural transformation graph (TPA) over a sequence of sibling nodes.
     
@@ -52,12 +52,12 @@ def search(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -> S
     results = set()
     for i, node in enumerate(siblings):
         logger.debug(f"Searching results in {tau} at {node} with variables: {m_sub}")
-        match_set = Matcher.match(tau, node, False, m_sub)
+        match_set = Matcher.match(tau, node, False, m_sub, catalog=catalog)
         for match in match_set.matches:
             results.add((Environment.from_dict(match.bindings), i))
     return results
 
-def eval_base(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -> Set[Tuple[Environment, int]]:
+def eval_base(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment, catalog=None) -> Set[Tuple[Environment, int]]:
     """
     Translates a specific structural match index into a set of universally authorized block sizes.
     
@@ -75,7 +75,7 @@ def eval_base(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -
     
     is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
     
-    for m_out, i in search(tau, siblings, m_sub):
+    for m_out, i in search(tau, siblings, m_sub, catalog=catalog):
         # Authorize all block sizes k that are large enough to encapsulate match index i
         start_k = i + 1 if is_stmt else i
         end_k = p + 1 if is_stmt else p
@@ -84,7 +84,7 @@ def eval_base(tau: PDA, siblings: List[ParserRuleContext], m_sub: Environment) -
                 
     return results
 
-def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
+def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int, catalog=None) -> Set[Tuple[Environment, int]]:
     """
     Evaluates a Zero-Width Negative Lookahead (NOT), applying Scope-Bounded Negation.
     
@@ -102,7 +102,7 @@ def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
     trans_list = list(transformations.values()) if isinstance(transformations, dict) else transformations
     all_matches = set()
     for tau in trans_list:
-        all_matches.update(search(tau, siblings, m_sub))
+        all_matches.update(search(tau, siblings, m_sub, catalog=catalog))
     
     if all_matches:
         k_limit = min(i for _, i in all_matches)
@@ -114,7 +114,21 @@ def NOT_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         
     return results
 
-def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
+def _tau_calls_not(tau, catalog=None) -> bool:
+    from .pda.transition import CallTransition
+    if isinstance(tau, dict):
+        tau = tau.get('__main__', next(iter(tau.values()))) if len(tau) > 0 else None
+    if tau is None or not hasattr(tau, 'states'):
+        return False
+    for s in tau.states:
+        for tr in tau.get_transitions(s):
+            if isinstance(tr.A, CallTransition):
+                called = catalog.get(tr.A.subpattern_name) if catalog is not None else None
+                if called and called.type == 'NOT':
+                    return True
+    return False
+
+def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int, catalog=None) -> Set[Tuple[Environment, int]]:
     """
     Evaluates an Existential Union (OR) across multiple structural transformations.
     
@@ -127,29 +141,13 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
     Returns:
         Set[Tuple[Environment, int]]: The pure set union of all base evaluations.
     """
-def _tau_calls_not(tau) -> bool:
-    from ..subpattern.SubPattern import loaded_subpatterns
-    from .pda.transition import CallTransition
-    if isinstance(tau, dict):
-        tau = tau.get('__main__', next(iter(tau.values()))) if len(tau) > 0 else None
-    if tau is None or not hasattr(tau, 'states'):
-        return False
-    for s in tau.states:
-        for tr in tau.get_transitions(s):
-            if isinstance(tr.A, CallTransition):
-                called = loaded_subpatterns.get(tr.A.subpattern_name)
-                if called and called.type == 'NOT':
-                    return True
-    return False
-
-def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
     results = set()
     is_stmt = len(siblings) > 0 and isinstance(siblings[0], Python3Parser.StmtContext)
     for trans_name, tau in transformations.items():
         logger.trace(f"Computing OR for trans {trans_name}")
-        if _tau_calls_not(tau):
+        if _tau_calls_not(tau, catalog=catalog):
             if len(siblings) > 0:
-                match_set = Matcher.match(tau, siblings[0], False, m_sub)
+                match_set = Matcher.match(tau, siblings[0], False, m_sub, catalog=catalog)
                 for match in match_set.matches:
                     m_out = Environment.from_dict(match.bindings)
                     start_k = 1 if is_stmt else 0
@@ -157,11 +155,11 @@ def OR_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContex
                     for k in range(start_k, end_k):
                         results.add((m_out, k))
         else:
-            results = results.union(eval_base(tau, siblings, m_sub))
+            results = results.union(eval_base(tau, siblings, m_sub, catalog=catalog))
         
     return results
 
-def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int) -> Set[Tuple[Environment, int]]:
+def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleContext], m_sub: Environment, p: int, catalog=None) -> Set[Tuple[Environment, int]]:
     """
     Evaluates a Universal Intersection (AND) with incremental branch pruning.
     
@@ -170,6 +168,7 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
         siblings (List[ParserRuleContext]): The sequence of sibling nodes S(v).
         m_sub (Environment): The local environment containing bound arguments.
         p (int): The maximum index of the sibling sequence.
+        catalog: Optional SubPatternCatalog for resolving nested subpattern calls.
         
     Returns:
         Set[Tuple[Environment, int]]: A set of valid configurations (m_merged, k) representing 
@@ -178,7 +177,7 @@ def AND_operator(transformations: Dict[str, PDA], siblings: List[ParserRuleConte
     import itertools
     results = set()
     trans_list = list(transformations.values()) if isinstance(transformations, dict) else transformations
-    all_matches = [search(tau, siblings, m_sub) for tau in trans_list]
+    all_matches = [search(tau, siblings, m_sub, catalog=catalog) for tau in trans_list]
 
     for combo in itertools.product(*all_matches):
         envs, indices = zip(*combo)
@@ -221,7 +220,8 @@ def eval_operator(
     op: str, 
     transformations: Dict[str, PDA], 
     current_node: ParserRuleContext, 
-    m_sub: Environment
+    m_sub: Environment,
+    catalog=None
 ) -> Set[Tuple[Environment, int]]:
     """
     Dynamically routes a logical operator evaluation to its corresponding method.
@@ -231,6 +231,7 @@ def eval_operator(
         transformations (Dict[str, PDA]): The parsed subpattern transformation graphs.
         current_node (ParserRuleContext): The active node pointer in the target syntax tree.
         m_sub (Environment): The initialized sub-environment resolving argument bindings.
+        catalog: Optional SubPatternCatalog for resolving nested subpatterns.
         
     Returns:
         Set[Tuple[Environment, int]]: A mathematical set representing all valid next-step 
@@ -249,7 +250,7 @@ def eval_operator(
     if not operator_func:
         raise ValueError(f"Unknown or unsupported operator: {op}")
         
-    return operator_func(transformations, siblings, m_sub, p)
+    return operator_func(transformations, siblings, m_sub, p, catalog=catalog)
 
 
 def join_dicts(m_a: dict, m_b: dict) -> dict:
@@ -297,20 +298,27 @@ def composition(mapping, bindings):
             result[u] = bindings[t]
     return result
 
-def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args) -> list[tuple[Environment, int]]:
+def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args, catalog=None) -> list[tuple[Environment, int]]:
     """
     Calls a subpattern against the current node.
 
     :param subpattern: The subpattern object.
     :param current_node: The current node in the parse tree.
     :param caller_env: The current variable bindings.
+    :param args: The arguments passed to the subpattern call.
+    :param catalog: Optional SubPatternCatalog for resolving transformations and nested calls.
     :return: A list of binding dicts.
     """
     caller_env = Environment.from_dict(caller_env)
 
     subpattern_name = subpattern.name
     op = subpattern.type
-    transformations = subpattern.get_compiled_transf()
+    if catalog is not None:
+        from ..language_processors.python_processor import PythonProcessor
+        transformations = catalog.get_or_compile(subpattern_name, current_node, PythonProcessor())
+    else:
+        from ..language_processors.python_processor import PythonProcessor
+        transformations = PythonProcessor().compile_subpattern(subpattern, current_node)
 
     m_j_to_i = mapping(subpattern.args_order, args)
     comp = composition(m_j_to_i, caller_env)
@@ -318,7 +326,7 @@ def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext,
     m_sub = Environment.from_dict(join_dicts(m_j_epsilon, comp))
     logger.trace(f"Calling subpattern {subpattern_name} on node {current_node} with bindings {m_sub}")
 
-    results = eval_operator(op, transformations, current_node, m_sub)
+    results = eval_operator(op, transformations, current_node, m_sub, catalog=catalog)
 
     if len(results) == 0:
         logger.trace(f"subpattern {subpattern_name} did not match")

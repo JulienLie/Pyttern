@@ -79,6 +79,9 @@ class SubPatternCatalog:
     def keys(self) -> KeysView[str]:
         return self._subpatterns.keys()
 
+    def names(self) -> KeysView[str]:
+        return self.keys()
+
     def values(self) -> ValuesView[BaseSubPattern]:
         return self._subpatterns.values()
 
@@ -133,7 +136,10 @@ class SubPatternCatalog:
             return self._compiled_cache[cache_key]
 
         subpattern = self[name]
-        compiled = processor.compile_subpattern(subpattern, context)
+        try:
+            compiled = processor.compile_subpattern(subpattern, context, catalog=self)
+        except TypeError:
+            compiled = processor.compile_subpattern(subpattern, context)
         self._compiled_cache[cache_key] = compiled
         logger.trace(f"Compiled and cached subpattern '{name}' for context {ctx_type}")
         return compiled

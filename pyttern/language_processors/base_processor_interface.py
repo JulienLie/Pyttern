@@ -22,15 +22,16 @@ class BaseProcessor:
         file_input = FileStream(file, encoding="utf-8")
         return self.generate_tree_from_stream(file_input)
 
-    def create_pda(self, pattern_tree):
+    def create_pda(self, pattern_tree, catalog=None):
         raise NotImplementedError
 
-    def compile_subpattern(self, subpattern, context):
+    def compile_subpattern(self, subpattern, context, catalog=None):
         """
         Compiles a subpattern definition into a Pushdown Automaton given a call context.
 
         :param subpattern: The subpattern definition to compile.
         :param context: The call context (SubPatternCallContext or AST node).
+        :param catalog: Optional subpattern catalog to resolve nested subpatterns.
         :return: A dictionary mapping transformation names to compiled PDA instances.
         """
         raise NotImplementedError

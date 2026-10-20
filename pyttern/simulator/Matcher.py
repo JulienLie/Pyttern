@@ -1,3 +1,5 @@
+from typing import Optional
+
 from antlr4.ParserRuleContext import ParserRuleContext
 from antlr4.tree.Tree import TerminalNode, Tree
 from loguru import logger
@@ -7,14 +9,19 @@ from pyttern.simulator.configuration import Environment
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
 from .pda.transition import NodeTransition, NamedTransition, CallTransition
-from ..subpattern.SubPattern import loaded_subpatterns
+from ..subpattern.catalog import SubPatternCatalog
 from ..pytternfsm.python.match_set import MatchSet, Match
 
 class Matcher:
-    def __init__(self, pdas: dict[str, PDA], parse_tree: Tree):
-        self.pda = pdas["__main__"]
-        self.callable = pdas
+    def __init__(self, pdas: dict[str, PDA] | PDA, parse_tree: Tree, catalog: Optional[SubPatternCatalog] = None):
+        if isinstance(pdas, dict):
+            self.pda = pdas["__main__"]
+            self.callable = pdas
+        else:
+            self.pda = pdas
+            self.callable = {"__main__": pdas}
         self.parse_tree = parse_tree
+        self.catalog = catalog if catalog is not None else SubPatternCatalog()
         self.match_set = MatchSet()
         self.configurations = []
         self.n_step = 0
@@ -30,7 +37,7 @@ class Matcher:
         self._listeners.clear()
 
     @staticmethod
-    def match(pda: dict[str, PDA], parse_tree: ParserRuleContext, stop_at_first=False, bindings=None) -> MatchSet:
+    def match(pda: dict[str, PDA] | PDA, parse_tree: ParserRuleContext, stop_at_first=False, bindings=None, catalog=None) -> MatchSet:
         """
         Matches a given parse tree against a Pushdown Automaton (PDA) and returns the resulting matches.
 
@@ -38,10 +45,11 @@ class Matcher:
         :param parse_tree: The parse tree to match against the PDA.
         :param stop_at_first: A boolean indicating whether to stop after the first match is found. Defaults to False.
         :param bindings: An optional dictionary of initial variable bindings. Defaults to None.
+        :param catalog: Optional SubPatternCatalog for resolving subpattern calls.
         :return: A MatchSet object containing the results of the matching process.
         """
 
-        matcher = Matcher(pda, parse_tree)
+        matcher = Matcher(pda, parse_tree, catalog=catalog)
         logger.debug("Starting match")
         matcher.start(bindings)
         while len(matcher.configurations) > 0:
@@ -182,13 +190,13 @@ class Matcher:
         subpattern_name = transition.subpattern_name
         args = transition.args
 
-        subp = loaded_subpatterns.get(subpattern_name)
+        subp = self.catalog.get(subpattern_name)
         if not subp:
             logger.warning(f"subpattern not found: {subpattern_name}")
-            logger.debug(f"Loaded subpatterns: {loaded_subpatterns.keys()}, callable subpatterns: {self.callable.keys()}")
+            logger.debug(f"Catalog subpatterns: {list(self.catalog.keys())}, callable subpatterns: {self.callable.keys()}")
             return []
         
-        return subpatterns.call_subpattern(subp, current_node, bindings, args)
+        return subpatterns.call_subpattern(subp, current_node, bindings, args, catalog=self.catalog)
 
 
     def _get_next_node(self, node, directions):

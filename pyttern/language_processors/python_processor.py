@@ -42,8 +42,8 @@ class PythonProcessor(BaseProcessor):
         with open(file, 'r', encoding="utf-8") as f:
             return self.generate_tree_from_code(f.read())
 
-    def create_pda(self, pattern_tree):
-        return Python_to_PDA().visit(pattern_tree)
+    def create_pda(self, pattern_tree, catalog=None):
+        return Python_to_PDA(catalog=catalog).visit(pattern_tree)
 
     @staticmethod
     def _adapt_stmt_to_tfpdef(tree):
@@ -92,12 +92,13 @@ class PythonProcessor(BaseProcessor):
             desc = children[0]
         return desc
 
-    def compile_subpattern(self, subpattern, context):
+    def compile_subpattern(self, subpattern, context, catalog=None):
         """
         Compiles a subpattern definition into a Pushdown Automaton given a call context.
 
         :param subpattern: The subpattern definition to compile.
         :param context: The call context (SubPatternCallContext or AST node).
+        :param catalog: Optional subpattern catalog to resolve nested subpatterns.
         :return: A dictionary mapping transformation names to compiled PDA instances.
         """
         from ..subpattern.SubPattern import SubPatternCallContext
@@ -109,7 +110,7 @@ class PythonProcessor(BaseProcessor):
             if pruned_trans is None:
                 ctx_name = ast_ctx.__class__.__name__ if ast_ctx is not None else "None"
                 raise ValueError(f"Cannot prune tree {trans.getText()} to {ctx_name}")
-            pda_result = Python_to_PDA().visit(pruned_trans)
+            pda_result = Python_to_PDA(catalog=catalog).visit(pruned_trans)
             if isinstance(pda_result, dict) and "__main__" in pda_result:
                 pda = pda_result["__main__"]
             else:

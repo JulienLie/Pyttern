@@ -1,17 +1,18 @@
 import math
+from typing import Optional
 
-from antlr4.tree.Tree import TerminalNode
 from loguru import logger
 
 from .tree_pruner import BlockEndContext, TreePruner
 from ...antlr.python import Python3ParserVisitor, Python3Parser
-from ...subpattern.SubPattern import loaded_subpatterns, SubPatternCallContext
+from ...subpattern.SubPattern import SubPatternCallContext
+from ...subpattern.catalog import SubPatternCatalog
 from ...simulator.pda.PDA_alphabets import NavigationAlphabet
 from ...simulator.pda.transition import NodeTransition, NamedTransition, Transition
 from ..generic_to_pda import Generic_to_PDA
 
 class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
-    def __init__(self):
+    def __init__(self, catalog: Optional[SubPatternCatalog] = None):
         grammar = Python3Parser
         skippable_nodes = [
                 "StmtContext"
@@ -23,6 +24,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         tree_pruner = TreePruner()
         
         super().__init__(grammar, skippable_nodes, remove_double_wildcard, tree_pruner)
+        self.catalog = catalog if catalog is not None else SubPatternCatalog()
 
     def define_boundaries(self, ctx):
         """
@@ -94,11 +96,14 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         if subpattern_call:
             name = subpattern_call.NAME().getText()
-            subpattern = loaded_subpatterns.get(name)
+            subpattern = self.catalog.get(name)
+            if subpattern is None:
+                raise ValueError(f"Calling {name} subpattern, but was not loaded. Available subpatterns: {list(self.catalog.keys())}")
             logger.debug(f"Handling {subpattern} at block level")
 
             context = SubPatternCallContext(ctx, None)
-            transformations = subpattern.compile(context)
+            from ...language_processors.python_processor import PythonProcessor
+            transformations = self.catalog.get_or_compile(name, context, PythonProcessor())
             self.dict_pda.update(transformations)
 
             args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
@@ -124,13 +129,14 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         lookahead_call_transition = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
         if lookahead_call_transition:
             name = lookahead_call_transition.NAME().getText()
-            subpattern = loaded_subpatterns.get(name)
+            subpattern = self.catalog.get(name)
             if subpattern is None:
-                logger.error(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
-                raise ValueError(f"Calling {name} subpattern, but was not loaded. Loaded subpattern: {list(loaded_subpatterns.keys())}")
+                logger.error(f"Calling {name} subpattern, but was not loaded. Available subpatterns: {list(self.catalog.keys())}")
+                raise ValueError(f"Calling {name} subpattern, but was not loaded. Available subpatterns: {list(self.catalog.keys())}")
 
             context = SubPatternCallContext(ctx, None)
-            transformations = subpattern.compile(context)
+            from ...language_processors.python_processor import PythonProcessor
+            transformations = self.catalog.get_or_compile(name, context, PythonProcessor())
             self.dict_pda.update(transformations)
 
             args_nodes = lookahead_call_transition.subpattern_args().subpattern_arg() if lookahead_call_transition.subpattern_args() is not None else None
@@ -159,18 +165,21 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
         subpattern_call = self.lookahead(ctx, Python3Parser.Subpattern_callContext)
         if subpattern_call is not None:
             name = subpattern_call.NAME().getText()
-            subpattern = loaded_subpatterns.get(name)
-            if subpattern is not None:
-                context = SubPatternCallContext(ctx, None)
-                transformations = subpattern.compile(context)
-                self.dict_pda.update(transformations)
+            subpattern = self.catalog.get(name)
+            if subpattern is None:
+                raise ValueError(f"Calling {name} subpattern, but was not loaded. Available subpatterns: {list(self.catalog.keys())}")
 
-                args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
-                args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes] if args_nodes else []
+            context = SubPatternCallContext(ctx, None)
+            from ...language_processors.python_processor import PythonProcessor
+            transformations = self.catalog.get_or_compile(name, context, PythonProcessor())
+            self.dict_pda.update(transformations)
 
-                new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
-                self.current_state = new_state
-                return self._add_up_transition(ctx)
+            args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
+            args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes] if args_nodes else []
+
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            self.current_state = new_state
+            return self._add_up_transition(ctx)
 
         return self.visitChildren(ctx)
 
@@ -237,8 +246,9 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
     def visitSubpattern_call(self, ctx:Python3Parser.Subpattern_callContext):
         subpattern_name = ctx.NAME().getText()
         logger.debug(f"Calling subpattern {subpattern_name}")
-        if subpattern_name not in loaded_subpatterns:
-            raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(loaded_subpatterns.keys())}")
+        subpattern = self.catalog.get(subpattern_name)
+        if subpattern is None:
+            raise ValueError(f"SubPattern {subpattern_name} is not defined. Available subpatterns: {list(self.catalog.keys())}")
 
         # TODO: change handling of subpattern args
         # Should be able to handle 3 types -> maybe check types from subpattern?
@@ -253,15 +263,14 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
 
         body = ctx.block()
 
-        subpattern = loaded_subpatterns[subpattern_name]
-
         ast_ctx = ctx.parentCtx
         while "wildcard" in ast_ctx.__class__.__name__:
             ast_ctx = ast_ctx.parentCtx
         context = SubPatternCallContext(ast_ctx, body=body) # first parent in also subpattern
 
         # TODO: same as before, change compilation in relation to subpattern args 
-        transformations = subpattern.compile(context)
+        from ...language_processors.python_processor import PythonProcessor
+        transformations = self.catalog.get_or_compile(subpattern_name, context, PythonProcessor())
         self.dict_pda.update(transformations)
         n_args_req = sum(1 for key in subpattern.args if subpattern.args[key] is None)
         if len(args_names) < n_args_req:

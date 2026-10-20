@@ -4,10 +4,10 @@
 
 **Blocked by:** 02: Language Processor Compilation Seam and Context-Keyed Caching
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The pattern compiler receives the active subpattern catalog and delegates all subpattern call site resolutions and compilations to it.
-- [ ] The runtime matcher accepts the subpattern catalog in its constructor and passes it down into subpattern execution routines.
-- [ ] Subpattern evaluators (for AND, OR, and NOT compositions) query definitions and transformations exclusively from the provided catalog.
-- [ ] Nested subpattern checks (such as detecting whether a called transformation executes a NOT subpattern) resolve cleanly through the catalog.
-- [ ] Patterns referencing subpatterns compile and match against code with correct variable bindings end-to-end without reading from any global dictionary.
+- [x] The pattern compiler receives the active subpattern catalog and delegates all subpattern call site resolutions and compilations to it.
+- [x] The runtime matcher accepts the subpattern catalog in its constructor and passes it down into subpattern execution routines.
+- [x] Subpattern evaluators (for AND, OR, and NOT compositions) query definitions and transformations exclusively from the provided catalog.
+- [x] Nested subpattern checks (such as detecting whether a called transformation executes a NOT subpattern) resolve cleanly through the catalog.
+- [x] Patterns referencing subpatterns compile and match against code with correct variable bindings end-to-end without reading from any global dictionary.

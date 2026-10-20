@@ -3,9 +3,11 @@ import glob
 import os
 import sys
 
+from typing import Optional
 from loguru import logger
 
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
+from pyttern.subpattern.catalog import SubPatternCatalog
 
 from .language_processors import determine_language, get_processor, Languages
 from .simulator.Matcher import Matcher
@@ -18,9 +20,10 @@ class PytternMatcher:
     and running the matching process against code files.
     """
 
-    def __init__(self, match_details=False, stop_at_first=False):
+    def __init__(self, match_details=False, stop_at_first=False, catalog: Optional[SubPatternCatalog] = None):
         self.match_details = match_details
         self.stop_at_first = stop_at_first
+        self.catalog = catalog if catalog is not None else SubPatternCatalog()
         self._language_processors = {lang: get_processor(lang) for lang in Languages}
         self._extension_to_processor = {
             ext: processor
@@ -58,7 +61,7 @@ class PytternMatcher:
         name = pattern_json.get('filename', 'unnamed')
         pattern_code = pattern_json["code"]
         tree = processor.generate_tree_from_code(pattern_code)
-        fsm = processor.create_pda(tree)
+        fsm = processor.create_pda(tree, catalog=self.catalog)
         return {'name': name, 'result': fsm}
 
     def match_tree(self, pattern_tree, code_tree):
@@ -79,7 +82,7 @@ class PytternMatcher:
         name = pattern_tree.get('name')
         if 'children' not in pattern_tree:
             pattern_fsm = pattern_tree['result']
-            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first)
+            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first, catalog=self.catalog)
             match_found = res.count() > 0
             logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
             return match_found
@@ -108,7 +111,7 @@ class PytternMatcher:
         name = pattern_tree.get('name')
         if 'children' not in pattern_tree:
             pattern_fsm = pattern_tree['result']
-            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first)
+            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first, catalog=self.catalog)
             match_found = res.count() > 0
             logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
             return {'name': name, 'result': match_found, 'matches': res}
@@ -145,14 +148,14 @@ class PytternMatcher:
                 if self._get_processor_for_file(item):
                     logger.debug(f"Compiling pattern file: {item_path}")
                     tree = processor.generate_tree_from_file(item_path)
-                    fsm = processor.create_pda(tree)
+                    fsm = processor.create_pda(tree, catalog=self.catalog)
                     children.append({'name': item, 'result': fsm})
         return {'name': op, 'children': children}
 
     def match(self, pattern_path, code_path, lang):
         """
         Main matching method. Compiles pattern and code from paths and matches them.
-        The pattern can be a single file or a directory representing a composite pattern.
+        The pattern can be a single file, a raw code string, or a directory representing a composite pattern.
         """
         logger.info(f"Starting match for pattern '{pattern_path}' on code '{code_path}' with language '{lang}'")
         processor = self._language_processors.get(Languages[lang.upper()])
@@ -163,14 +166,22 @@ class PytternMatcher:
         if os.path.isdir(pattern_path):
             logger.debug(f"Pattern is a directory, compiling composite pattern from '{pattern_path}'")
             pattern_tree = self._dir_to_pattern_tree(pattern_path, processor)
-        else:  # single file
+        elif os.path.isfile(pattern_path):  # single file
             logger.debug(f"Pattern is a single file, compiling from '{pattern_path}'")
             tree = processor.generate_tree_from_file(pattern_path)
-            fsm = processor.create_pda(tree)
+            fsm = processor.create_pda(tree, catalog=self.catalog)
             pattern_tree = {'name': os.path.basename(pattern_path), 'result': fsm}
+        else:
+            logger.debug("Pattern is raw code string, compiling from string")
+            tree = processor.generate_tree_from_code(pattern_path)
+            fsm = processor.create_pda(tree, catalog=self.catalog)
+            pattern_tree = {'name': 'raw_pattern', 'result': fsm}
 
         # Compile code
-        code_tree = processor.generate_tree_from_file(code_path)
+        if os.path.isfile(code_path):
+            code_tree = processor.generate_tree_from_file(code_path)
+        else:
+            code_tree = processor.generate_tree_from_code(code_path)
 
         # Match
         match_result = self.match_tree(pattern_tree, code_tree)
@@ -201,14 +212,14 @@ class PytternMatcher:
                 ret[code_filepath][pattern_filepath] = result
         return ret
     
-def match_files(pattern_path, code_path, lang=None, match_details=False, stop_at_first=True):
+def match_files(pattern_path, code_path, lang=None, match_details=False, stop_at_first=True, catalog=None):
     if lang is None:
         pattern_lang = determine_language(pattern_path)
         code_lang = determine_language(code_path)
         if code_lang != pattern_lang:
             raise ValueError(f"Pattern language ({pattern_lang}) and Code language ({code_lang}) should be the same.")
         lang = pattern_lang
-    matcher = PytternMatcher(match_details, stop_at_first)
+    matcher = PytternMatcher(match_details, stop_at_first, catalog=catalog)
     if match_details:
         res, det = matcher.match(pattern_path, code_path, lang)
         return res, det["matches"]
