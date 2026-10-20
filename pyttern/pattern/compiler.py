@@ -11,6 +11,7 @@ from pyttern.language_processors.base_processor_interface import BaseProcessor
 from pyttern.language_processors.java_processor import JavaProcessor
 from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.pattern.compiled import CompiledPattern, LeafPattern
+from pyttern.pattern.composite import CompositePattern, AndPattern, OrPattern, NotPattern
 from pyttern.subpattern.catalog import SubPatternCatalog
 
 
@@ -87,6 +88,59 @@ class PatternCompiler:
             catalog=self.catalog,
         )
 
+    def compile_dir(
+        self,
+        path: Union[str, Path],
+        op: str = "and",
+        name: Optional[str] = None,
+    ) -> CompositePattern:
+        """
+        Recursively compiles a directory tree into an immutable CompositePattern hierarchy.
+        Treats subdirectories named 'and', 'or', and 'not' as logical combinators, defaulting
+        other subdirectories to 'and' composition. Pattern files are filtered by processor
+        extensions and compiled into LeafPattern instances.
+        """
+        dir_path = Path(path)
+        if not dir_path.exists():
+            raise FileNotFoundError(f"Pattern directory not found: {dir_path}")
+        if not dir_path.is_dir():
+            raise NotADirectoryError(f"Path is not a directory: {dir_path}")
+
+        op_norm = op.lower()
+        if op_norm not in ("and", "or", "not"):
+            raise ValueError(f"Unsupported logical operator: {op}")
+
+        pattern_name = name if name is not None else op_norm
+        supported_exts = {e.lower().lstrip(".") for e in self.processor.get_language_extensions()}
+        children: list[CompiledPattern] = []
+
+        logger.debug(f"Compiling pattern directory '{dir_path}' with op='{op_norm}' as '{pattern_name}'")
+
+        for item in sorted(os.listdir(dir_path)):
+            if item.startswith(".") or item == "__pycache__":
+                continue
+            item_path = dir_path / item
+            if item_path.is_dir():
+                item_lower = item.lower()
+                if item_lower in ("and", "or", "not"):
+                    sub_op = item_lower
+                else:
+                    sub_op = "and"
+                child_pattern = self.compile_dir(item_path, op=sub_op)
+                children.append(child_pattern)
+            elif item_path.is_file():
+                ext = item_path.suffix.lstrip(".").lower()
+                if ext in supported_exts:
+                    leaf = self.compile_file(item_path)
+                    children.append(leaf)
+
+        if op_norm == "and":
+            return AndPattern(children=children, name=pattern_name, processor=self.processor)
+        elif op_norm == "or":
+            return OrPattern(children=children, name=pattern_name, processor=self.processor)
+        else:
+            return NotPattern(children=children, name=pattern_name, processor=self.processor)
+
     def compile(
         self,
         source: Union[str, Path, dict],
@@ -97,13 +151,13 @@ class PatternCompiler:
         dispatches between file paths, directories, raw code strings, and JSON definitions.
         """
         if isinstance(source, Path):
-            if hasattr(self, "compile_dir") and source.is_dir():
-                return getattr(self, "compile_dir")(source)
+            if source.is_dir():
+                return self.compile_dir(source, name=name)
             return self.compile_file(source, name=name)
 
         if isinstance(source, str):
-            if hasattr(self, "compile_dir") and "\n" not in source and os.path.isdir(source):
-                return getattr(self, "compile_dir")(source)
+            if "\n" not in source and os.path.isdir(source):
+                return self.compile_dir(source, name=name)
             if "\n" not in source and os.path.isfile(source):
                 return self.compile_file(source, name=name)
             return self.compile_code(source, name=name)

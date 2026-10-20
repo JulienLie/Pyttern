@@ -4,13 +4,13 @@
 
 **Blocked by:** 01: Core Pattern Compiler, Leaf Pattern, and MatchResult
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `AndPattern` evaluates all child patterns and short-circuits on the first failure when stopping at first match.
-- [ ] `OrPattern` evaluates child patterns and short-circuits on the first successful match.
-- [ ] `NotPattern` inverts the match outcome of its single child pattern.
-- [ ] `compile_dir` recursively traverses directories, treating subdirectories named `and`, `or`, and `not` as logical combinators.
-- [ ] Subdirectories with names other than `and`, `or`, or `not` default to `and` composition.
-- [ ] Directory compilation returns an immutable composite `CompiledPattern` tree containing leaf patterns for pattern files.
-- [ ] Polymorphic `compile(source)` automatically recognizes directory paths and dispatches to `compile_dir`.
-- [ ] Composite matching produces a hierarchical `MatchResult` containing child match results.
+- [x] `AndPattern` evaluates all child patterns and short-circuits on the first failure when stopping at first match.
+- [x] `OrPattern` evaluates child patterns and short-circuits on the first successful match.
+- [x] `NotPattern` inverts the match outcome of its single child pattern.
+- [x] `compile_dir` recursively traverses directories, treating subdirectories named `and`, `or`, and `not` as logical combinators.
+- [x] Subdirectories with names other than `and`, `or`, or `not` default to `and` composition.
+- [x] Directory compilation returns an immutable composite `CompiledPattern` tree containing leaf patterns for pattern files.
+- [x] Polymorphic `compile(source)` automatically recognizes directory paths and dispatches to `compile_dir`.
+- [x] Composite matching produces a hierarchical `MatchResult` containing child match results.
