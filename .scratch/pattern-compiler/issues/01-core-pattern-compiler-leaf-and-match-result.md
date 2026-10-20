@@ -6,11 +6,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] `PatternCompiler` initializes with an active language and an optional `SubPatternCatalog`.
-- [ ] `compile_code` compiles a raw pattern string into an executable `LeafPattern` wrapping a Pushdown Automaton.
-- [ ] `compile_file` loads and compiles a pattern file into an executable `LeafPattern`.
-- [ ] Polymorphic `compile(source)` automatically dispatches between raw code strings and file paths.
-- [ ] `LeafPattern.matches(target)` accepts pre-parsed CST nodes and executes matching against the Pushdown Automaton.
-- [ ] `LeafPattern.matches(target)` accepts raw code strings or file paths, automatically generating CST nodes via the language processor.
-- [ ] Matching returns an immutable `MatchResult` implementing `__bool__` representing match success.
-- [ ] `MatchResult` provides access to match name, boolean status, and underlying match set bindings.
+- [x] `PatternCompiler` initializes with an active language and an optional `SubPatternCatalog`.
+- [x] `compile_code` compiles a raw pattern string into an executable `LeafPattern` wrapping a Pushdown Automaton.
+- [x] `compile_file` loads and compiles a pattern file into an executable `LeafPattern`.
+- [x] Polymorphic `compile(source)` automatically dispatches between raw code strings and file paths.
+- [x] `LeafPattern.matches(target)` accepts pre-parsed CST nodes and executes matching against the Pushdown Automaton.
+- [x] `LeafPattern.matches(target)` accepts raw code strings or file paths, automatically generating CST nodes via the language processor.
+- [x] Matching returns an immutable `MatchResult` implementing `__bool__` representing match success.
+- [x] `MatchResult` provides access to match name, boolean status, and underlying match set bindings.
