@@ -23,3 +23,15 @@ _Avoid_: Call site, parent context
 **Matcher**:
 The simulation engine that steps Pushdown Automata across target Concrete Syntax Trees with environment variable bindings.
 _Avoid_: Engine, runner, evaluator
+
+**CompiledPattern**:
+An immutable representation of a structural code query (either an elementary leaf PDA or a composite boolean tree) ready for execution against target ASTs.
+_Avoid_: Pattern dictionary, pattern tree, raw pattern
+
+**PatternCompiler**:
+The compilation module responsible for transforming pattern sources (files, directories, code strings, or JSON) into `CompiledPattern` instances using an active language processor and subpattern catalog.
+_Avoid_: Pattern parser, pattern loader
+
+**MatchResult**:
+An immutable result object produced by matching a pattern against code, containing boolean status, node bindings, and hierarchical child results.
+_Avoid_: Result dict, match dict
