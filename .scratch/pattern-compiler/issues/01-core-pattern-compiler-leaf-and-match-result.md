@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] `PatternCompiler` initializes with an active language and an optional `SubPatternCatalog`.
 - [x] `compile_code` compiles a raw pattern string into an executable `LeafPattern` wrapping a Pushdown Automaton.
