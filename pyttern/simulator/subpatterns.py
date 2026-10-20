@@ -298,7 +298,14 @@ def composition(mapping, bindings):
             result[u] = bindings[t]
     return result
 
-def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext, caller_env: Environment, args, catalog=None) -> list[tuple[Environment, int]]:
+def call_subpattern(
+    subpattern: BaseSubPattern,
+    current_node: ParserRuleContext,
+    caller_env: Environment,
+    args,
+    catalog=None,
+    context_type=None,
+) -> list[tuple[Environment, int]]:
     """
     Calls a subpattern against the current node.
 
@@ -307,18 +314,49 @@ def call_subpattern(subpattern: BaseSubPattern, current_node: ParserRuleContext,
     :param caller_env: The current variable bindings.
     :param args: The arguments passed to the subpattern call.
     :param catalog: Optional SubPatternCatalog for resolving transformations and nested calls.
+    :param context_type: Optional call context type from CallTransition.
     :return: A list of binding dicts.
     """
     caller_env = Environment.from_dict(caller_env)
 
     subpattern_name = subpattern.name
     op = subpattern.type
+    transformations = None
+    lookup_ctx = context_type if context_type is not None else current_node
+
     if catalog is not None:
         from ..language_processors.python_processor import PythonProcessor
-        transformations = catalog.get_or_compile(subpattern_name, current_node, PythonProcessor())
+        try:
+            transformations = catalog.get_or_compile(subpattern_name, lookup_ctx, PythonProcessor())
+        except (ValueError, TypeError, Exception) as e:
+            # Fallback to current_node if context_type failed
+            if lookup_ctx is not current_node:
+                try:
+                    transformations = catalog.get_or_compile(subpattern_name, current_node, PythonProcessor())
+                except (ValueError, TypeError, Exception):
+                    pass
+            # Fallback to any already-compiled transformation for this subpattern in catalog cache
+            if transformations is None:
+                for (c_name, _), trans in getattr(catalog, "_compiled_cache", {}).items():
+                    if c_name == subpattern_name:
+                        transformations = trans
+                        break
+            if transformations is None:
+                logger.trace(f"Subpattern {subpattern_name} cannot be compiled: {e}")
+                return []
     else:
         from ..language_processors.python_processor import PythonProcessor
-        transformations = PythonProcessor().compile_subpattern(subpattern, current_node)
+        try:
+            transformations = PythonProcessor().compile_subpattern(subpattern, lookup_ctx)
+        except (ValueError, TypeError, Exception) as e:
+            if lookup_ctx is not current_node:
+                try:
+                    transformations = PythonProcessor().compile_subpattern(subpattern, current_node)
+                except (ValueError, TypeError, Exception):
+                    pass
+            if transformations is None:
+                logger.trace(f"Subpattern {subpattern_name} cannot be compiled: {e}")
+                return []
 
     m_j_to_i = mapping(subpattern.args_order, args)
     comp = composition(m_j_to_i, caller_env)

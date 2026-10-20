@@ -196,7 +196,10 @@ class Matcher:
             logger.debug(f"Catalog subpatterns: {list(self.catalog.keys())}, callable subpatterns: {self.callable.keys()}")
             return []
         
-        return subpatterns.call_subpattern(subp, current_node, bindings, args, catalog=self.catalog)
+        context_type = getattr(transition, 'context_type', None)
+        return subpatterns.call_subpattern(
+            subp, current_node, bindings, args, catalog=self.catalog, context_type=context_type
+        )
 
 
     def _get_next_node(self, node, directions):

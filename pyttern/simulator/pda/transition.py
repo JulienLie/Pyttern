@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 from .PDA_alphabets import NavigationAlphabet, StackAlphabet
 
@@ -39,12 +40,19 @@ class NamedTransition(TransitionCondition):
 class CallTransition(TransitionCondition):
     subpattern_name: str
     args: list[str]
+    context_type: Any = None
 
     def to_json(self):
+        ctx_name = (
+            self.context_type.__name__
+            if isinstance(self.context_type, type)
+            else (self.context_type.__class__.__name__ if self.context_type is not None else None)
+        )
         return {
             "type": "CallTransition",
             "subpattern_name": self.subpattern_name,
-            "args": self.args
+            "args": self.args,
+            "context_type": ctx_name,
         }
     
     def __str__(self):

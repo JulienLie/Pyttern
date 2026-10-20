@@ -2,7 +2,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
@@ -34,14 +34,14 @@ def test_proxy_subpattern():
     logger.enable("pyttern")
 
     subpattern_file = Path(__file__).parent / "proxy.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON, True)
+    catalog = SubPatternCatalog()
+    catalog.load_file(subpattern_file)
 
     code_path = Path(__file__).parent / "proxy.py"
     pattern_path = Path(__file__).parent / "proxy.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
-    #assert det.count() == 1, f"Expected 1 match but got {det.count()}"
     matched = det.matches[0]
     bindings = matched.bindings
 

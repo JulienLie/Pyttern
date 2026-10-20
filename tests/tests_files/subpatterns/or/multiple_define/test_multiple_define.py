@@ -5,7 +5,15 @@ import pytest
 
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
+
+
+@pytest.fixture
+def catalog():
+    cat = SubPatternCatalog()
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    cat.load_file(subpattern_file)
+    return cat
 
 
 def test_multiple_define_subpattern_parse():
@@ -22,16 +30,12 @@ def test_multiple_define_subpattern_parse():
     assert ret[2].name == "Loop", f"Expected subpattern name 'loop', got {ret[2].name}"
     assert len(ret[2].transformations) == 2, f"Expected 2 transformations, got {len(ret[2].transformations)}"
 
-def test_multiple_define_subpattern_for():
-    #logger.enable("pyttern")
 
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_multiple_define_subpattern_for(catalog):
     code_path = Path(__file__).parent / "for_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"
@@ -49,16 +53,11 @@ def test_multiple_define_subpattern_for():
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
 
-def test_multiple_define_subpattern_while():
-    #logger.enable("pyttern")
-
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_multiple_define_subpattern_while(catalog):
     code_path = Path(__file__).parent / "while_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"
@@ -75,20 +74,18 @@ def test_multiple_define_subpattern_while():
                                                                 f"got {binding_v.__class__.__name__}")
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
+
 @pytest.mark.parametrize("name", ["augasssign", "var_first", "incr_first"])
 @pytest.mark.parametrize("code", ["x = 0\nx += 1\n", "x = 0\nx = x + 1\n", "x = 0\nx = 1 + x\n"])
-def test_incr_subpattern(name, code, tmp_path):
+def test_incr_subpattern(name, code, tmp_path, catalog):
     logger.disable("pyttern")
-
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
 
     pattern_path = tmp_path / "incr.pyt"
     pattern_path.write_text("?$Incr(?i, ?v)\n")
     code_path = tmp_path / f"{name}.py"
     code_path.write_text(code)
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     print(f'res: {res}, det: {det}')
     assert res, det
 
@@ -109,16 +106,13 @@ def test_incr_subpattern(name, code, tmp_path):
 
 @pytest.mark.parametrize("name", ["eq", "ne", "lt", "le", "gt", "ge"])
 @pytest.mark.parametrize("code", ["x == 1", "x != 1", "x < 1", "x <= 1", "x > 1", "x >= 1"])
-def test_comp_subpattern(name, code, tmp_path):
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_comp_subpattern(name, code, tmp_path, catalog):
     pattern_path = tmp_path / "comp.pyt"
     pattern_path.write_text("while ?$Comp(?i, ?v):\n\t?\n")
     code_path = tmp_path / f"{name}.py"
     code_path.write_text(f"while {code}:\n\tpass\n")
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"

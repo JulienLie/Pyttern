@@ -55,7 +55,7 @@ class BaseSubPattern(ABC):
         pass
     
 
-    def generate_pda(self, pda: PDA, args: list[str], starting_state: int) -> int:
+    def generate_pda(self, pda: PDA, args: list[str], starting_state: int, context_type: Any = None) -> int:
         """
         Generates the transition needed for this subpattern in the pda @pda using the argument names from @args
         """
@@ -64,7 +64,7 @@ class BaseSubPattern(ABC):
         subpattern_name = self.name
 
         logger.trace(f"Adding transition for {self.type} subpattern {subpattern_name}")
-        transition = Transition(starting_state, '', CallTransition(subpattern_name, args), [],
+        transition = Transition(starting_state, '', CallTransition(subpattern_name, args, context_type=context_type), [],
                                 next_state, '')
         pda.add_transition(transition)
 

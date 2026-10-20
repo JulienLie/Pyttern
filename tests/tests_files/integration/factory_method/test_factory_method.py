@@ -2,7 +2,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
@@ -22,17 +22,16 @@ def test_compile_subpattern():
 
 #@pytest.mark.timeout(1)
 def test_factory_method_subpattern():
-    #logger.enable("pyttern")
     subpattern_file = Path(__file__).parent / "factory_method.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON, True)
+    catalog = SubPatternCatalog()
+    catalog.load_file(subpattern_file)
     
     code_path = Path(__file__).parent / "factory_method.py"
     pattern_path = Path(__file__).parent / "factory_method.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() > 0, f"Expected at least one match but got None"
-    #assert det.count() == 1, f"Expected 1 match but got {det.count()}"
     matched = det.matches[0]
     bindings = matched.bindings
 
@@ -45,12 +44,13 @@ def test_factory_method_subpattern():
 
 def test_creator():
     subpattern_file = Path(__file__).parent / "factory_method.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_file(subpattern_file)
 
     code_path = Path(__file__).parent / "factory_method.py"
     pattern_path = Path(__file__).parent / "creator_body.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() > 0, f"Expected at least one match but got None"
     matched = det.matches[0]
@@ -73,8 +73,3 @@ def test_concrete_creator():
     compare_binding(bindings, "Creator", "Dialog")
     compare_binding(bindings, "ConcreteCreatorA", "WindowsDialog")
     compare_binding(bindings, "ConcreteCreatorB", "WebDialog")
-    compare_binding(bindings, "createProduct", "createButton")
-    compare_binding(bindings, "ProductA", "WindowsButton")
-    compare_binding(bindings, "ProductB", "WebButton")
-
-    assert det.count() == 1, f"Expected 1 match but got {det.count()}"

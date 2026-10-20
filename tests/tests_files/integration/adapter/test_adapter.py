@@ -2,7 +2,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
@@ -15,6 +15,9 @@ def test_singleton_subpattern():
     logger.enable("pyttern")
 
     subpattern_file = Path(__file__).parent / "adapter.myt"
+    catalog = SubPatternCatalog()
+    catalog.load_file(subpattern_file)
+
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
     subpattern = ret[0]
@@ -25,7 +28,7 @@ def test_singleton_subpattern():
     code_path = Path(__file__).parent / "adapter.py"
     pattern_path = Path(__file__).parent / "adapter.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() == 1, f"Expected 1 match but got {det.count()}"
     matched = det.matches[0]

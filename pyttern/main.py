@@ -6,7 +6,6 @@ import sys
 from typing import Optional
 from loguru import logger
 
-from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 from pyttern.subpattern.catalog import SubPatternCatalog
 
 from .language_processors import determine_language, get_processor, Languages
@@ -212,7 +211,14 @@ class PytternMatcher:
                 ret[code_filepath][pattern_filepath] = result
         return ret
     
-def match_files(pattern_path, code_path, lang=None, match_details=False, stop_at_first=True, catalog=None):
+def match_files(
+    pattern_path,
+    code_path,
+    lang=None,
+    match_details=False,
+    stop_at_first=True,
+    catalog: Optional[SubPatternCatalog] = None,
+):
     if lang is None:
         pattern_lang = determine_language(pattern_path)
         code_lang = determine_language(code_path)
@@ -305,15 +311,17 @@ def main():
         parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
     
-    if args.sub_patterns:
-        for sub_pyttern in args.sub_patterns:
-            ret = parse_subpattern_from_file(sub_pyttern, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    if args.sub:
+        sub_lang = Languages[args.lang.upper()] if args.lang else Languages.PYTHON
+        for sub_pyttern in args.sub:
+            ret = catalog.load_file(sub_pyttern, language=sub_lang)
             if len(ret) > 0:
                 logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
             else:
                 logger.warning(f"No sub pytterns found in {sub_pyttern}")
 
-    matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first)
+    matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first, catalog=catalog)
 
     # Use wildcards if they are likely present, otherwise treat as single files
     if '*' in args.pattern or '*' in args.code:

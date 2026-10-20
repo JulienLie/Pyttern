@@ -14,7 +14,6 @@ from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_string
 from pyttern.subpattern import SubPatternCatalog
-from pyttern.subpattern.SubPattern import loaded_subpatterns
 
 def test_get_node_style():
     # Test named color

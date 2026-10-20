@@ -30,7 +30,7 @@ class JavaProcessor(BaseProcessor):
 
         return pruned_tree
 
-    def create_pda(self, pattern_tree):
+    def create_pda(self, pattern_tree, catalog=None):
         return Java_to_PDA().visit(pattern_tree)
 
     def get_language_extensions(self):

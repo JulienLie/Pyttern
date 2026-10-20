@@ -1,11 +1,14 @@
 from pathlib import Path
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 def test_complex_and_subpattern():
     subpattern_file = Path(__file__).parent / "resource.myt"
+    catalog = SubPatternCatalog()
+    catalog.load_file(subpattern_file)
+
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1
     assert ret[0].name == "ResourceFlow"
@@ -15,9 +18,9 @@ def test_complex_and_subpattern():
     pattern_path = Path(__file__).parent / "resource.pyt"
 
     code_ok = Path(__file__).parent / "resource_ok.py"
-    res, det = match_files(pattern_path, code_ok, match_details=True)
+    res, det = match_files(pattern_path, code_ok, match_details=True, catalog=catalog)
     assert res, det
 
     code_ko = Path(__file__).parent / "resource_missing_close_ko.py"
-    res, det = match_files(pattern_path, code_ko, match_details=True)
+    res, det = match_files(pattern_path, code_ko, match_details=True, catalog=catalog)
     assert not res, det

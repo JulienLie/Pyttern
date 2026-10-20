@@ -1,6 +1,6 @@
 # Spec: Explicit Subpattern Catalog and Encapsulated Compilation Seam
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 

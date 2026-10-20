@@ -4,10 +4,10 @@
 
 **Blocked by:** 03: Compiler and Runtime Simulator Integration
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `PytternMatcher` accepts an optional `catalog` parameter in its constructor, instantiating an empty catalog if none is provided.
-- [ ] Top-level matching helper functions (`match_files`) accept an optional `catalog` parameter and thread it to the matcher.
-- [ ] The CLI command parser accepts multiple `-s / --sub` flags and loads each subpattern file into the matcher's catalog without crashes.
-- [ ] Existing subpattern and NOT test suites are migrated to use explicit catalogs.
-- [ ] All tests pass without requiring calls to clear or reset global state between test functions.
+- [x] `PytternMatcher` accepts an optional `catalog` parameter in its constructor, instantiating an empty catalog if none is provided.
+- [x] Top-level matching helper functions (`match_files`) accept an optional `catalog` parameter and thread it to the matcher.
+- [x] The CLI command parser accepts multiple `-s / --sub` flags and loads each subpattern file into the matcher's catalog without crashes.
+- [x] Existing subpattern and NOT test suites are migrated to use explicit catalogs.
+- [x] All tests pass without requiring calls to clear or reset global state between test functions.

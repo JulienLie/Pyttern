@@ -2,20 +2,20 @@ from pathlib import Path
 
 import pytest
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
-from pyttern.subpattern.SubPattern import loaded_subpatterns
 
 
-@pytest.fixture(autouse=True)
-def clean_subpatterns():
-    loaded_subpatterns.clear()
-    yield
-    loaded_subpatterns.clear()
+@pytest.fixture
+def catalog():
+    cat = SubPatternCatalog()
+    subpattern_file = Path(__file__).parent / "assign.myt"
+    cat.load_file(subpattern_file)
+    return cat
 
 
-def test_assign_a_b_ok():
+def test_assign_a_b_ok(catalog):
     subpattern_file = Path(__file__).parent / "assign.myt"
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
@@ -27,13 +27,11 @@ def test_assign_a_b_ok():
     code_path = Path(__file__).parent / "assign_a_b_ok.py"
     pattern_path = Path(__file__).parent / "assign.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
-    loaded_subpatterns.clear()
 
-
-def test_assign_b_a_ok():
+def test_assign_b_a_ok(catalog):
     subpattern_file = Path(__file__).parent / "assign.myt"
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
@@ -45,13 +43,11 @@ def test_assign_b_a_ok():
     code_path = Path(__file__).parent / "assign_b_a_ok.py"
     pattern_path = Path(__file__).parent / "assign.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
-    loaded_subpatterns.clear()
 
-
-def test_assign_nok():
+def test_assign_nok(catalog):
     subpattern_file = Path(__file__).parent / "assign.myt"
     ret = parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
     assert len(ret) == 1, f"Expected 1 subpattern, got {len(ret)}"
@@ -63,7 +59,5 @@ def test_assign_nok():
     code_path = Path(__file__).parent / "assign_nok.py"
     pattern_path = Path(__file__).parent / "assign.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert not res, det
-
-    loaded_subpatterns.clear()

@@ -2,9 +2,17 @@ from pathlib import Path
 
 import pytest
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
+
+
+@pytest.fixture
+def catalog():
+    cat = SubPatternCatalog()
+    subpattern_file = Path(__file__).parent / "loop.myt"
+    cat.load_file(subpattern_file)
+    return cat
 
 
 def test_loop_subpattern():
@@ -14,16 +22,12 @@ def test_loop_subpattern():
     assert ret[0].name == "Loop", f"Expected subpattern name 'Incr', got {ret[0].name}"
     assert len(ret[0].transformations) == 2, f"Expected 2 transformations, got {len(ret[0].transformations)}"
 
-def test_loop_subpattern_for():
-    #logger.enable("pyttern")
 
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_loop_subpattern_for(catalog):
     code_path = Path(__file__).parent / "for_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"
@@ -41,16 +45,11 @@ def test_loop_subpattern_for():
     assert binding_v.getText() == "10", f"Expected binding text '10', got {binding_v.getText()}"
 
 
-def test_loop_subpattern_while():
-    #logger.enable("pyttern")
-
-    subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_loop_subpattern_while(catalog):
     code_path = Path(__file__).parent / "while_loop.py"
     pattern_path = Path(__file__).parent / "loop.pyt"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
     assert len(det.matches) == 1, f"Expected 1 match, got {len(det.matches)}"

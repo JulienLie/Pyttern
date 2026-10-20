@@ -112,7 +112,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context_type=type(ctx))
             self.current_state = new_state
             return self._add_up_transition(NodeTransition(ctx.__class__.__name__))
 
@@ -145,7 +145,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             else:
                 args_names = []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context_type=type(ctx))
             self.current_state = new_state
 
             self._restrict_stmt = True
@@ -177,7 +177,7 @@ class Python_to_PDA(Generic_to_PDA, Python3ParserVisitor):
             args_nodes = subpattern_call.subpattern_args().subpattern_arg() if subpattern_call.subpattern_args() is not None else None
             args_names = [arg_node.getChild(0).getText()[1:] for arg_node in args_nodes] if args_nodes else []
 
-            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state)
+            new_state = subpattern.generate_pda(self.pda, args_names, self.current_state, context_type=type(ctx))
             self.current_state = new_state
             return self._add_up_transition(ctx)
 

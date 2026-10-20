@@ -2,17 +2,17 @@ from pathlib import Path
 
 import pytest
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
-from pyttern.subpattern.SubPattern import loaded_subpatterns
 
 
-@pytest.fixture(autouse=True)
-def clean_subpatterns():
-    loaded_subpatterns.clear()
-    yield
-    loaded_subpatterns.clear()
+@pytest.fixture
+def catalog():
+    cat = SubPatternCatalog()
+    subpattern_file = Path(__file__).parent / "double_def.myt"
+    cat.load_file(subpattern_file)
+    return cat
 
 
 def test_double_def_subpattern():
@@ -28,34 +28,25 @@ def test_double_def_subpattern():
     assert len(ret[1].transformations) == 2, f"Expected 2 transformations, got {len(ret[1].transformations)}"
 
 
-def test_double_def_ok():
-    subpattern_file = Path(__file__).parent / "double_def.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_double_def_ok(catalog):
     pattern_path = Path(__file__).parent / "double_def.pyt"
     code_path = Path(__file__).parent / "double_def_ok.py"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
 
 
-def test_double_def_nok():
-    subpattern_file = Path(__file__).parent / "double_def.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_double_def_nok(catalog):
     pattern_path = Path(__file__).parent / "double_def.pyt"
     code_path = Path(__file__).parent / "double_def_nok.py"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert not res, det
 
 
-def test_simple_def_nok():
-    subpattern_file = Path(__file__).parent / "double_def.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
-
+def test_simple_def_nok(catalog):
     pattern_path = Path(__file__).parent / "double_def.pyt"
     code_path = Path(__file__).parent / "simple_def_nok.py"
 
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert not res, det
