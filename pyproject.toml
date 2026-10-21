@@ -82,6 +82,8 @@ module = [
 ]
 disallow_untyped_defs = true
 
+# Legacy ANTLR-dependent AST-to-PDA conversion visitors rely on dynamic MRO mixins
+# and untyped ANTLR visitor methods. Retained with minimal overrides until FSM compilation refactoring.
 [[tool.mypy.overrides]]
 module = [
     "pyttern.pytternfsm.generic_to_pda",

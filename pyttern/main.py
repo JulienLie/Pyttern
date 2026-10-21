@@ -10,6 +10,7 @@ from typing import Any
 from loguru import logger
 
 from pyttern.pattern import MatchResult, PatternCompiler
+from pyttern.pytternfsm.python.match_set import MatchSet
 from pyttern.subpattern.catalog import SubPatternCatalog
 
 from .language_processors import BaseProcessor, Languages, determine_language, get_processor
@@ -126,7 +127,7 @@ def match_files(
     match_details: bool = False,
     stop_at_first: bool = True,
     catalog: SubPatternCatalog | None = None,
-) -> bool | tuple[bool, Any]:
+) -> bool | tuple[bool, MatchSet]:
     if lang is None:
         code_lang = determine_language(code_path)
         if os.path.isdir(str(pattern_path)):
@@ -143,8 +144,8 @@ def match_files(
         match_out = matcher.match(pattern_path, code_path, lang)
         if isinstance(match_out, tuple):
             res, det = match_out
-            return res, det.matches
-        return match_out, []
+            return res, det.matches if det.matches is not None else MatchSet()
+        return match_out, MatchSet()
     res_bool = matcher.match(pattern_path, code_path, lang)
     assert isinstance(res_bool, bool)
     return res_bool

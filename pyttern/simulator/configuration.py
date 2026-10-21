@@ -152,16 +152,14 @@ class Environment:
             items.append((k, h))
         return hash(tuple(items))
 
-    def __str__(self) -> str:
-        pretty_mapping = {
-            v: (n.getText() if hasattr(n, 'getText') else str(n)) if n is not None else None
+    def _format_mapping(self) -> dict[str, str | None]:
+        return {
+            v: (n.getText() if hasattr(n, "getText") else str(n)) if n is not None else None
             for v, n in self.mapping.items()
         }
-        return f"Environment({pretty_mapping})"
+
+    def __str__(self) -> str:
+        return f"Environment({self._format_mapping()})"
 
     def __repr__(self) -> str:
-        pretty_mapping = {
-            v: (n.getText() if hasattr(n, 'getText') else str(n)) if n is not None else None
-            for v, n in self.mapping.items()
-        }
-        return f"Environment({pretty_mapping!r})"
+        return f"Environment({self._format_mapping()!r})"

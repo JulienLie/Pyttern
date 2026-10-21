@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import itertools
-from typing import Any
+from typing import Any, Literal
 
 from antlr4 import ParserRuleContext, RuleContext
 from antlr4.tree.Tree import Tree
@@ -263,7 +263,7 @@ def AND_operator(
 
 
 def eval_operator(
-    op: str,
+    op: Literal["AND", "OR", "NOT"] | str,
     transformations: dict[str, PDA],
     current_node: RuleContext | Tree,
     m_sub: Environment,

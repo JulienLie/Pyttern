@@ -17,6 +17,13 @@ from ..subpattern.catalog import SubPatternCatalog
 from ..pytternfsm.python.match_set import Match, MatchSet
 
 
+def _to_symbol_str(val: Any) -> str:
+    """Helper to convert a transition alpha or beta symbol sequence to string."""
+    if isinstance(val, str):
+        return val
+    return "".join(getattr(x, "value", str(x)) for x in val)
+
+
 class Matcher:
     configurations: list[Configuration]
     _listeners: list[Any]
@@ -42,7 +49,7 @@ class Matcher:
         self.parse_tree = parse_tree
         self.catalog = catalog if catalog is not None else SubPatternCatalog()
         self.match_set = MatchSet()
-        self.configurations = []
+        self.configurations: list[Configuration] = []
         self.n_step = 0
         self._listeners = []
 
@@ -123,17 +130,11 @@ class Matcher:
 
         for transition in self.pda.get_transitions(current_state):
             # Transition components
-            raw_alpha = transition.alpha
-            alpha = raw_alpha if isinstance(raw_alpha, str) else "".join(
-                getattr(x, "value", str(x)) for x in raw_alpha
-            )
+            alpha = _to_symbol_str(transition.alpha)
             A = transition.A
             t = transition.t
             q_prime = transition.q_prime
-            raw_beta = transition.beta
-            beta = raw_beta if isinstance(raw_beta, str) else "".join(
-                getattr(x, "value", str(x)) for x in raw_beta
-            )
+            beta = _to_symbol_str(transition.beta)
 
             if not stack.endswith(alpha):
                 logger.trace(f"Wrong stack elements: expecting {alpha} but was {stack[-len(alpha):]}")
@@ -280,6 +281,10 @@ class Matcher:
                     if current_node is None:
                         return None
         return current_node
+
+    @staticmethod
+    def _to_symbol_str(val: Any) -> str:
+        return _to_symbol_str(val)
 
     @staticmethod
     def _match_node(input: Any, A: NodeTransition) -> bool:
