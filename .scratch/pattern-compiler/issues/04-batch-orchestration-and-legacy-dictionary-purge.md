@@ -4,12 +4,12 @@
 
 **Blocked by:** 03: JSON Pattern Deserialization and Web Adapter Migration
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Batch wildcard matching compiles all discovered pattern files once before iterating across target code files.
-- [ ] When match details are disabled, `stop_at_first` is automatically enforced as `True` for fast-path short-circuiting.
-- [ ] When match details are enabled, `stop_at_first` defaults to `False` while honoring user overrides.
-- [ ] The top-level matcher delegates all pattern compilation to `PatternCompiler`.
-- [ ] Obsolete dictionary traversal methods (`parse_json_pattern`, `_dir_to_pattern_tree`, `_match_pyttern_bool`, `_match_pyttern_details`) are completely removed.
-- [ ] CLI and API entry points are updated to consume `PatternCompiler` and `CompiledPattern`.
-- [ ] Existing API and CLI test suites are migrated and pass cleanly.
+- [x] Batch wildcard matching compiles all discovered pattern files once before iterating across target code files.
+- [x] When match details are disabled, `stop_at_first` is automatically enforced as `True` for fast-path short-circuiting.
+- [x] When match details are enabled, `stop_at_first` defaults to `False` while honoring user overrides.
+- [x] The top-level matcher delegates all pattern compilation to `PatternCompiler`.
+- [x] Obsolete dictionary traversal methods (`parse_json_pattern`, `_dir_to_pattern_tree`, `_match_pyttern_bool`, `_match_pyttern_details`) are completely removed.
+- [x] CLI and API entry points are updated to consume `PatternCompiler` and `CompiledPattern`.
+- [x] Existing API and CLI test suites are migrated and pass cleanly.

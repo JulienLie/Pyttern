@@ -37,6 +37,12 @@ class MatchResult:
             return self.matches.matches[0].bindings
         return None
 
+    def count(self) -> int:
+        """Total number of recorded matches across this result and any children."""
+        if self.matches is not None:
+            return self.matches.count()
+        return sum(child.count() for child in self.children)
+
     @property
     def leaf_results(self) -> list[MatchResult]:
         """Returns all leaf MatchResult instances in depth-first order."""
