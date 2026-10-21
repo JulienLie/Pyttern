@@ -1,19 +1,38 @@
-from typing import Optional
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any
 
 from antlr4.ParserRuleContext import ParserRuleContext
+from antlr4.RuleContext import RuleContext
 from antlr4.tree.Tree import TerminalNode, Tree
 from loguru import logger
 
-from pyttern.simulator.configuration import Environment
+from pyttern.simulator.configuration import Configuration, Environment
 
 from .pda.PDA import PDA
 from .pda.PDA_alphabets import NavigationAlphabet
-from .pda.transition import NodeTransition, NamedTransition, CallTransition
+from .pda.transition import CallTransition, NamedTransition, NodeTransition
 from ..subpattern.catalog import SubPatternCatalog
-from ..pytternfsm.python.match_set import MatchSet, Match
+from ..pytternfsm.python.match_set import Match, MatchSet
+
 
 class Matcher:
-    def __init__(self, pdas: dict[str, PDA] | PDA, parse_tree: Tree, catalog: Optional[SubPatternCatalog] = None):
+    configurations: list[Configuration]
+    _listeners: list[Any]
+    n_step: int
+    pda: PDA
+    callable: dict[str, PDA]
+    parse_tree: Tree
+    catalog: SubPatternCatalog
+    match_set: MatchSet
+
+    def __init__(
+        self,
+        pdas: dict[str, PDA] | PDA,
+        parse_tree: Tree,
+        catalog: SubPatternCatalog | None = None,
+    ) -> None:
         if isinstance(pdas, dict):
             self.pda = pdas["__main__"]
             self.callable = pdas
@@ -27,17 +46,23 @@ class Matcher:
         self.n_step = 0
         self._listeners = []
 
-    def add_listener(self, listener):
+    def add_listener(self, listener: Any) -> None:
         self._listeners.append(listener)
 
-    def remove_listener(self, listener):
+    def remove_listener(self, listener: Any) -> None:
         self._listeners.remove(listener)
 
-    def remove_all_listeners(self):
+    def remove_all_listeners(self) -> None:
         self._listeners.clear()
 
     @staticmethod
-    def match(pda: dict[str, PDA] | PDA, parse_tree: ParserRuleContext, stop_at_first=False, bindings=None, catalog=None) -> MatchSet:
+    def match(
+        pda: dict[str, PDA] | PDA,
+        parse_tree: ParserRuleContext | Tree,
+        stop_at_first: bool = False,
+        bindings: Mapping[str, Any] | Environment | None = None,
+        catalog: SubPatternCatalog | None = None,
+    ) -> MatchSet:
         """
         Matches a given parse tree against a Pushdown Automaton (PDA) and returns the resulting matches.
 
@@ -59,20 +84,26 @@ class Matcher:
         logger.debug(f"Match finished with {matcher.match_set.count()} matches")
         return matcher.match_set
 
-    def start(self, initial_bindings=None):
-        bindings = {t: None for t in self.pda.named_wildcards}
+    def start(self, initial_bindings: Mapping[str, Any] | Environment | None = None) -> Matcher:
+        bindings: dict[str, Any] = {t: None for t in self.pda.named_wildcards}
         if initial_bindings is not None:
             if isinstance(initial_bindings, Environment):
                 bindings.update(initial_bindings.mapping)
             else:
                 bindings.update(initial_bindings)
-        first_config = (self.pda.initial_state, self.parse_tree, "", Environment.from_dict(bindings), [])
+        first_config = Configuration(
+            state=self.pda.initial_state,
+            parse_tree=self.parse_tree,
+            action="",
+            environment=Environment.from_dict(bindings),
+            history=[],
+        )
         self.configurations.append(first_config)
         for listener in self._listeners:
             listener.on_start(self, self.pda.initial_state, self.parse_tree)
         return self
 
-    def step(self):
+    def step(self) -> Matcher:
         logger.trace(f"Step {self.n_step}")
         if len(self.configurations) == 0:
             raise Warning("No more configurations to process")
@@ -90,14 +121,19 @@ class Matcher:
                 listener.on_match(self, match)
             return self
 
-
         for transition in self.pda.get_transitions(current_state):
             # Transition components
-            alpha = transition.alpha
+            raw_alpha = transition.alpha
+            alpha = raw_alpha if isinstance(raw_alpha, str) else "".join(
+                getattr(x, "value", str(x)) for x in raw_alpha
+            )
             A = transition.A
             t = transition.t
             q_prime = transition.q_prime
-            beta = transition.beta
+            raw_beta = transition.beta
+            beta = raw_beta if isinstance(raw_beta, str) else "".join(
+                getattr(x, "value", str(x)) for x in raw_beta
+            )
 
             if not stack.endswith(alpha):
                 logger.trace(f"Wrong stack elements: expecting {alpha} but was {stack[-len(alpha):]}")
@@ -107,7 +143,7 @@ class Matcher:
             class_name = current_node.__class__.__name__
 
             new_var: Environment = var
-            new_vars = []
+            new_vars: list[tuple[Environment, int]] = []
 
             # Default terminal node
             if isinstance(A, NodeTransition):
@@ -143,7 +179,6 @@ class Matcher:
                 logger.error(f"Unknown transition type: {A}")
                 raise ValueError(f"Unknown transition type: {A} ({type(A)})")
 
-
             logger.trace(f"Taking {transition} and generating {len(new_vars)} new configuration(s)")
 
             new_stack += beta
@@ -153,7 +188,7 @@ class Matcher:
                 curr = current_node
                 valid_skip = True
                 for _ in range(k):
-                    parent = curr.parentCtx
+                    parent = getattr(curr, "parentCtx", None)
                     if parent is None:
                         valid_skip = False
                         break
@@ -170,13 +205,24 @@ class Matcher:
                 if next_node is None:
                     logger.trace(f"Wrong direction: cannot get next node at {t}")
                     continue
-                new_config = (q_prime, next_node, new_stack, variables, new_matches)
+                new_config = Configuration(
+                    state=q_prime,
+                    parse_tree=next_node,
+                    action=new_stack,
+                    environment=variables,
+                    history=new_matches,
+                )
                 self.configurations.append(new_config)
 
         self.n_step += 1
         return self
 
-    def call_subpattern(self, transition: CallTransition, current_node: ParserRuleContext, bindings):
+    def call_subpattern(
+        self,
+        transition: CallTransition,
+        current_node: RuleContext | Tree,
+        bindings: Environment,
+    ) -> list[tuple[Environment, int]]:
         """
         Calls a subpattern transition (CallTransition) against the current node.
 
@@ -195,45 +241,48 @@ class Matcher:
             logger.warning(f"subpattern not found: {subpattern_name}")
             logger.debug(f"Catalog subpatterns: {list(self.catalog.keys())}, callable subpatterns: {self.callable.keys()}")
             return []
-        
+
         context_type = getattr(transition, 'context_type', None)
         return subpatterns.call_subpattern(
             subp, current_node, bindings, args, catalog=self.catalog, context_type=context_type
         )
 
-
-    def _get_next_node(self, node, directions):
-        current_node = node
+    def _get_next_node(
+        self,
+        node: Tree | ParserRuleContext,
+        directions: list[NavigationAlphabet],
+    ) -> Tree | ParserRuleContext | None:
+        current_node: Any = node
         for direction in directions:
             match direction:
                 case NavigationAlphabet.RIGHT_SIBLING:
                     if current_node == self.parse_tree:
                         return None
                     try:
-                        parent = current_node.parentCtx
+                        parent = getattr(current_node, "parentCtx", None)
                         if parent is None:
                             return None
                         siblings = list(parent.getChildren())
                         index = siblings.index(current_node)
                         current_node = siblings[index + 1]
-                    except IndexError:
+                    except (IndexError, AttributeError):
                         return None
                 case NavigationAlphabet.LEFT_CHILD:
                     try:
                         children = list(current_node.getChildren())
                         current_node = children[0]
-                    except AttributeError:
-                        return None
-                    except IndexError:
+                    except (AttributeError, IndexError):
                         return None
                 case NavigationAlphabet.PARENT:
                     if current_node == self.parse_tree:
                         return None
-                    current_node = current_node.parentCtx
+                    current_node = getattr(current_node, "parentCtx", None)
+                    if current_node is None:
+                        return None
         return current_node
 
     @staticmethod
-    def _match_node(input, A: NodeTransition):
+    def _match_node(input: Any, A: NodeTransition) -> bool:
         name = A.name
         down, up = A.down, A.up
         if name == "":
@@ -244,7 +293,7 @@ class Matcher:
         return input.__class__.__name__ == name and down <= input.getChildCount() <= up
 
     @staticmethod
-    def _unwrap(tree):
+    def _unwrap(tree: Any) -> Any:
         from ..antlr.python import Python3Parser
         while tree is not None and not isinstance(tree, TerminalNode) and hasattr(tree, 'children') and len(tree.children) == 1:
             if isinstance(tree, Python3Parser.NameContext):
@@ -253,13 +302,12 @@ class Matcher:
         return tree
 
     @staticmethod
-    def _match_tree(tree1, tree2):
+    def _match_tree(tree1: Any, tree2: Any) -> bool:
         logger.trace(f'Matching {tree1} and {tree2}')
         if tree1 is None or tree2 is None:
             return False
-        from antlr4.tree.Tree import Tree
         if not isinstance(tree1, Tree) or not isinstance(tree2, Tree):
-            return tree1 == tree2
+            return bool(tree1 == tree2)
         if isinstance(tree1, TerminalNode) and isinstance(tree2, TerminalNode):
             return str(tree1) == str(tree2)
         if isinstance(tree1, TerminalNode) or isinstance(tree2, TerminalNode):
@@ -271,10 +319,13 @@ class Matcher:
                 return Matcher._match_tree(tree1, unwrapped)
         if tree1.__class__.__name__ != tree2.__class__.__name__:
             return False
-        if len(tree1.children) != len(tree2.children):
+        children1 = getattr(tree1, 'children', None)
+        children2 = getattr(tree2, 'children', None)
+        if children1 is None or children2 is None:
             return False
-        for child1, child2 in zip(tree1.children, tree2.children):
+        if len(children1) != len(children2):
+            return False
+        for child1, child2 in zip(children1, children2):
             if not Matcher._match_tree(child1, child2):
                 return False
         return True
-
