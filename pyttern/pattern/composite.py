@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import os
 from abc import ABC
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Optional, Sequence, Union
-
-from antlr4.ParserRuleContext import ParserRuleContext
-from antlr4.tree.Tree import Tree
 
 from pyttern.language_processors.base_processor_interface import BaseProcessor
 from pyttern.pattern.compiled import CompiledPattern
@@ -20,7 +15,7 @@ class CompositePattern(CompiledPattern, ABC):
     Abstract base class for immutable composite pattern combinations (AND, OR, NOT).
     """
     children: tuple[CompiledPattern, ...]
-    processor: Optional[BaseProcessor]
+    _processor: Optional[BaseProcessor]
 
     def __init__(
         self,
@@ -30,47 +25,19 @@ class CompositePattern(CompiledPattern, ABC):
     ) -> None:
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "children", tuple(children))
-        object.__setattr__(self, "processor", processor)
+        object.__setattr__(self, "_processor", processor)
 
-    def _get_processor(self) -> Optional[BaseProcessor]:
+    @property
+    def processor(self) -> Optional[BaseProcessor]:
         """
-        Discovers an associated language processor from self or its child patterns.
+        Exposes the language processor injected into this composite, or directly
+        from its first child pattern.
         """
-        if self.processor is not None:
-            return self.processor
-        for child in self.children:
-            proc = getattr(child, "processor", None)
-            if proc is not None:
-                return proc
-            if hasattr(child, "_get_processor"):
-                proc = child._get_processor()
-                if proc is not None:
-                    return proc
+        if self._processor is not None:
+            return self._processor
+        if self.children:
+            return self.children[0].processor
         return None
-
-    def _resolve_target(self, target: Any) -> Any:
-        """
-        Normalizes target code into a pre-parsed syntax tree if a processor is available.
-        Otherwise passes target down directly to children.
-        """
-        if isinstance(target, (ParserRuleContext, Tree)):
-            return target
-
-        processor = self._get_processor()
-        if processor is None:
-            return target
-
-        if isinstance(target, Path):
-            return processor.generate_tree_from_file(str(target))
-        elif isinstance(target, str):
-            if "\n" not in target and os.path.isfile(target):
-                return processor.generate_tree_from_file(target)
-            else:
-                return processor.generate_tree_from_code(target)
-        else:
-            raise TypeError(
-                f"Target must be a CST node, file path, or code string, got {type(target).__name__}"
-            )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, children={list(self.children)!r})"
@@ -117,7 +84,7 @@ class AndPattern(CompositePattern):
 class OrPattern(CompositePattern):
     """
     Logical OR composite pattern: matches if any child pattern matches.
-    Short-circuits on the first successful match when stop_at_first=True.
+    Short-circuits on the first successful match by default or when stop_at_first=True.
     """
 
     def __init__(
@@ -130,7 +97,6 @@ class OrPattern(CompositePattern):
 
     def matches(self, target: Any, stop_at_first: Optional[bool] = None) -> MatchResult:
         code_tree = self._resolve_target(target)
-        stop = False if stop_at_first is None else bool(stop_at_first)
         child_results: list[MatchResult] = []
         matched = False
 
@@ -139,7 +105,7 @@ class OrPattern(CompositePattern):
             child_results.append(res)
             if res.matched:
                 matched = True
-                if stop:
+                if stop_at_first is None or stop_at_first is True:
                     break
 
         return MatchResult(

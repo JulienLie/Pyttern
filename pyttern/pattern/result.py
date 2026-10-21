@@ -54,6 +54,10 @@ class MatchResult:
         return leaves
 
     def __getitem__(self, key: str) -> Any:
+        """
+        Backwards-compatible dictionary subscripting emulation.
+        Core code should prefer direct property access (e.g., result.matched, result.matches).
+        """
         if key in ("matched", "result"):
             return self.matched
         if key == "name":

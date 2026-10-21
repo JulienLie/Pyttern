@@ -22,6 +22,38 @@ class CompiledPattern(ABC):
     """
     name: str
 
+    @property
+    @abstractmethod
+    def processor(self) -> Optional[BaseProcessor]:
+        """
+        The language processor associated with this compiled pattern.
+        """
+        pass
+
+    def _resolve_target(self, target: Any) -> Any:
+        """
+        Normalizes target code into a pre-parsed syntax tree using the pattern's processor.
+        If no processor is available, returns target as-is.
+        """
+        if isinstance(target, (ParserRuleContext, Tree)):
+            return target
+
+        processor = self.processor
+        if processor is None:
+            return target
+
+        if isinstance(target, Path):
+            return processor.generate_tree_from_file(str(target))
+        elif isinstance(target, str):
+            if "\n" not in target and os.path.isfile(target):
+                return processor.generate_tree_from_file(target)
+            else:
+                return processor.generate_tree_from_code(target)
+        else:
+            raise TypeError(
+                f"Target must be a CST node, file path, or code string, got {type(target).__name__}"
+            )
+
     @abstractmethod
     def matches(self, target: Any, stop_at_first: Optional[bool] = None) -> MatchResult:
         """
@@ -34,32 +66,37 @@ class CompiledPattern(ABC):
         pass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class LeafPattern(CompiledPattern):
     """
     An elementary compiled pattern wrapping a Pushdown Automaton.
     """
     pda: Any
-    processor: BaseProcessor
-    catalog: Optional[SubPatternCatalog] = None
+    _processor: BaseProcessor
+    catalog: Optional[SubPatternCatalog]
+
+    def __init__(
+        self,
+        name: str,
+        pda: Any,
+        processor: BaseProcessor,
+        catalog: Optional[SubPatternCatalog] = None,
+    ) -> None:
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "pda", pda)
+        object.__setattr__(self, "_processor", processor)
+        object.__setattr__(self, "catalog", catalog)
+
+    @property
+    def processor(self) -> BaseProcessor:
+        """The language processor injected into this leaf pattern."""
+        return self._processor
 
     def matches(self, target: Any, stop_at_first: Optional[bool] = None) -> MatchResult:
         """
         Executes matching of this leaf pattern against target code.
         """
-        if isinstance(target, (ParserRuleContext, Tree)):
-            code_tree = target
-        elif isinstance(target, Path):
-            code_tree = self.processor.generate_tree_from_file(str(target))
-        elif isinstance(target, str):
-            if "\n" not in target and os.path.isfile(target):
-                code_tree = self.processor.generate_tree_from_file(target)
-            else:
-                code_tree = self.processor.generate_tree_from_code(target)
-        else:
-            raise TypeError(
-                f"Target must be a CST node, file path, or code string, got {type(target).__name__}"
-            )
+        code_tree = self._resolve_target(target)
 
         stop = False if stop_at_first is None else bool(stop_at_first)
         match_set = Matcher.match(

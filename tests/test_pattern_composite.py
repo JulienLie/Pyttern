@@ -22,6 +22,10 @@ class MockPattern(CompiledPattern):
         object.__setattr__(self, "call_count", 0)
         object.__setattr__(self, "should_match", should_match)
 
+    @property
+    def processor(self):
+        return None
+
     def matches(self, target, stop_at_first=None):
         object.__setattr__(self, "call_count", self.call_count + 1)
         return MatchResult(matched=self.should_match, name=self.name, children=())
@@ -93,6 +97,20 @@ class TestCompositePatternHierarchyAndImmutability:
 
         with pytest.raises((FrozenInstanceError, AttributeError)):
             pat.children = ()
+
+    def test_processor_property_delegation(self):
+        compiler = PatternCompiler(Languages.PYTHON)
+        p1 = compiler.compile("x = ?a")
+        p2 = compiler.compile("y = ?b")
+
+        and_pat = AndPattern([p1, p2])
+        assert and_pat.processor is p1.processor
+
+        nested = OrPattern([and_pat])
+        assert nested.processor is p1.processor
+
+        empty_pat = AndPattern()
+        assert empty_pat.processor is None
 
 
 class TestAndPatternExecution:
@@ -210,6 +228,20 @@ class TestOrPatternExecution:
         result = or_pat.matches(code)
         assert bool(result) is False
         assert result.matched is False
+
+    def test_or_pattern_short_circuits_on_success_by_default(self):
+        c1 = MockPattern("c1", False)
+        c2 = MockPattern("c2", True)
+        c3 = MockPattern("c3", True)
+
+        or_pat = OrPattern([c1, c2, c3])
+        result = or_pat.matches("code")  # default stop_at_first=None
+
+        assert result.matched is True
+        assert c1.call_count == 1
+        assert c2.call_count == 1
+        assert c3.call_count == 0  # Short-circuited by default!
+        assert len(result.children) == 2
 
     def test_or_pattern_short_circuits_on_success_when_stop_at_first(self):
         c1 = MockPattern("c1", False)

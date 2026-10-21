@@ -59,7 +59,7 @@ class PatternCompiler:
         if not isinstance(code, str):
             raise TypeError(f"Pattern code must be a string, got {type(code).__name__}")
 
-        pattern_name = name if name is not None else "raw_pattern"
+        pattern_name = name if name is not None else "unnamed"
         logger.debug(f"Compiling pattern code for '{pattern_name}'")
         tree = self.processor.generate_tree_from_code(code)
         pda = self.processor.create_pda(tree, catalog=self.catalog)

@@ -2,11 +2,8 @@ import argparse
 import glob
 import os
 import sys
-from pathlib import Path
 from typing import Optional
 
-from antlr4.ParserRuleContext import ParserRuleContext
-from antlr4.tree.Tree import Tree
 from loguru import logger
 
 from pyttern.pattern import PatternCompiler
@@ -57,20 +54,7 @@ class PytternMatcher:
         compiler = PatternCompiler(language=lang, catalog=self.catalog)
         compiled_pattern = compiler.compile(pattern_path)
 
-        processor = compiler.processor
-        if isinstance(code_path, (ParserRuleContext, Tree)):
-            code_tree = code_path
-        elif isinstance(code_path, Path):
-            code_tree = processor.generate_tree_from_file(str(code_path))
-        elif isinstance(code_path, str):
-            if "\n" not in code_path and os.path.isfile(code_path):
-                code_tree = processor.generate_tree_from_file(code_path)
-            else:
-                code_tree = processor.generate_tree_from_code(code_path)
-        else:
-            code_tree = code_path
-
-        match_result = compiled_pattern.matches(code_tree, stop_at_first=self.stop_at_first)
+        match_result = compiled_pattern.matches(code_path, stop_at_first=self.stop_at_first)
         if self.match_details:
             return match_result.matched, match_result
         return match_result.matched
@@ -142,7 +126,7 @@ def match_files(
     matcher = PytternMatcher(match_details, stop_at_first, catalog=catalog)
     if match_details:
         res, det = matcher.match(pattern_path, code_path, lang)
-        return res, det["matches"]
+        return res, det.matches
     return matcher.match(pattern_path, code_path, lang)
 
 

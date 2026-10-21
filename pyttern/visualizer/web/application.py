@@ -12,7 +12,7 @@ from ...Pyttern_listener import Pyttern_listener
 from ...language_processors import Languages, get_processor, determine_language, determine_language_from_code
 from ...subpattern.SubPattern import loaded_subpatterns
 from ...subpattern.subpattern_parser import parse_subpattern_from_string
-from ...pattern import PatternCompiler, MatchResult
+from ...pattern import PatternCompiler
 from ...pyttern_error_listener import PytternSyntaxException
 from ...simulator.Matcher import Matcher
 from ...simulator.pda.PDA import PDAEncoder
@@ -490,10 +490,7 @@ def batch_match():
         logger.debug(f"Processing {filename}")
         logger.debug(f"Debug {code}")
 
-        code_tree = processor.generate_tree_from_code(code)
-        logger.debug(f"Code Tree {code_tree}")
-
-        match_res = pattern.matches(code_tree, stop_at_first=False)
+        match_res = pattern.matches(code, stop_at_first=False)
         patterns_match_results = {leaf.name: leaf.matched for leaf in match_res.leaf_results}
         result = {
             'name': filename,
@@ -503,17 +500,6 @@ def batch_match():
         results.append(result)
     return json.dumps(results)
 
-def __get_pyt_files(data):
-    if isinstance(data, MatchResult):
-        for leaf in data.leaf_results:
-            yield leaf.name, leaf.matched
-        return
-    name = data.get("name", "")
-    if "children" in data and data["children"]:
-        for child in data["children"]:
-            yield from __get_pyt_files(child)
-    else:
-        yield name, data.get("result", False)
 
 @app.route("/api/batch_validate", methods=['POST'])
 def batch_validate():

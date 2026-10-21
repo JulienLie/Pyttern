@@ -43,7 +43,7 @@ class TestPatternCompilerCompilation:
 
         assert isinstance(pattern, LeafPattern)
         assert isinstance(pattern, CompiledPattern)
-        assert pattern.name == "raw_pattern"
+        assert pattern.name == "unnamed"
         assert pattern.pda is not None
 
     def test_compile_code_custom_name(self):
@@ -77,7 +77,7 @@ class TestPatternCompilerCompilation:
         pattern = compiler.compile("x = ?a")
 
         assert isinstance(pattern, LeafPattern)
-        assert pattern.name == "raw_pattern"
+        assert pattern.name == "unnamed"
 
     def test_polymorphic_compile_dispatches_to_file_str(self, tmp_path):
         pattern_file = tmp_path / "my_rule.pyt"
@@ -116,7 +116,7 @@ class TestLeafPatternExecution:
         assert isinstance(result, MatchResult)
         assert bool(result) is True
         assert result.matched is True
-        assert result.name == "raw_pattern"
+        assert result.name == "unnamed"
         assert result.matches is not None
         assert result.matches.count() > 0
 
