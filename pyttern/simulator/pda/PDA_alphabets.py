@@ -5,7 +5,7 @@ class NavigationAlphabet(Enum):
     RIGHT_SIBLING = 1
     LEFT_CHILD = 2
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "".join(m[0] for m in self.name.split("_"))
 
 class StackAlphabet(Enum):

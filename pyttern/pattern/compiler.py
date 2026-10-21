@@ -27,6 +27,7 @@ class PatternCompiler:
         language: Union[Languages, str, BaseProcessor],
         catalog: Optional[SubPatternCatalog] = None,
     ) -> None:
+        self.language: Optional[Languages]
         if isinstance(language, BaseProcessor):
             self.processor = language
             if isinstance(language, PythonProcessor):
