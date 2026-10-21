@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 import argparse
 import glob
 import os
+from pathlib import Path
 import sys
-from typing import Optional
+from typing import Any
 
 from loguru import logger
 
-from pyttern.pattern import PatternCompiler
+from pyttern.pattern import MatchResult, PatternCompiler
 from pyttern.subpattern.catalog import SubPatternCatalog
 
-from .language_processors import determine_language, get_processor, Languages
+from .language_processors import BaseProcessor, Languages, determine_language, get_processor
 
 
 class PytternMatcher:
@@ -22,9 +25,9 @@ class PytternMatcher:
     def __init__(
         self,
         match_details: bool = False,
-        stop_at_first: Optional[bool] = None,
-        catalog: Optional[SubPatternCatalog] = None,
-    ):
+        stop_at_first: bool | None = None,
+        catalog: SubPatternCatalog | None = None,
+    ) -> None:
         self.match_details = match_details
         if not match_details:
             self.stop_at_first = True
@@ -32,20 +35,25 @@ class PytternMatcher:
             self.stop_at_first = bool(stop_at_first) if stop_at_first is not None else False
 
         self.catalog = catalog if catalog is not None else SubPatternCatalog()
-        self._language_processors = {lang: get_processor(lang) for lang in Languages}
-        self._extension_to_processor = {}
+        self._language_processors: dict[Languages, BaseProcessor] = {lang: get_processor(lang) for lang in Languages}
+        self._extension_to_processor: dict[str, BaseProcessor] = {}
         for processor in self._language_processors.values():
             for ext in processor.get_language_extensions():
                 clean_ext = ext.lstrip(".")
                 self._extension_to_processor[clean_ext] = processor
                 self._extension_to_processor[f".{clean_ext}"] = processor
 
-    def _get_processor_for_file(self, file_name):
+    def _get_processor_for_file(self, file_name: str | Path | os.PathLike[str]) -> BaseProcessor | None:
         """Get the language processor for a given file name based on its extension."""
         file_ext = os.path.splitext(str(file_name))[1].lstrip(".")
         return self._extension_to_processor.get(file_ext)
 
-    def match(self, pattern_path, code_path, lang):
+    def match(
+        self,
+        pattern_path: str | Path,
+        code_path: str | Path,
+        lang: str | Languages | BaseProcessor,
+    ) -> bool | tuple[bool, MatchResult]:
         """
         Main matching method. Compiles pattern and code from paths and matches them.
         The pattern can be a single file, a raw code string, or a directory representing a composite pattern.
@@ -59,13 +67,17 @@ class PytternMatcher:
             return match_result.matched, match_result
         return match_result.matched
 
-    def match_wildcards(self, pattern_path, code_path):
+    def match_wildcards(
+        self,
+        pattern_path: str | Path,
+        code_path: str | Path,
+    ) -> dict[str, dict[str, bool | tuple[bool, MatchResult]]]:
         """
         Match files using glob patterns for both patterns and code files.
         Pre-compiles discovered patterns once before iterating across target code files.
         Parses each target code file once per code file, and matches against pre-compiled patterns.
         """
-        ret = {}
+        ret: dict[str, dict[str, bool | tuple[bool, MatchResult]]] = {}
         patterns_filespath = sorted(glob.glob(str(pattern_path)))
         code_filespath = sorted(glob.glob(str(code_path)))
         logger.info(f"Found {len(patterns_filespath)} pattern(s) and {len(code_filespath)} code file(s).")
@@ -80,7 +92,7 @@ class PytternMatcher:
                     if processor:
                         break
             if not processor:
-                processor = self._language_processors.get(Languages.PYTHON)
+                processor = self._language_processors[Languages.PYTHON]
 
             compiler = PatternCompiler(language=processor, catalog=self.catalog)
             compiled_patterns[p_path] = compiler.compile(p_path)
@@ -95,6 +107,7 @@ class PytternMatcher:
             code_tree = processor.generate_tree_from_file(code_filepath)
             for pattern_filepath, compiled_pattern in compiled_patterns.items():
                 match_result = compiled_pattern.matches(code_tree, stop_at_first=self.stop_at_first)
+                result: bool | tuple[bool, MatchResult]
                 if self.match_details:
                     result = (match_result.matched, match_result)
                 else:
@@ -107,13 +120,13 @@ class PytternMatcher:
 
 
 def match_files(
-    pattern_path,
-    code_path,
-    lang=None,
-    match_details=False,
-    stop_at_first=True,
-    catalog: Optional[SubPatternCatalog] = None,
-):
+    pattern_path: str | Path,
+    code_path: str | Path,
+    lang: str | Languages | None = None,
+    match_details: bool = False,
+    stop_at_first: bool = True,
+    catalog: SubPatternCatalog | None = None,
+) -> bool | tuple[bool, Any]:
     if lang is None:
         code_lang = determine_language(code_path)
         if os.path.isdir(str(pattern_path)):
@@ -122,21 +135,28 @@ def match_files(
             pattern_lang = determine_language(pattern_path)
         if code_lang != pattern_lang:
             raise ValueError(f"Pattern language ({pattern_lang}) and Code language ({code_lang}) should be the same.")
+        if pattern_lang is None:
+            raise ValueError(f"Could not determine language for pattern '{pattern_path}' or code '{code_path}'.")
         lang = pattern_lang
     matcher = PytternMatcher(match_details, stop_at_first, catalog=catalog)
     if match_details:
-        res, det = matcher.match(pattern_path, code_path, lang)
-        return res, det.matches
-    return matcher.match(pattern_path, code_path, lang)
+        match_out = matcher.match(pattern_path, code_path, lang)
+        if isinstance(match_out, tuple):
+            res, det = match_out
+            return res, det.matches
+        return match_out, []
+    res_bool = matcher.match(pattern_path, code_path, lang)
+    assert isinstance(res_bool, bool)
+    return res_bool
 
 
-def run_application(host="0.0.0.0", port=5000):
+def run_application(host: str = "0.0.0.0", port: int = 5000) -> None:
     from .visualizer.web import application
     logger.enable("pyttern")
     application.app.run(debug=True, host=host, port=port)
 
 
-def configure_logger(verbosity: int):
+def configure_logger(verbosity: int) -> None:
     # Remove the default loguru handler
     logger.remove()
     
@@ -173,7 +193,7 @@ def configure_logger(verbosity: int):
 
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Pyttern: A tool for pattern matching in code.")
     parser.add_argument("--web", action="store_true", help="Launch the web application.")
     parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language for single file matching.")
@@ -239,6 +259,7 @@ def main():
 
         result = matcher.match(args.pattern, args.code, args.lang)
         if args.details:
+            assert isinstance(result, tuple)
             res, det = result
             if res:
                 logger.success("Match found!")
