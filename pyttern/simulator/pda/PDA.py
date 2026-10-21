@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass, field
+from typing import Any
 
 from loguru import logger
 
@@ -8,7 +9,7 @@ from .transition import Transition, TransitionCondition
 
 
 class PDAEncoder(json.JSONEncoder):
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         if isinstance(o, PDA):
             json_object = o.__dict__.copy()
             for elem in json_object:

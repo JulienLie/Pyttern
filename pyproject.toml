@@ -27,6 +27,7 @@ pylint="^3.2.2"
 pytest-subtests="^0.14.2"
 flake8 = "^7.3.0"
 pytest-timeout = "^2.4.0"
+mypy = "^2.4.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -43,3 +44,40 @@ pyttern = "pyttern.main:main"
 pytternweb = "pyttern.main:run_application"
 pytterncompile = "pyttern.main:_compile_code"
 pytterngraph = "pyttern.visualizer.pytterngraph_cli:main"
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+exclude = ["^pyttern/antlr/python/.*", "^pyttern/antlr/java/.*"]
+
+[[tool.mypy.overrides]]
+module = [
+    "antlr4.*",
+    "flasgger.*",
+    "cachelib.*",
+    "Flask_Assets.*",
+    "pymemcache.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.pytternfsm.*",
+    "pyttern.pattern.*",
+    "pyttern.simulator.pda.*",
+]
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.pytternfsm.generic_to_pda",
+    "pyttern.pytternfsm.generic_tree_pruner",
+    "pyttern.pytternfsm.python.python_to_pda",
+    "pyttern.pytternfsm.python.tree_pruner",
+    "pyttern.pytternfsm.java.*",
+]
+ignore_errors = true
+
+

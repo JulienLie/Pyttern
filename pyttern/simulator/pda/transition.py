@@ -7,16 +7,16 @@ from .PDA_alphabets import NavigationAlphabet, StackAlphabet
 
 class TransitionCondition(ABC):
     @abstractmethod
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         ...
 
 @dataclass
 class NodeTransition(TransitionCondition):
     name: str
-    down: int = 1
-    up: int = 1
+    down: int | float = 1
+    up: int | float = 1
 
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         return {
             "type": "NodeTransition",
             "name": self.name,
@@ -29,7 +29,7 @@ class NodeTransition(TransitionCondition):
 class NamedTransition(TransitionCondition):
     name: str
 
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         return {
             "type": "NamedTransition",
             "name": self.name
@@ -42,7 +42,7 @@ class CallTransition(TransitionCondition):
     args: list[str]
     context_type: Any = None
 
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         ctx_name = (
             self.context_type.__name__
             if isinstance(self.context_type, type)
@@ -55,7 +55,7 @@ class CallTransition(TransitionCondition):
             "context_type": ctx_name,
         }
     
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.subpattern_name}({self.args})"
 
 
