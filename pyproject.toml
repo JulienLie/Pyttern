@@ -59,8 +59,15 @@ module = [
     "cachelib.*",
     "Flask_Assets.*",
     "pymemcache.*",
+    "flask_session.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.antlr.*",
+]
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
