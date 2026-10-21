@@ -1,23 +1,21 @@
+from __future__ import annotations
+
+from typing import Any
 import graphviz
 from antlr4.tree.Tree import TerminalNode, ErrorNode
 
 try:
-    from ..antlr.python import Python3Parser
+    from pyttern.antlr.python import Python3Parser
 except ImportError:
-    try:
-        from pyttern.antlr.python import Python3Parser
-    except ImportError:
-        Python3Parser = None
+    Python3Parser = None  # type: ignore[assignment,misc]
 
 try:
-    from ..subpattern.SubPattern import loaded_subpatterns
+    from pyttern.subpattern.SubPattern import loaded_subpatterns
 except ImportError:
-    try:
-        from pyttern.subpattern.SubPattern import loaded_subpatterns
-    except ImportError:
-        loaded_subpatterns = {}
+    loaded_subpatterns = {}
 
-def parse_intervals(intervals_input):
+
+def parse_intervals(intervals_input: str | list[Any] | None) -> list[tuple[int, int]] | None:
     if not intervals_input:
         return None
     
@@ -28,7 +26,7 @@ def parse_intervals(intervals_input):
     else:
         parts = intervals_input
         
-    intervals = []
+    intervals: list[tuple[int, int]] = []
     for part in parts:
         part = str(part).strip()
         if '-' in part:
@@ -45,7 +43,8 @@ def parse_intervals(intervals_input):
                 continue
     return intervals
 
-def is_in_intervals(val, intervals):
+
+def is_in_intervals(val: int, intervals: list[tuple[int, int]] | None) -> bool:
     if intervals is None:
         return True
     for start, end in intervals:
@@ -53,7 +52,8 @@ def is_in_intervals(val, intervals):
             return True
     return False
 
-COLOR_MAP = {
+
+COLOR_MAP: dict[str, tuple[int, int, int]] = {
     "red": (255, 0, 0),
     "blue": (0, 0, 255),
     "green": (0, 128, 0),
@@ -76,7 +76,8 @@ COLOR_MAP = {
     "darkgreen": (0, 100, 0),
 }
 
-def get_node_style(color_name):
+
+def get_node_style(color_name: str | None) -> dict[str, str]:
     if not color_name:
         return {}
     
@@ -88,7 +89,7 @@ def get_node_style(color_name):
             if len(h) == 3:
                 h = ''.join([c*2 for c in h])
             rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        except:
+        except Exception:
             rgb = (200, 200, 200)
     else:
         rgb = COLOR_MAP.get(color_name, (200, 200, 200))
@@ -99,8 +100,9 @@ def get_node_style(color_name):
     
     return {'style': 'filled', 'fillcolor': fill_hex, 'fontcolor': font_color}
 
-def flatten_tree_dict(d, current_prefix=""):
-    flat = {}
+
+def flatten_tree_dict(d: Any, current_prefix: str = "") -> dict[str, Any]:
+    flat: dict[str, Any] = {}
     if not isinstance(d, dict):
         flat[current_prefix or "__main__"] = d
     else:
@@ -115,8 +117,9 @@ def flatten_tree_dict(d, current_prefix=""):
                 flat.update(flatten_tree_dict(val, current_prefix=name))
     return flat
 
-def find_subpattern_calls(node):
-    calls = []
+
+def find_subpattern_calls(node: Any) -> list[str]:
+    calls: list[str] = []
     if node is None:
         return calls
     
@@ -138,16 +141,16 @@ def find_subpattern_calls(node):
             
     return calls
 
-def collect_subpattern_trees(root_tree, existing_keys=None, catalog=None):
+
+def collect_subpattern_trees(root_tree: Any, existing_keys: set[str] | None = None, catalog: Any = None) -> dict[str, Any]:
     if existing_keys is None:
         existing_keys = set()
     
-    collected = {}
-    visited_subpatterns = set()
-    queue = []
+    collected: dict[str, Any] = {}
+    visited_subpatterns: set[str] = set()
+    queue: list[str] = []
     
     queue.extend(find_subpattern_calls(root_tree))
-    
     while queue:
         sub_name = queue.pop(0)
         if sub_name in visited_subpatterns:
@@ -172,11 +175,17 @@ def collect_subpattern_trees(root_tree, existing_keys=None, catalog=None):
                     
     return collected
 
-def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree", 
-                         font_size: int = 14, node_intervals: list = None, 
-                         highlights: dict = None, wrap_at: int = None,
-                         catalog=None):
-    
+
+def visualize_parse_tree(
+    tree: Any,
+    output_path: str,
+    title: str = "Parse Tree", 
+    font_size: int = 14,
+    node_intervals: list[Any] | str | None = None, 
+    highlights: dict[str, Any] | None = None,
+    wrap_at: int | None = None,
+    catalog: Any = None,
+) -> None:
     if not isinstance(tree, dict):
         trees = {"__main__": tree}
     else:
@@ -185,7 +194,7 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     trees = flatten_tree_dict(trees)
 
     # Collect any called subpatterns not already in trees
-    subpattern_trees = {}
+    subpattern_trees: dict[str, Any] = {}
     for t_name, t_node in list(trees.items()):
         discovered = collect_subpattern_trees(t_node, existing_keys=set(trees.keys()) | set(subpattern_trees.keys()), catalog=catalog)
         subpattern_trees.update(discovered)
@@ -199,7 +208,7 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     elif intervals is None and node_intervals is None:
         intervals = None  # Show all states by default
 
-    parsed_highlights = []
+    parsed_highlights: list[dict[str, Any]] = []
     if highlights:
         for range_str, cfg in highlights.items():
             color = cfg.get("color", "red") if isinstance(cfg, dict) else cfg
@@ -217,14 +226,14 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
     dot.attr(ranksep=spacing)
     dot.attr(pad='0.5')
 
-    sorted_tree_names = []
+    sorted_tree_names: list[str] = []
     if "__main__" in trees:
         sorted_tree_names.append("__main__")
     for name in trees:
         if name != "__main__":
             sorted_tree_names.append(name)
 
-    last_tree_root = None
+    last_tree_root: str | None = None
     for tree_name in sorted_tree_names:
         current_tree = trees[tree_name]
         tree_name_clean = tree_name.replace(":", "_")
@@ -253,12 +262,20 @@ def visualize_parse_tree(tree, output_path: str, title: str = "Parse Tree",
 
     dot.render(output_path, format='pdf', cleanup=True)
 
-def _render_single_tree_to_graph(graph, tree, tree_name, intervals, parsed_highlights, font_size):
+
+def _render_single_tree_to_graph(
+    graph: Any,
+    tree: Any,
+    tree_name: str,
+    intervals: list[tuple[int, int]] | None,
+    parsed_highlights: list[dict[str, Any]],
+    font_size: int,
+) -> str | None:
     # First Pass: Assign DFS IDs and identify nodes
-    node_info = {}
-    dfs_order = []
+    node_info: dict[Any, dict[str, int]] = {}
+    dfs_order: list[Any] = []
     
-    def first_pass(node):
+    def first_pass(node: Any) -> None:
         dfs_id = len(dfs_order)
         dfs_order.append(node)
         node_info[node] = {"dfs_id": dfs_id}
@@ -279,8 +296,8 @@ def _render_single_tree_to_graph(graph, tree, tree_name, intervals, parsed_highl
         if not is_in_intervals(last_id, current_intervals):
             current_intervals.append((last_id, last_id))
 
-    def get_visible_descendants(node):
-        results = []
+    def get_visible_descendants(node: Any) -> list[Any]:
+        results: list[Any] = []
         if not hasattr(node, "children") or not isinstance(node.children, (list, tuple)):
             return results
         
@@ -293,11 +310,11 @@ def _render_single_tree_to_graph(graph, tree, tree_name, intervals, parsed_highl
         return results
 
     # Second Pass: Add nodes and edges
-    def second_pass(node):
+    def second_pass(node: Any) -> str | None:
         node_id = node_info[node]["dfs_id"]
         if not is_in_intervals(node_id, current_intervals):
             return None
-
+        
         unique_id = str(hash(node)) if tree_name == "__main__" else f"{tree_name}_{hash(node)}"
         
         # Determine Color

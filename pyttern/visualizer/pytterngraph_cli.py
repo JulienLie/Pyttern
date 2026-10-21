@@ -1,16 +1,19 @@
-import sys
-import os
+from __future__ import annotations
+
 import argparse
+import os
+import sys
+from typing import Any
 import yaml
 from loguru import logger
-from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.language_processors.languages import Languages
 from pyttern.language_processors import get_processor
 from pyttern.visualizer.pda_visualizer import visualize_pda
 from pyttern.visualizer.pt_visualizer import visualize_parse_tree
 from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(description="Pyttern Graph Tool: Visualize PDA structure or Parse Tree from code/patterns.")
     parser.add_argument("input", nargs="?", help="Input file (python or pyttern).")
     parser.add_argument("output", nargs="?", help="Output PDF filename.")
@@ -25,7 +28,7 @@ def main():
     args = parser.parse_args()
 
     # Default values
-    options = {
+    options: dict[str, Any] = {
         "input": args.input,
         "output": args.output if args.output else "visualization_output",
         "lang": "python",
@@ -127,6 +130,7 @@ def main():
     except Exception as e:
         logger.exception(f"Error generating graph: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

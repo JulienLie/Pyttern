@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Optional, Union
 
 from loguru import logger
 
@@ -24,9 +23,10 @@ class PatternCompiler:
 
     def __init__(
         self,
-        language: Union[Languages, str, BaseProcessor],
-        catalog: Optional[SubPatternCatalog] = None,
+        language: Languages | str | BaseProcessor,
+        catalog: SubPatternCatalog | None = None,
     ) -> None:
+        self.language: Languages | None
         if isinstance(language, BaseProcessor):
             self.processor = language
             if isinstance(language, PythonProcessor):
@@ -52,7 +52,7 @@ class PatternCompiler:
 
         self.catalog = catalog if catalog is not None else SubPatternCatalog()
 
-    def compile_code(self, code: str, name: Optional[str] = None) -> LeafPattern:
+    def compile_code(self, code: str, name: str | None = None) -> LeafPattern:
         """
         Compiles a raw pattern string into an executable LeafPattern wrapping a Pushdown Automaton.
         """
@@ -70,7 +70,7 @@ class PatternCompiler:
             catalog=self.catalog,
         )
 
-    def compile_file(self, file_path: Union[str, Path], name: Optional[str] = None) -> LeafPattern:
+    def compile_file(self, file_path: str | Path, name: str | None = None) -> LeafPattern:
         """
         Loads and compiles a pattern file into an executable LeafPattern.
         """
@@ -91,9 +91,9 @@ class PatternCompiler:
 
     def compile_dir(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         op: str = "and",
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> CompositePattern:
         """
         Recursively compiles a directory tree into an immutable CompositePattern hierarchy.
@@ -144,8 +144,8 @@ class PatternCompiler:
 
     def compile_json(
         self,
-        pattern_json: Union[dict, str],
-        lang: Optional[Union[str, Languages, BaseProcessor]] = None,
+        pattern_json: dict | str,
+        lang: str | Languages | BaseProcessor | None = None,
     ) -> CompiledPattern:
         """
         Recursively compiles a nested JSON pattern definition into a CompiledPattern hierarchy.
@@ -197,8 +197,8 @@ class PatternCompiler:
 
     def compile(
         self,
-        source: Union[str, Path, dict],
-        name: Optional[str] = None,
+        source: str | Path | dict,
+        name: str | None = None,
     ) -> CompiledPattern:
         """
         Polymorphic compilation entry point:

@@ -27,6 +27,7 @@ pylint="^3.2.2"
 pytest-subtests="^0.14.2"
 flake8 = "^7.3.0"
 pytest-timeout = "^2.4.0"
+mypy = "^2.4.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -43,3 +44,52 @@ pyttern = "pyttern.main:main"
 pytternweb = "pyttern.main:run_application"
 pytterncompile = "pyttern.main:_compile_code"
 pytterngraph = "pyttern.visualizer.pytterngraph_cli:main"
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+follow_imports = "silent"
+exclude = ["^pyttern/antlr/python/.*", "^pyttern/antlr/java/.*"]
+
+[[tool.mypy.overrides]]
+module = [
+    "antlr4.*",
+    "flasgger.*",
+    "cachelib.*",
+    "Flask_Assets.*",
+    "pymemcache.*",
+    "flask_session.*",
+    "graphviz.*",
+    "yaml.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.antlr.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.pytternfsm.*",
+    "pyttern.pattern.*",
+    "pyttern.simulator.*",
+    "pyttern.subpattern.*",
+    "pyttern.language_processors.*",
+]
+disallow_untyped_defs = true
+
+# Legacy ANTLR-dependent AST-to-PDA conversion visitors rely on dynamic MRO mixins
+# and untyped ANTLR visitor methods. Retained with minimal overrides until FSM compilation refactoring.
+[[tool.mypy.overrides]]
+module = [
+    "pyttern.pytternfsm.generic_to_pda",
+    "pyttern.pytternfsm.python.python_to_pda",
+    "pyttern.pytternfsm.java.*",
+]
+ignore_errors = true
+
+

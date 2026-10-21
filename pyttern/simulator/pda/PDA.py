@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass, field
+from typing import Any
 
 from loguru import logger
 
@@ -8,7 +11,7 @@ from .transition import Transition, TransitionCondition
 
 
 class PDAEncoder(json.JSONEncoder):
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         if isinstance(o, PDA):
             json_object = o.__dict__.copy()
             for elem in json_object:
@@ -22,6 +25,7 @@ class PDAEncoder(json.JSONEncoder):
         if isinstance(o, TransitionCondition):
             return o.to_json()
         return super().default(o)
+
 
 @dataclass
 class PDA:
@@ -61,14 +65,13 @@ class PDA:
         else:
             logger.warning(f"Transition {transition} already exists in state {current_state}")
 
-
     def get_transitions(self, state: int | None = None) -> list[Transition]:
         if state is None:
             return [
                 transition
                 for transitions in self.transitions.values()
                 for transition in transitions
-            ] # Flatten
+            ]  # Flatten
 
         return self.transitions[state]
 

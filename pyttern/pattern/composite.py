@@ -133,15 +133,16 @@ class NotPattern(CompositePattern):
         child: Optional[CompiledPattern] = None,
         children: Optional[Sequence[CompiledPattern]] = None,
     ) -> None:
+        resolved_children: tuple[CompiledPattern, ...]
         if child is not None:
             resolved_children = (child,)
         elif children is not None:
             resolved_children = tuple(children)
         elif child_or_children is not None:
-            if isinstance(child_or_children, (list, tuple)):
-                resolved_children = tuple(child_or_children)
-            else:
+            if isinstance(child_or_children, CompiledPattern):
                 resolved_children = (child_or_children,)
+            else:
+                resolved_children = tuple(child_or_children)
         else:
             resolved_children = ()
         super().__init__(children=resolved_children, name=name, processor=processor)
