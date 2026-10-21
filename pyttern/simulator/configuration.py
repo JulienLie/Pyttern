@@ -1,40 +1,63 @@
-
 from __future__ import annotations
 
+from collections.abc import ItemsView, Iterator, KeysView, Mapping, ValuesView
 from dataclasses import dataclass
-from typing import Optional, Iterator, Any
+from typing import Any, NamedTuple
+
+from antlr4.ParserRuleContext import ParserRuleContext
+from antlr4.tree.Tree import Tree
 
 _PRIVATE_TOKEN = object()
 
 
+class Configuration(NamedTuple):
+    """
+    The simulation state tuple capturing current automaton state, parse tree node,
+    action, environment, and call stack history.
+    """
+    state: Any
+    parse_tree: Tree | ParserRuleContext
+    action: str
+    environment: Environment
+    history: list[Any]
+
+    @property
+    def stack(self) -> str:
+        return self.action
+
+    @property
+    def node(self) -> Tree | ParserRuleContext:
+        return self.parse_tree
+
+
 @dataclass(frozen=True)
 class Environment:
-    mapping: dict[str, object]
+    mapping: dict[str, Any]
 
-    def __init__(self, mapping: dict[str, object], *, _secret: object = None):
+    def __init__(self, mapping: Mapping[str, Any] | None = None, *, _secret: object = None) -> None:
         if _secret is not _PRIVATE_TOKEN:
             raise RuntimeError(
                 "Environment constructor is private. Use Environment.empty() or merge()."
             )
-        object.__setattr__(self, 'mapping', mapping)
+        object.__setattr__(self, 'mapping', dict(mapping) if mapping is not None else {})
 
     @classmethod
-    def _create(cls, mapping: dict[str, object]) -> 'Environment':
+    def _create(cls, mapping: Mapping[str, Any]) -> Environment:
         return cls(mapping, _secret=_PRIVATE_TOKEN)
 
     @classmethod
-    def empty(cls) -> 'Environment':
+    def empty(cls) -> Environment:
         return cls._create({})
 
     @classmethod
-    def from_dict(cls, mapping: dict[str, object] | 'Environment' | None = None) -> 'Environment':
+    def from_dict(cls, mapping: Mapping[str, Any] | Environment | None = None) -> Environment:
         if mapping is None:
             return cls.empty()
         if isinstance(mapping, Environment):
             return mapping
         return cls._create(dict(mapping))
 
-    def merge(self, other: 'Environment') -> Optional['Environment']:
+    def merge(self, other: Environment | Mapping[str, Any]) -> Environment | None:
         if not isinstance(other, Environment):
             other = Environment.from_dict(other)
         from .Matcher import Matcher
@@ -63,12 +86,12 @@ class Environment:
                 merged[key] = val
         return self._create(merged)
 
-    def bind(self, key: str, value: object) -> 'Environment':
+    def bind(self, key: str, value: Any) -> Environment:
         new_mapping = self.mapping.copy()
         new_mapping[key] = value
         return self._create(new_mapping)
 
-    def update(self, other: 'Environment' | dict[str, object]) -> 'Environment':
+    def update(self, other: Environment | Mapping[str, Any]) -> Environment:
         new_mapping = self.mapping.copy()
         if isinstance(other, Environment):
             new_mapping.update(other.mapping)
@@ -76,7 +99,7 @@ class Environment:
             new_mapping.update(other)
         return self._create(new_mapping)
 
-    def join(self, other: 'Environment' | dict[str, object]) -> 'Environment':
+    def join(self, other: Environment | Mapping[str, Any]) -> Environment:
         new_mapping = self.mapping.copy()
         other_mapping = other.mapping if isinstance(other, Environment) else other
         for key, value in other_mapping.items():
@@ -84,25 +107,25 @@ class Environment:
                 new_mapping[key] = value
         return self._create(new_mapping)
 
-    def copy(self) -> 'Environment':
+    def copy(self) -> Environment:
         return self._create(self.mapping.copy())
 
     def get(self, key: str, default: Any = None) -> Any:
         return self.mapping.get(key, default)
 
-    def items(self):
+    def items(self) -> ItemsView[str, Any]:
         return self.mapping.items()
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         return self.mapping.keys()
 
-    def values(self):
+    def values(self) -> ValuesView[Any]:
         return self.mapping.values()
 
-    def __getitem__(self, key: str) -> object:
+    def __getitem__(self, key: str) -> Any:
         return self.mapping[key]
 
-    def __contains__(self, key: str) -> bool:
+    def __contains__(self, key: object) -> bool:
         return key in self.mapping
 
     def __iter__(self) -> Iterator[str]:
@@ -119,7 +142,7 @@ class Environment:
         return False
 
     def __hash__(self) -> int:
-        items = []
+        items: list[tuple[str, int]] = []
         for k in sorted(self.mapping.keys()):
             v = self.mapping[k]
             try:
@@ -130,9 +153,15 @@ class Environment:
         return hash(tuple(items))
 
     def __str__(self) -> str:
-        pretty_mapping = {v:(n.getText() if n is not None else None) for v, n in self.mapping.items()}
+        pretty_mapping = {
+            v: (n.getText() if hasattr(n, 'getText') else str(n)) if n is not None else None
+            for v, n in self.mapping.items()
+        }
         return f"Environment({pretty_mapping})"
 
     def __repr__(self) -> str:
-        pretty_mapping = {v:(n.getText() if n is not None else None) for v, n in self.mapping.items()}
+        pretty_mapping = {
+            v: (n.getText() if hasattr(n, 'getText') else str(n)) if n is not None else None
+            for v, n in self.mapping.items()
+        }
         return f"Environment({pretty_mapping!r})"

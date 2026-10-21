@@ -73,7 +73,7 @@ ignore_errors = true
 module = [
     "pyttern.pytternfsm.*",
     "pyttern.pattern.*",
-    "pyttern.simulator.pda.*",
+    "pyttern.simulator.*",
 ]
 disallow_untyped_defs = true
 

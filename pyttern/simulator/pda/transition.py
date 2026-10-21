@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
@@ -10,6 +12,7 @@ class TransitionCondition(ABC):
     def to_json(self) -> dict[str, Any]:
         ...
 
+
 @dataclass
 class NodeTransition(TransitionCondition):
     name: str
@@ -21,7 +24,7 @@ class NodeTransition(TransitionCondition):
             "type": "NodeTransition",
             "name": self.name,
             "down": f"{self.down}",
-            "up": f"{self.up}"
+            "up": f"{self.up}",
         }
 
 
@@ -32,7 +35,7 @@ class NamedTransition(TransitionCondition):
     def to_json(self) -> dict[str, Any]:
         return {
             "type": "NamedTransition",
-            "name": self.name
+            "name": self.name,
         }
 
 
@@ -54,7 +57,7 @@ class CallTransition(TransitionCondition):
             "args": self.args,
             "context_type": ctx_name,
         }
-    
+
     def __str__(self) -> str:
         return f"{self.subpattern_name}({self.args})"
 
