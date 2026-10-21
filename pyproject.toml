@@ -76,16 +76,18 @@ module = [
     "pyttern.pattern.*",
     "pyttern.simulator.*",
     "pyttern.subpattern.*",
+    "pyttern.language_processors.*",
 ]
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
     "pyttern.pytternfsm.generic_to_pda",
-    "pyttern.pytternfsm.generic_tree_pruner",
     "pyttern.pytternfsm.python.python_to_pda",
-    "pyttern.pytternfsm.python.tree_pruner",
     "pyttern.pytternfsm.java.*",
+    "pyttern.visualizer.*",
+    "pyttern.main",
+    "pyttern.Pyttern_listener",
 ]
 ignore_errors = true
 

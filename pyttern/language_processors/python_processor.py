@@ -1,53 +1,68 @@
-import io
+from __future__ import annotations
 
-from antlr4 import CommonTokenStream, InputStream
+import io
+import re
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+from antlr4 import CommonTokenStream, InputStream, ParserRuleContext
+from antlr4.tree.Tree import Tree
 from loguru import logger
 
 from .base_processor_interface import BaseProcessor
-from ..Pyttern_listener import ConsolePytternListener
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
 from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
+from ..pytternfsm.PDA import PDA
 from ..pytternfsm.python.python_to_pda import Python_to_PDA
 from ..pytternfsm.python.tree_pruner import TreePruner
+
+if TYPE_CHECKING:
+    from ..Pyttern_listener import ConsolePytternListener
+    from ..subpattern.SubPattern import BaseSubPattern, SubPatternCallContext
+    from ..subpattern.catalog import SubPatternCatalog
 
 
 class PythonProcessor(BaseProcessor):
 
-    def generate_tree_from_code(self, code):
+    def generate_tree_from_code(self, code: str) -> ParserRuleContext | Tree:
         code = code.strip()
         code += "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
-    def generate_tree_from_stream(self, stream):
+    def generate_tree_from_stream(self, stream: InputStream) -> ParserRuleContext | Tree:
         logger.debug("Generating tree")
         lexer = Python3Lexer(stream)
-        stream = CommonTokenStream(lexer)
-        py_parser = Python3Parser(stream)
+        token_stream = CommonTokenStream(lexer)
+        py_parser = Python3Parser(token_stream)
 
-        input = io.StringIO()
+        error_stream = io.StringIO()
 
         py_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener(input)
+        error_listener = Python3ErrorListener(error_stream)
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
 
-        pruned_tree = TreePruner().visit(tree)
+        pruned_tree: ParserRuleContext | Tree = TreePruner().visit(tree)
 
         return pruned_tree
 
-    def generate_tree_from_file(self, file):
-        with open(file, 'r', encoding="utf-8") as f:
+    def generate_tree_from_file(self, file: str | Path) -> ParserRuleContext | Tree:
+        with open(file, "r", encoding="utf-8") as f:
             return self.generate_tree_from_code(f.read())
 
-    def create_pda(self, pattern_tree, catalog=None):
+    def create_pda(
+        self,
+        pattern_tree: ParserRuleContext | Tree,
+        catalog: SubPatternCatalog | None = None,
+    ) -> dict[str, PDA]:
         return Python_to_PDA(catalog=catalog).visit(pattern_tree)
 
     @staticmethod
-    def _adapt_stmt_to_tfpdef(tree):
-        desc = tree
+    def _adapt_stmt_to_tfpdef(tree: ParserRuleContext | Tree) -> Python3Parser.TfpdefContext | None:
+        desc: Any = tree
         while desc and not isinstance(desc, Python3Parser.Expr_stmtContext):
             children = list(desc.getChildren())
             if len(children) != 1:
@@ -74,7 +89,11 @@ class PythonProcessor(BaseProcessor):
                 return tfpdef
         return None
 
-    def prune_subpattern_tree(self, tree, ctx):
+    def prune_subpattern_tree(
+        self,
+        tree: ParserRuleContext | Tree,
+        ctx: type | ParserRuleContext | Tree | None,
+    ) -> ParserRuleContext | Tree | None:
         """
         Prunes a subpattern transformation parse tree down to the target context type.
         """
@@ -83,8 +102,10 @@ class PythonProcessor(BaseProcessor):
             if adapted is not None:
                 return adapted
 
-        target_cls = ctx if isinstance(ctx, type) else (ctx.__class__ if ctx is not None else None)
-        desc = tree
+        target_cls: type | None = ctx if isinstance(ctx, type) else (ctx.__class__ if ctx is not None else None)
+        if target_cls is None:
+            return None
+        desc: Any = tree
         while desc and not isinstance(desc, target_cls):
             children = list(desc.getChildren())
             if len(children) != 1:
@@ -92,7 +113,12 @@ class PythonProcessor(BaseProcessor):
             desc = children[0]
         return desc
 
-    def compile_subpattern(self, subpattern, context, catalog=None):
+    def compile_subpattern(
+        self,
+        subpattern: BaseSubPattern,
+        context: SubPatternCallContext | ParserRuleContext | Tree | None,
+        catalog: SubPatternCatalog | None = None,
+    ) -> dict[str, PDA]:
         """
         Compiles a subpattern definition into a Pushdown Automaton given a call context.
 
@@ -104,7 +130,7 @@ class PythonProcessor(BaseProcessor):
         from ..subpattern.SubPattern import SubPatternCallContext
 
         ast_ctx = context.ast_ctx if isinstance(context, SubPatternCallContext) else context
-        compiled = {}
+        compiled: dict[str, PDA] = {}
         for name, trans in subpattern.transformations.items():
             pruned_trans = self.prune_subpattern_tree(trans, ast_ctx)
             if pruned_trans is None:
@@ -119,14 +145,15 @@ class PythonProcessor(BaseProcessor):
 
         return compiled
 
-    def create_listener(self):
+    def create_listener(self) -> ConsolePytternListener:
+        from ..Pyttern_listener import ConsolePytternListener
         return ConsolePytternListener()
 
-    def get_language_extensions(self):
+    def get_language_extensions(self) -> list[str]:
         return ["py", "pyt", "pyh"]
 
     @staticmethod
-    def parse_diagnostics(code: str) -> list[dict]:
+    def parse_diagnostics(code: str) -> list[dict[str, Any]]:
         """
         * **Arguments:**
         - `code` (`str`): The full text content of the active document.
@@ -151,8 +178,8 @@ class PythonProcessor(BaseProcessor):
 
         logger.debug(f"Parsing {code} for debugging purpose")
         lexer = Python3Lexer(stream)
-        stream = CommonTokenStream(lexer)
-        py_parser = Python3Parser(stream)
+        token_stream = CommonTokenStream(lexer)
+        py_parser = Python3Parser(token_stream)
 
         error = io.StringIO()
 
@@ -165,9 +192,9 @@ class PythonProcessor(BaseProcessor):
         logger.debug(f"Parsing done, error found: {error_listener.errors}")
 
         return error_listener.errors
-    
+
     @staticmethod
-    def get_completions(code: str, line: int, character: int) -> list[dict]:
+    def get_completions(code: str, line: int, character: int) -> list[dict[str, Any]]:
         """
         * **Arguments:**
         - `code` (`str`): The full text content of the active document.
@@ -187,9 +214,7 @@ class PythonProcessor(BaseProcessor):
         | `detail` | `str` | *(Optional)* A short description shown next to the label (e.g. `wildcard operator`). |
         | `documentation`| `str` | *(Optional)* Detailed documentation shown in the expandable info card (can be markdown). |
         """
-        import re
-
-        lines = code.split('\n')
+        lines = code.split("\n")
         if line < 0 or line >= len(lines):
             return []
 
@@ -204,111 +229,111 @@ class PythonProcessor(BaseProcessor):
         prefix = match.group(1) if match else ""
 
         # Pyttern-specific wildcard patterns
-        pyttern_wildcards = [
+        pyttern_wildcards: list[dict[str, Any]] = [
             {
                 "label": "?",
                 "kind": "keyword",
                 "detail": "simple wildcard",
-                "documentation": "Matches exactly 1 element (variable, expression, statement, etc.)."
+                "documentation": "Matches exactly 1 element (variable, expression, statement, etc.).",
             },
             {
                 "label": "?name",
                 "kind": "keyword",
                 "detail": "named wildcard",
-                "documentation": "Matches 1 element and binds it to `name`."
+                "documentation": "Matches 1 element and binds it to `name`.",
             },
             {
                 "label": "?*",
                 "kind": "keyword",
                 "detail": "sequence wildcard",
-                "documentation": "Matches zero or more elements."
+                "documentation": "Matches zero or more elements.",
             },
             {
                 "label": "?:",
                 "kind": "keyword",
                 "detail": "body wildcard",
-                "documentation": "Matches a node that has a block/body (e.g., `if`, `for`)."
+                "documentation": "Matches a node that has a block/body (e.g., `if`, `for`).",
             },
             {
                 "label": "?:*",
                 "kind": "keyword",
                 "detail": "deep body wildcard",
-                "documentation": "Matches a body at any level of indentation."
+                "documentation": "Matches a body at any level of indentation.",
             },
             {
                 "label": "?<...>",
                 "kind": "keyword",
                 "detail": "contains wildcard",
-                "documentation": "Matches if the inner pattern is found anywhere within the node."
+                "documentation": "Matches if the inner pattern is found anywhere within the node.",
             },
             {
                 "label": "?$(...)",
                 "kind": "keyword",
                 "detail": "sub-pattern call",
-                "documentation": "Calls a sub-pattern defined elsewhere."
+                "documentation": "Calls a sub-pattern defined elsewhere.",
             },
             {
                 "label": "?{n, m}",
                 "kind": "keyword",
                 "detail": "range wildcard",
-                "documentation": "Matches between `n` and `m` elements in a sequence."
+                "documentation": "Matches between `n` and `m` elements in a sequence.",
             },
         ]
 
         # Pyttern sub-pattern structures
-        pyttern_subpatterns = [
+        pyttern_subpatterns: list[dict[str, Any]] = [
             {
                 "label": "$&Name(args)",
                 "kind": "keyword",
                 "detail": "AND sub-pattern",
-                "documentation": "AND operator. All internal transformations must match."
+                "documentation": "AND operator. All internal transformations must match.",
             },
             {
                 "label": "$|Name(args)",
                 "kind": "keyword",
                 "detail": "OR sub-pattern",
-                "documentation": "OR operator. At least one internal transformation must match."
+                "documentation": "OR operator. At least one internal transformation must match.",
             },
             {
                 "label": "$#",
                 "kind": "keyword",
                 "detail": "transformation label",
-                "documentation": "A label for a specific transformation branch/version of the pattern logic."
+                "documentation": "A label for a specific transformation branch/version of the pattern logic.",
             },
         ]
 
         # Pyttern API keywords
-        pyttern_api = [
+        pyttern_api: list[dict[str, Any]] = [
             {
                 "label": "match_files",
                 "kind": "function",
                 "detail": "pyttern.match_files",
-                "documentation": "Matches patterns against files.\n\n`match_files(pattern_file, code_file, lang='python')`"
+                "documentation": "Matches patterns against files.\n\n`match_files(pattern_file, code_file, lang='python')`",
             },
             {
                 "label": "PytternMatcher",
                 "kind": "class",
                 "detail": "pyttern.PytternMatcher",
-                "documentation": "Main matcher class for matching trees.\n\n`matcher = PytternMatcher(match_details=True)`"
+                "documentation": "Main matcher class for matching trees.\n\n`matcher = PytternMatcher(match_details=True)`",
             },
             {
                 "label": "get_processor",
                 "kind": "function",
                 "detail": "pyttern.language_processors.get_processor",
-                "documentation": "Retrieves the processor instance for a specific language (e.g. 'python', 'java')."
+                "documentation": "Retrieves the processor instance for a specific language (e.g. 'python', 'java').",
             },
             {
                 "label": "parse_diagnostics",
                 "kind": "function",
                 "detail": "PythonProcessor.parse_diagnostics",
-                "documentation": "Parses code and returns a list of diagnostic dictionaries for syntax errors."
+                "documentation": "Parses code and returns a list of diagnostic dictionaries for syntax errors.",
             },
             {
                 "label": "generate_tree_from_code",
                 "kind": "function",
                 "detail": "PythonProcessor.generate_tree_from_code",
-                "documentation": "Generates a pruned parse tree from Python/Pyttern code."
-            }
+                "documentation": "Generates a pruned parse tree from Python/Pyttern code.",
+            },
         ]
 
         # Python keywords
@@ -319,19 +344,19 @@ class PythonProcessor(BaseProcessor):
             "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"
         ]
 
-        python_keywords = [
+        python_keywords: list[dict[str, Any]] = [
             {
                 "label": kw,
                 "kind": "keyword" if kw not in ("True", "False", "None") else "constant",
                 "detail": "python keyword" if kw not in ("True", "False", "None") else "python constant",
-                "documentation": f"Standard Python {'constant' if kw in ('True', 'False', 'None') else 'keyword'}."
+                "documentation": f"Standard Python {'constant' if kw in ('True', 'False', 'None') else 'keyword'}.",
             }
             for kw in python_keywords_list
         ]
 
         # Extract local definitions
-        local_functions = set()
-        local_variables = set()
+        local_functions: set[str] = set()
+        local_variables: set[str] = set()
 
         for line_str in lines:
             # Check function definitions
@@ -352,20 +377,20 @@ class PythonProcessor(BaseProcessor):
                 if var not in python_keywords_list:
                     local_variables.add(var)
 
-        local_suggestions = []
+        local_suggestions: list[dict[str, Any]] = []
         for func in sorted(local_functions):
             local_suggestions.append({
                 "label": func,
                 "kind": "function",
                 "detail": "local function",
-                "documentation": f"Function `{func}` defined in the current document."
+                "documentation": f"Function `{func}` defined in the current document.",
             })
         for var in sorted(local_variables):
             local_suggestions.append({
                 "label": var,
                 "kind": "variable",
                 "detail": "local variable/class",
-                "documentation": f"Variable/class `{var}` defined in the current document."
+                "documentation": f"Variable/class `{var}` defined in the current document.",
             })
 
         # Combine all candidates
@@ -373,16 +398,19 @@ class PythonProcessor(BaseProcessor):
 
         # Filter candidates based on prefix
         prefix_lower = prefix.lower()
-        filtered = []
+        filtered: list[dict[str, Any]] = []
         for item in all_candidates:
-            label = item["label"]
-            if label.startswith('?') or label.startswith('$'):
+            label = str(item["label"])
+            if label.startswith("?") or label.startswith("$"):
                 if label.startswith(prefix):
                     filtered.append(item)
             else:
-                if prefix.startswith('?') or prefix.startswith('$'):
+                if prefix.startswith("?") or prefix.startswith("$"):
                     continue
                 if label.lower().startswith(prefix_lower):
                     filtered.append(item)
 
         return filtered
+
+
+__all__ = ["PythonProcessor"]
