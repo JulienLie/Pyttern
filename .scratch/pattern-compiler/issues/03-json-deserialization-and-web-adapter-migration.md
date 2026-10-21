@@ -4,11 +4,11 @@
 
 **Blocked by:** 02: Composite Patterns (And, Or, Not) and Directory Compilation
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `compile_json` recursively parses nested pattern JSON definitions into a composite `CompiledPattern` tree.
-- [ ] `compile_json` handles leaf pattern objects containing pattern code and metadata.
-- [ ] `MatchResult.to_dict()` serializes a match result hierarchy into the dictionary format expected by the web visualizer.
-- [ ] The web visualizer matching endpoint compiles incoming compound patterns using `compile_json`.
-- [ ] In-place dictionary mutations (e.g. forcing `name = 'and'` on untyped dictionaries) are completely removed from web handlers.
-- [ ] The web visualizer matching endpoint formats responses using `MatchResult.to_dict()`.
+- [x] `compile_json` recursively parses nested pattern JSON definitions into a composite `CompiledPattern` tree.
+- [x] `compile_json` handles leaf pattern objects containing pattern code and metadata.
+- [x] `MatchResult.to_dict()` serializes a match result hierarchy into the dictionary format expected by the web visualizer.
+- [x] The web visualizer matching endpoint compiles incoming compound patterns using `compile_json`.
+- [x] In-place dictionary mutations (e.g. forcing `name = 'and'` on untyped dictionaries) are completely removed from web handlers.
+- [x] The web visualizer matching endpoint formats responses using `MatchResult.to_dict()`.

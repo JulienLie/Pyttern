@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Optional, Union
@@ -141,6 +142,59 @@ class PatternCompiler:
         else:
             return NotPattern(children=children, name=pattern_name, processor=self.processor)
 
+    def compile_json(
+        self,
+        pattern_json: Union[dict, str],
+        lang: Optional[Union[str, Languages, BaseProcessor]] = None,
+    ) -> CompiledPattern:
+        """
+        Recursively compiles a nested JSON pattern definition into a CompiledPattern hierarchy.
+        """
+        if isinstance(pattern_json, str):
+            try:
+                pattern_json = json.loads(pattern_json)
+            except Exception as e:
+                raise ValueError(f"Invalid JSON string: {e}") from e
+
+        if not isinstance(pattern_json, dict):
+            raise TypeError(
+                f"Pattern JSON must be a dict or valid JSON string, got {type(pattern_json).__name__}"
+            )
+
+        if lang is not None:
+            compiler = PatternCompiler(language=lang, catalog=self.catalog)
+            return compiler.compile_json(pattern_json)
+
+        # Composite node
+        if "children" in pattern_json:
+            raw_name = pattern_json.get("name")
+            if raw_name is None:
+                raw_name = "and"
+            op = str(raw_name).lower()
+
+            children = [self.compile_json(child) for child in pattern_json["children"]]
+
+            if op == "or":
+                pattern_name = pattern_json.get("name") or "or"
+                return OrPattern(children=children, name=pattern_name, processor=self.processor)
+            elif op == "not":
+                pattern_name = pattern_json.get("name") or "not"
+                return NotPattern(children=children, name=pattern_name, processor=self.processor)
+            else:
+                pattern_name = pattern_json.get("name") or "and"
+                return AndPattern(children=children, name=pattern_name, processor=self.processor)
+
+        # Leaf node
+        name = pattern_json.get("filename") or pattern_json.get("name") or "unnamed"
+        if "code" in pattern_json:
+            return self.compile_code(pattern_json["code"], name=name)
+        elif "file" in pattern_json:
+            return self.compile_file(pattern_json["file"], name=name)
+        elif "path" in pattern_json:
+            return self.compile_file(pattern_json["path"], name=name)
+        else:
+            raise ValueError(f"Leaf pattern object must contain 'code', 'file', or 'path': {pattern_json}")
+
     def compile(
         self,
         source: Union[str, Path, dict],
@@ -155,14 +209,24 @@ class PatternCompiler:
                 return self.compile_dir(source, name=name)
             return self.compile_file(source, name=name)
 
+        if isinstance(source, dict):
+            return self.compile_json(source)
+
         if isinstance(source, str):
+            trimmed = source.strip()
+            if (trimmed.startswith("{") and trimmed.endswith("}")) or (
+                trimmed.startswith("[") and trimmed.endswith("]")
+            ):
+                try:
+                    parsed = json.loads(source)
+                    if isinstance(parsed, dict):
+                        return self.compile_json(parsed)
+                except Exception:
+                    pass
             if "\n" not in source and os.path.isdir(source):
                 return self.compile_dir(source, name=name)
             if "\n" not in source and os.path.isfile(source):
                 return self.compile_file(source, name=name)
             return self.compile_code(source, name=name)
-
-        if isinstance(source, dict) and hasattr(self, "compile_json"):
-            return getattr(self, "compile_json")(source)
 
         raise TypeError(f"Unsupported source type for compile: {type(source).__name__}")
