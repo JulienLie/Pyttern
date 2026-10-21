@@ -44,6 +44,7 @@ class CallTransition(TransitionCondition):
     subpattern_name: str
     args: list[str]
     context_type: Any = None
+    call_id: int | None = None
 
     def to_json(self) -> dict[str, Any]:
         ctx_name = (
@@ -51,14 +52,19 @@ class CallTransition(TransitionCondition):
             if isinstance(self.context_type, type)
             else (self.context_type.__class__.__name__ if self.context_type is not None else None)
         )
-        return {
+        res: dict[str, Any] = {
             "type": "CallTransition",
             "subpattern_name": self.subpattern_name,
             "args": self.args,
             "context_type": ctx_name,
         }
+        if self.call_id is not None:
+            res["call_id"] = self.call_id
+        return res
 
     def __str__(self) -> str:
+        if self.call_id is not None:
+            return f"{self.subpattern_name}({self.args})#{self.call_id}"
         return f"{self.subpattern_name}({self.args})"
 
 

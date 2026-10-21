@@ -1,0 +1,3 @@
+def ?(?*):
+    ?$NoBareIf(?val):
+        pass

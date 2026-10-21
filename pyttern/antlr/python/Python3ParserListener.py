@@ -1133,6 +1133,15 @@ class Python3ParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by Python3Parser#compound_subpattern_call.
+    def enterCompound_subpattern_call(self, ctx:Python3Parser.Compound_subpattern_callContext):
+        pass
+
+    # Exit a parse tree produced by Python3Parser#compound_subpattern_call.
+    def exitCompound_subpattern_call(self, ctx:Python3Parser.Compound_subpattern_callContext):
+        pass
+
+
     # Enter a parse tree produced by Python3Parser#subpattern_stmts.
     def enterSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
         pass

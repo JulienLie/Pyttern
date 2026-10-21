@@ -102,6 +102,24 @@ class PythonProcessor(BaseProcessor):
             if adapted is not None:
                 return adapted
 
+        if ctx is not None and isinstance(
+            ctx,
+            (
+                Python3Parser.StmtContext,
+                Python3Parser.Compound_stmtContext,
+                Python3Parser.Compound_subpattern_callContext,
+            ),
+        ):
+            desc_stmt: Any = tree
+            while desc_stmt and not isinstance(desc_stmt, Python3Parser.StmtContext):
+                children = list(desc_stmt.getChildren())
+                if len(children) != 1:
+                    break
+                desc_stmt = children[0]
+            if desc_stmt and isinstance(desc_stmt, Python3Parser.StmtContext):
+                return desc_stmt
+            return tree
+
         target_cls: type | None = ctx if isinstance(ctx, type) else (ctx.__class__ if ctx is not None else None)
         if target_cls is None:
             return None
@@ -127,15 +145,48 @@ class PythonProcessor(BaseProcessor):
         :param catalog: Optional subpattern catalog to resolve nested subpatterns.
         :return: A dictionary mapping transformation names to compiled PDA instances.
         """
-        from ..subpattern.SubPattern import SubPatternCallContext
+        from ..subpattern.SubPattern import (
+            SubPatternCallContext,
+            clone_tree,
+            extract_body_stmts,
+            is_body_var_stmt,
+            rename_vars_in_tree,
+            substitute_body,
+        )
 
+        body = getattr(context, "body", None) if isinstance(context, SubPatternCallContext) else None
+        args = getattr(context, "args", None) if isinstance(context, SubPatternCallContext) else None
         ast_ctx = context.ast_ctx if isinstance(context, SubPatternCallContext) else context
+
+        if subpattern.body_var is not None and body is None:
+            raise ValueError(
+                f"Subpattern '{subpattern.name}' requires a body wildcard '(?{subpattern.body_var})', but no body was provided at call site."
+            )
+        if subpattern.body_var is None and body is not None:
+            raise ValueError(f"Subpattern '{subpattern.name}' does not accept a body, but a body was provided.")
+
+        body_stmts: list[Any] = []
+        var_map: dict[str, str] = {}
+        if subpattern.body_var is not None and body is not None:
+            body_stmts = extract_body_stmts(body)
+            if args is not None:
+                for caller_arg, param in zip(args, subpattern.args_order):
+                    var_map[caller_arg] = param
+
         compiled: dict[str, PDA] = {}
         for name, trans in subpattern.transformations.items():
-            pruned_trans = self.prune_subpattern_tree(trans, ast_ctx)
+            cloned_trans = clone_tree(trans)
+            if subpattern.body_var is not None and body_stmts:
+                if is_body_var_stmt(cloned_trans, subpattern.body_var) and len(body_stmts) == 1:
+                    cloned_trans = clone_tree(body_stmts[0])
+                    rename_vars_in_tree(cloned_trans, var_map)
+                else:
+                    substitute_body(cloned_trans, body_stmts, subpattern.body_var, var_map)
+
+            pruned_trans = self.prune_subpattern_tree(cloned_trans, ast_ctx)
             if pruned_trans is None:
                 ctx_name = ast_ctx.__class__.__name__ if ast_ctx is not None else "None"
-                raise ValueError(f"Cannot prune tree {trans.getText()} to {ctx_name}")
+                raise ValueError(f"Cannot prune tree {cloned_trans.getText()} to {ctx_name}")
             pda_result = Python_to_PDA(catalog=catalog).visit(pruned_trans)
             if isinstance(pda_result, dict) and "__main__" in pda_result:
                 pda = pda_result["__main__"]

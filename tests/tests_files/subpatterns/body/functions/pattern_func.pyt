@@ -1,0 +1,2 @@
+?$MyFunc(?fn, ?arg):
+    print(?arg)

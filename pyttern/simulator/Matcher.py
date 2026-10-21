@@ -236,16 +236,22 @@ class Matcher:
 
         subpattern_name = transition.subpattern_name
         args = transition.args
+        call_id = getattr(transition, "call_id", None)
 
         subp = self.catalog.get(subpattern_name)
         if not subp:
             logger.warning(f"subpattern not found: {subpattern_name}")
             logger.debug(f"Catalog subpatterns: {list(self.catalog.keys())}, callable subpatterns: {self.callable.keys()}")
             return []
-
-        context_type = getattr(transition, 'context_type', None)
+        context_type = getattr(transition, "context_type", None)
         return subpatterns.call_subpattern(
-            subp, current_node, bindings, args, catalog=self.catalog, context_type=context_type
+            subp,
+            current_node,
+            bindings,
+            args,
+            catalog=self.catalog,
+            context_type=context_type,
+            call_id=call_id,
         )
 
     def _get_next_node(

@@ -634,6 +634,11 @@ class Python3ParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by Python3Parser#compound_subpattern_call.
+    def visitCompound_subpattern_call(self, ctx:Python3Parser.Compound_subpattern_callContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by Python3Parser#subpattern_stmts.
     def visitSubpattern_stmts(self, ctx:Python3Parser.Subpattern_stmtsContext):
         return self.visitChildren(ctx)
