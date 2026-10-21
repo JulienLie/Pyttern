@@ -1,6 +1,15 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Literal, Any, Optional
+from typing import Any, Literal
+
+from antlr4 import RuleContext
+from antlr4.tree.Tree import ParseTree, Tree
+from loguru import logger
+
+from pyttern.simulator.pda.transition import CallTransition, Transition
+from ..simulator.pda import PDA
 
 
 @dataclass(frozen=True)
@@ -8,19 +17,10 @@ class SubPatternCallContext:
     ast_ctx: Any
     body: Any = None
 
-from antlr4 import RuleContext
-from antlr4.tree.Tree import Tree, ParseTree
-from loguru import logger
 
-from pyttern.simulator.pda.transition import CallTransition, Transition
-
-
-from ..simulator.pda import PDA
-
-def prune(tree: RuleContext, ctx: RuleContext | None):
+def prune(tree: RuleContext, ctx: RuleContext | None) -> Any:
     from ..language_processors.python_processor import PythonProcessor
     return PythonProcessor().prune_subpattern_tree(tree, ctx)
-
 
 
 @dataclass
@@ -30,12 +30,12 @@ class BaseSubPattern(ABC):
 
     Attributes:
         name (str): The name of the subpattern.
-        args (dict[str, str]): A dictionary of argument names and their default values.
+        args (dict[str, Tree | None]): A dictionary of argument names and their default values.
         transformations (dict): A dictionary of transformations associated with the subpattern.
     """
 
     name: str
-    args: dict[str, Optional[Tree]]
+    args: dict[str, Tree | None]
     args_order: list[str]
     code: str
     transformations: dict[str, ParseTree] = field(default_factory=dict)
@@ -53,9 +53,14 @@ class BaseSubPattern(ABC):
     @abstractmethod
     def type(self) -> Literal["AND", "OR", "NOT"]:
         pass
-    
 
-    def generate_pda(self, pda: PDA, args: list[str], starting_state: int, context_type: Any = None) -> int:
+    def generate_pda(
+        self,
+        pda: PDA,
+        args: list[str],
+        starting_state: int,
+        context_type: Any = None,
+    ) -> int:
         """
         Generates the transition needed for this subpattern in the pda @pda using the argument names from @args
         """
@@ -64,37 +69,48 @@ class BaseSubPattern(ABC):
         subpattern_name = self.name
 
         logger.trace(f"Adding transition for {self.type} subpattern {subpattern_name}")
-        transition = Transition(starting_state, '', CallTransition(subpattern_name, args, context_type=context_type), [],
-                                next_state, '')
+        transition = Transition(
+            starting_state,
+            "",
+            CallTransition(subpattern_name, args, context_type=context_type),
+            [],
+            next_state,
+            "",
+        )
         pda.add_transition(transition)
 
         return next_state
 
-
-    def check_args_nbr(self, args_names) -> None:
+    def check_args_nbr(self, args_names: list[str]) -> None:
         n_args_req = sum(1 for key in self.args if self.args[key] is None)
         if len(args_names) < n_args_req:
-            logger.error(f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
-            raise ValueError(f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}")
+            logger.error(
+                f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}"
+            )
+            raise ValueError(
+                f"Subpattern {self.name} requires at least {n_args_req} arguments, but got {len(args_names)}"
+            )
+
 
 @dataclass
 class OrSubPattern(BaseSubPattern):
     @property
     def type(self) -> Literal["OR"]:
         return "OR"
-    
-    
+
+
 @dataclass
 class AndSubPattern(BaseSubPattern):
     @property
     def type(self) -> Literal["AND"]:
         return "AND"
 
-    
+
 @dataclass
 class NotSubPattern(BaseSubPattern):
     @property
     def type(self) -> Literal["NOT"]:
         return "NOT"
+
 
 loaded_subpatterns: dict[str, BaseSubPattern] = {}

@@ -50,6 +50,7 @@ python_version = "3.12"
 check_untyped_defs = true
 disallow_incomplete_defs = true
 warn_unused_ignores = true
+follow_imports = "silent"
 exclude = ["^pyttern/antlr/python/.*", "^pyttern/antlr/java/.*"]
 
 [[tool.mypy.overrides]]
@@ -74,6 +75,7 @@ module = [
     "pyttern.pytternfsm.*",
     "pyttern.pattern.*",
     "pyttern.simulator.pda.*",
+    "pyttern.subpattern.*",
 ]
 disallow_untyped_defs = true
 
