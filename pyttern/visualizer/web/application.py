@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import json
 from functools import wraps
+from typing import Any, Callable
 
 from antlr4 import ParseTreeVisitor
 from cachelib import FileSystemCache
@@ -38,8 +41,8 @@ swagger = Swagger(app, template_file='swagger_template.yml')
 
 
 class PtToJson(ParseTreeVisitor):
-    def visitChildren(self, node):
-        elem = {"name": node.__class__.__name__, "children": [], "id": hash(node)}
+    def visitChildren(self, node: Any) -> dict[str, Any] | list[Any]:
+        elem: dict[str, Any] = {"name": node.__class__.__name__, "children": [], "id": hash(node)}
         if hasattr(node, "start") and node.start is not None:
             elem["start"] = (node.start.line, node.start.column)
         if hasattr(node, "stop") and node.stop is not None:
@@ -56,7 +59,7 @@ class PtToJson(ParseTreeVisitor):
         elem["children"] = result
         return elem
 
-    def visitTerminal(self, node):
+    def visitTerminal(self, node: Any) -> dict[str, Any]:
         return {
             "name": node.__class__.__name__,
             "symbol": node.symbol.text,
@@ -64,20 +67,20 @@ class PtToJson(ParseTreeVisitor):
             'id': hash(node)
         }
 
-    def visitErrorNode(self, node):
-        return {"name": node.__class__.__name__, "children": [], id: hash(node)}
+    def visitErrorNode(self, node: Any) -> dict[str, Any]:
+        return {"name": node.__class__.__name__, "children": [], "id": hash(node)}
 
-    def defaultResult(self):
+    def defaultResult(self) -> list[Any]:
         return []
 
-    def aggregateResult(self, aggregate, nextResult):
+    def aggregateResult(self, aggregate: list[Any], nextResult: Any) -> list[Any]:
         return aggregate + [nextResult]
 
 
-def file_check():
-    def _file_check(f):
+def file_check() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def _file_check(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def __file_check(*args, **kwargs):
+        def __file_check(*args: Any, **kwargs: Any) -> Any:
             if ("pyttern_code" in session and "code_file" in session
                     and session["pyttern_code"] is not None
                     and session["code_file"] is not None):
@@ -93,7 +96,7 @@ def file_check():
     return _file_check
 
 
-def get_matcher(pattern_code, code, lang=None) -> Matcher:
+def get_matcher(pattern_code: str, code: str, lang: str | Languages | None = None) -> Matcher:
     if lang is None:
         lang = determine_language(code)
     if lang is None:
@@ -107,12 +110,12 @@ def get_matcher(pattern_code, code, lang=None) -> Matcher:
     return Matcher(pyttern_fsm, code_tree)
 
 class JsonListener(Pyttern_listener):
-    def __init__(self):
-        self.data = []
+    def __init__(self) -> None:
+        self.data: list[dict[str, Any]] = []
 
-    def step(self, _, fsm, ast, stack, variables, matches):
+    def step(self, _: Any, fsm: Any, ast: Any, stack: Any, variables: Any, matches: Any) -> None:
         state_info = (str(fsm), hash(ast))
-        pos = ()
+        pos: tuple[int, int] | tuple[()] = ()
         if hasattr(ast, "start") and hasattr(ast, "stop"):
             pos = (ast.start.start, ast.stop.stop)
         if hasattr(ast, "symbol"):
@@ -133,11 +136,11 @@ class JsonListener(Pyttern_listener):
             "code_pos": pos
         })
 
-    def on_match(self, _, __):
+    def on_match(self, _: Any, __: Any) -> None:
         self.data[-1]["match"] = True
 
 
-def try_processors(code):
+def try_processors(code: str) -> str:
     languages = ["python", "java"]
     for lang in languages:
         try:
@@ -154,14 +157,14 @@ def try_processors(code):
 @app.route("/")
 @app.route("/macros")
 @app.route("/subpatterns")
-def index():
+def index() -> Response:
     return send_from_directory("dist/", "index.html")
 
 
 """API endpoints"""
 
 @app.route("/api/validate", methods=['POST'])
-def validate():
+def validate() -> str:
     """
     Try to compile the code/pattern in the given language or try to determine the language.
     ---
@@ -214,7 +217,7 @@ def validate():
 
 
 @app.route("/api/pattern", methods=['POST'])
-def pattern():
+def pattern() -> str:
     """
     Parse the pattern and return its tree and PDA representation.
     ---
@@ -286,7 +289,7 @@ def pattern():
 
 
 @app.route("/api/code", methods=['POST'])
-def code():
+def code() -> str:
     """
     Parse the code and return its tree representation.
     ---
@@ -342,7 +345,7 @@ def code():
     })
 
 @app.route("/api/match", methods=['POST'])
-def match():
+def match() -> str:
     """
     Match the pattern on the code and return the matching steps.
     ---
@@ -420,7 +423,7 @@ def match():
 
 
 @app.route("/api/batch_match", methods=['POST'])
-def batch_match():
+def batch_match() -> str:
     """
     match a list of files with a compound pattern
     ---
@@ -502,7 +505,7 @@ def batch_match():
 
 
 @app.route("/api/batch_validate", methods=['POST'])
-def batch_validate():
+def batch_validate() -> str | Response:
     """
     Validate a list of pattern or code files in the given language or try to determine the language.
     ---
@@ -593,7 +596,7 @@ def batch_validate():
     if pattern_lang == "":
         return try_processors(pattern_codes[0]["code"])
     logger.info(f"Current lang: {pattern_lang}")
-    res = {}
+    res: dict[str, Any] = {}
     try:
         lang = pattern_lang
         current_language_processor = get_processor(lang)
@@ -618,7 +621,7 @@ def batch_validate():
     return json.dumps(res)
 
 @app.route("/api/step", methods=['POST'])
-def step():
+def step() -> str | Response:
     """
     Get the information about the current step of the matching process.
     ---
@@ -684,7 +687,7 @@ def step():
 
 @app.route("/api/subpattern", methods=['POST'])
 @app.route("/api/macro", methods=['POST'])
-def parse_subpattern():
+def parse_subpattern() -> str:
     """
     [WIP] Parse a subpattern and return its PDA representation.
     ---
@@ -741,7 +744,7 @@ def parse_subpattern():
 
 @app.route("/api/subpattern", methods=['DELETE'])
 @app.route("/api/macro", methods=['DELETE'])
-def remove_subpattern():
+def remove_subpattern() -> str:
     subpattern_name = request.json["name"]
     logger.debug(f"Removing subpattern {subpattern_name}")
     if loaded_subpatterns[subpattern_name] is None:
@@ -751,7 +754,7 @@ def remove_subpattern():
 
 @app.route("/api/subpattern", methods=['GET'])
 @app.route("/api/macro", methods=['GET'])
-def loaded_subpattern():
+def loaded_subpattern() -> str:
     """
     [WIP] Returns the loaded subpatterns in the session.
     ---

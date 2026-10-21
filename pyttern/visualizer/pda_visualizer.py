@@ -1,9 +1,12 @@
+from __future__ import annotations
+
+from typing import Any
 import graphviz
 from ..simulator.pda.PDA import PDA
 from ..simulator.pda.transition import Transition, NodeTransition, NamedTransition, CallTransition
 from ..simulator.pda.PDA_alphabets import StackAlphabet, NavigationAlphabet
 
-COLOR_MAP = {
+COLOR_MAP: dict[str, tuple[int, int, int]] = {
     "red": (255, 0, 0),
     "blue": (0, 0, 255),
     "green": (0, 128, 0),
@@ -26,7 +29,8 @@ COLOR_MAP = {
     "darkgreen": (0, 100, 0),
 }
 
-def get_node_style(color_name):
+
+def get_node_style(color_name: str | None) -> dict[str, str]:
     if not color_name:
         return {}
     
@@ -38,7 +42,7 @@ def get_node_style(color_name):
             if len(h) == 3:
                 h = ''.join([c*2 for c in h])
             rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        except:
+        except Exception:
             rgb = (200, 200, 200)
     else:
         rgb = COLOR_MAP.get(color_name, (200, 200, 200))
@@ -52,7 +56,8 @@ def get_node_style(color_name):
     
     return {'style': 'filled', 'fillcolor': fill_hex, 'fontcolor': font_color}
 
-def format_stack(s):
+
+def format_stack(s: Any) -> str:
     if not s:
         return "ε"
     if isinstance(s, list):
@@ -63,7 +68,8 @@ def format_stack(s):
         return s.value if s.value else "ε"
     return str(s)
 
-def format_transition_label(t: Transition):
+
+def format_transition_label(t: Transition) -> str:
     # Condition
     cond = ""
     if isinstance(t.A, NodeTransition):
@@ -84,7 +90,8 @@ def format_transition_label(t: Transition):
     label = f"{cond}, {stack_op}" if cond else stack_op
     return f"{label}\n{nav}"
 
-def parse_intervals(intervals_input):
+
+def parse_intervals(intervals_input: str | list[Any] | None) -> list[tuple[int, int]] | None:
     if not intervals_input:
         return None
     
@@ -95,7 +102,7 @@ def parse_intervals(intervals_input):
     else:
         parts = intervals_input
         
-    intervals = []
+    intervals: list[tuple[int, int]] = []
     for part in parts:
         part = str(part).strip()
         if '-' in part:
@@ -112,7 +119,8 @@ def parse_intervals(intervals_input):
                 continue
     return intervals
 
-def is_in_intervals(val, intervals):
+
+def is_in_intervals(val: int, intervals: list[tuple[int, int]] | None) -> bool:
     if intervals is None:
         return True
     for start, end in intervals:
@@ -120,14 +128,20 @@ def is_in_intervals(val, intervals):
             return True
     return False
 
-def find_next_visible(pda: PDA, start_state: int, intervals: list, visited=None):
+
+def find_next_visible(
+    pda: PDA,
+    start_state: int,
+    intervals: list[tuple[int, int]] | None,
+    visited: set[int] | None = None,
+) -> set[int]:
     if visited is None:
         visited = set()
     if start_state in visited:
         return set()
     visited.add(start_state)
     
-    results = set()
+    results: set[int] = set()
     transitions = pda.transitions.get(start_state, [])
     for t in transitions:
         if is_in_intervals(t.q_prime, intervals):
@@ -136,19 +150,23 @@ def find_next_visible(pda: PDA, start_state: int, intervals: list, visited=None)
             results.update(find_next_visible(pda, t.q_prime, intervals, visited))
     return results
 
-def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA", 
-                  wrap_at: int = None, 
-                  node_intervals: list = None,
-                  highlights: dict = None,
-                  font_size: int = 14):
-    
+
+def visualize_pda(
+    pda: PDA | dict[str, PDA],
+    output_path: str,
+    title: str = "PDA", 
+    wrap_at: int | None = None, 
+    node_intervals: list[Any] | str | None = None,
+    highlights: dict[str, Any] | None = None,
+    font_size: int = 14,
+) -> None:
     if isinstance(pda, PDA):
-        pdas = {"__main__": pda}
+        pdas: dict[str, PDA] = {"__main__": pda}
     else:
         pdas = pda
 
-    def flatten_pda_dict(d, current_prefix=""):
-        flat = {}
+    def flatten_pda_dict(d: Any, current_prefix: str = "") -> dict[str, PDA]:
+        flat: dict[str, PDA] = {}
         if isinstance(d, PDA):
             flat[current_prefix or "__main__"] = d
         elif isinstance(d, dict):
@@ -173,13 +191,13 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
     elif intervals is None and node_intervals is None:
         intervals = None  # Show all states by default
 
-    parsed_highlights = []
+    parsed_highlights: list[dict[str, Any]] = []
     if highlights:
         for range_str, cfg in highlights.items():
             parsed_highlights.append({
                 "intervals": parse_intervals(range_str),
-                "color": cfg.get("color", "red"),
-                "highlight_self": cfg.get("self", False)
+                "color": cfg.get("color", "red") if isinstance(cfg, dict) else cfg,
+                "highlight_self": cfg.get("self", False) if isinstance(cfg, dict) else False,
             })
 
     dot = graphviz.Digraph(comment=title)
@@ -200,10 +218,9 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
     dot.attr(splines='true')
 
     # Render each PDA
-    last_pda_initial = None
+    last_pda_initial: str | None = None
     for pda_name, current_pda in pdas.items():
         if pda_name == "__main__":
-            target_graph = dot
             main_intervals = list(intervals) if intervals is not None else None
             for h in parsed_highlights:
                 if h["intervals"] and main_intervals is not None:
@@ -242,10 +259,19 @@ def visualize_pda(pda: PDA | dict[str, PDA], output_path: str, title: str = "PDA
 
     dot.render(output_path, format='pdf', cleanup=True)
 
-def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals, wrap_at, parsed_highlights):
-    node_to_row = {}
+
+def _render_single_pda_to_graph(
+    graph: Any,
+    pda: PDA,
+    pda_name: str,
+    visible_states: list[int],
+    intervals: list[tuple[int, int]] | None,
+    wrap_at: int | None,
+    parsed_highlights: list[dict[str, Any]],
+) -> None:
+    node_to_row: dict[int, int] = {}
     if wrap_at:
-        first_nodes_of_rows = []
+        first_nodes_of_rows: list[int] = []
         for row_idx, i in enumerate(range(0, len(visible_states), wrap_at)):
             with graph.subgraph() as s:
                 s.attr(rank='same')
@@ -264,13 +290,13 @@ def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals,
         for state in visible_states:
             add_node_to_graph(graph, state, pda, parsed_highlights, pda_name=pda_name)
 
-    processed_skips = set() 
+    processed_skips: set[tuple[int, int]] = set() 
 
     for state in visible_states:
         for t in pda.transitions.get(state, []):
             if is_in_intervals(t.q_prime, intervals):
                 label = format_transition_label(t)
-                attr = {}
+                attr: dict[str, str] = {}
                 
                 if wrap_at:
                     row_q = node_to_row.get(t.q)
@@ -311,7 +337,15 @@ def _render_single_pda_to_graph(graph, pda, pda_name, visible_states, intervals,
                         graph.edge(node_state, node_v, **attr)
                         processed_skips.add((state, v))
 
-def add_node_to_graph(graph, state, pda, highlights_config=None, node_font_size=12, pda_name="__main__"):
+
+def add_node_to_graph(
+    graph: Any,
+    state: int,
+    pda: PDA,
+    highlights_config: list[dict[str, Any]] | None = None,
+    node_font_size: int = 12,
+    pda_name: str = "__main__",
+) -> None:
     width = str(0.3 + (node_font_size / 40.0) * 1.0)
     attr = {'shape': 'circle', 'fixedsize': 'true', 'width': width, 'fontsize': str(node_font_size)}
     

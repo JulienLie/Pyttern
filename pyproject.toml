@@ -61,6 +61,8 @@ module = [
     "Flask_Assets.*",
     "pymemcache.*",
     "flask_session.*",
+    "graphviz.*",
+    "yaml.*",
 ]
 ignore_missing_imports = true
 
@@ -85,9 +87,6 @@ module = [
     "pyttern.pytternfsm.generic_to_pda",
     "pyttern.pytternfsm.python.python_to_pda",
     "pyttern.pytternfsm.java.*",
-    "pyttern.visualizer.*",
-    "pyttern.main",
-    "pyttern.Pyttern_listener",
 ]
 ignore_errors = true
 
