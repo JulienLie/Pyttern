@@ -37,6 +37,16 @@ class MatchResult:
             return self.matches.matches[0].bindings
         return None
 
+    @property
+    def leaf_results(self) -> list[MatchResult]:
+        """Returns all leaf MatchResult instances in depth-first order."""
+        if not self.children:
+            return [self]
+        leaves: list[MatchResult] = []
+        for child in self.children:
+            leaves.extend(child.leaf_results)
+        return leaves
+
     def __getitem__(self, key: str) -> Any:
         if key in ("matched", "result"):
             return self.matched
@@ -60,6 +70,6 @@ class MatchResult:
         }
         if self.children:
             d["children"] = [child.to_dict() for child in self.children]
-        elif self.matches is not None:
+        if self.matches is not None or not self.children:
             d["matches"] = self.matches
         return d
