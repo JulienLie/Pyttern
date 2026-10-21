@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ItemsView, Iterator, KeysView, Optional, ValuesView
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
+from .SubPattern import BaseSubPattern, SubPatternCallContext
+
 if TYPE_CHECKING:
-    from .SubPattern import BaseSubPattern
     from ..language_processors.languages import Languages
 
 
@@ -20,7 +22,7 @@ class SubPatternCatalog:
 
     def __init__(self) -> None:
         self._subpatterns: dict[str, BaseSubPattern] = {}
-        self._compiled_cache: dict[tuple[str, Any], Any] = {}
+        self._compiled_cache: dict[tuple[str, type | None], dict[str, Any]] = {}
 
     def register(self, subpattern: BaseSubPattern, override: bool = True) -> None:
         """
@@ -41,8 +43,8 @@ class SubPatternCatalog:
         logger.trace(f"Registered subpattern '{subpattern.name}' in catalog.")
 
     def get(
-        self, name: str, default: Optional[BaseSubPattern] = None
-    ) -> Optional[BaseSubPattern]:
+        self, name: str, default: BaseSubPattern | None = None
+    ) -> BaseSubPattern | None:
         """
         Retrieves a subpattern definition by name.
 
@@ -67,7 +69,7 @@ class SubPatternCatalog:
             )
         return self._subpatterns[name]
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: object) -> bool:
         return name in self._subpatterns
 
     def __len__(self) -> int:
@@ -88,13 +90,18 @@ class SubPatternCatalog:
     def items(self) -> ItemsView[str, BaseSubPattern]:
         return self._subpatterns.items()
 
+    def clear(self) -> None:
+        """
+        Clears all registered subpatterns and the compiled context cache.
+        """
+        self._subpatterns.clear()
+        self._compiled_cache.clear()
+
     @staticmethod
-    def _extract_context_type(context: Any) -> Any:
+    def _extract_context_type(context: Any) -> type | None:
         """
         Extracts the AST context class type from a call context or AST node.
         """
-        from .SubPattern import SubPatternCallContext
-
         if isinstance(context, SubPatternCallContext):
             ctx_node = context.ast_ctx
         else:
@@ -106,7 +113,7 @@ class SubPatternCatalog:
             return ctx_node.__class__
         return None
 
-    def get_compiled(self, name: str, context: Any) -> Optional[dict[str, Any]]:
+    def get_compiled(self, name: str, context: Any) -> dict[str, Any] | None:
         """
         Retrieves cached compiled transformations for a subpattern under a call context.
 
@@ -137,7 +144,7 @@ class SubPatternCatalog:
 
         subpattern = self[name]
         try:
-            compiled = processor.compile_subpattern(subpattern, context, catalog=self)
+            compiled: dict[str, Any] = processor.compile_subpattern(subpattern, context, catalog=self)
         except TypeError:
             compiled = processor.compile_subpattern(subpattern, context)
         self._compiled_cache[cache_key] = compiled

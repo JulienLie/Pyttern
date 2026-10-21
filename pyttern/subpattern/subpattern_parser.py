@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from antlr4 import InputStream, CommonTokenStream
+from antlr4 import CommonTokenStream, InputStream
+from antlr4.tree.Tree import ParseTree
 from loguru import logger
 
 from .SubPattern import BaseSubPattern
 from .subpattern_visitor import SubPattern_Visitor
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
-from ..language_processors import Languages
+from ..language_processors.languages import Languages
 from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
 from ..pytternfsm.python.tree_pruner import TreePruner
 
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from .catalog import SubPatternCatalog
 
 
-def string_to_subpattern_tree(subpattern_string: str) -> Any:
+def string_to_subpattern_tree(subpattern_string: str) -> ParseTree:
     """
     Parses a raw subpattern string into a pruned ANTLR ParseTree.
 
@@ -39,7 +40,7 @@ def string_to_subpattern_tree(subpattern_string: str) -> Any:
     py_parser.addErrorListener(error_listener)
 
     tree = py_parser.subpattern_input()
-    pruned_tree = TreePruner().visit(tree)
+    pruned_tree: ParseTree = TreePruner().visit(tree)
 
     return pruned_tree
 
@@ -48,7 +49,7 @@ def parse_subpattern_from_string(
     code: str,
     language: Languages,
     override: bool = True,
-    catalog: Optional[SubPatternCatalog] = None,
+    catalog: SubPatternCatalog | None = None,
 ) -> list[BaseSubPattern]:
     """
     Parses subpattern definitions from a string.
@@ -62,7 +63,7 @@ def parse_subpattern_from_string(
     logger.trace("Parsing subpattern from string")
 
     subpattern_tree = string_to_subpattern_tree(code)
-    subpatterns = SubPattern_Visitor(override=override).visit(subpattern_tree)
+    subpatterns: list[BaseSubPattern] = SubPattern_Visitor(override=override).visit(subpattern_tree)
 
     if catalog is not None:
         for subpattern in subpatterns:
@@ -75,7 +76,7 @@ def parse_subpattern_from_file(
     file: str | Path,
     language: Languages,
     override: bool = True,
-    catalog: Optional[SubPatternCatalog] = None,
+    catalog: SubPatternCatalog | None = None,
 ) -> list[BaseSubPattern]:
     """
     Parses subpatterns from a file and returns parsed subpatterns.
@@ -89,12 +90,12 @@ def parse_subpattern_from_file(
     """
     logger.debug(f"Parsing subpattern from file: {file}")
 
-    with open(file, 'r', encoding="UTF-8") as f:
+    with open(file, "r", encoding="UTF-8") as f:
         code = f.read()
         return parse_subpattern_from_string(code, language, override, catalog=catalog)
 
 
-def parse_diagnostics(code: str) -> list[dict]:
+def parse_diagnostics(code: str) -> list[dict[str, Any]]:
     """
     * **Arguments:**
     - `code` (`str`): The full text content of the active document.
@@ -135,7 +136,7 @@ def parse_diagnostics(code: str) -> list[dict]:
     return error_listener.errors
 
 
-def get_completions(code: str, line: int, character: int) -> list[dict]:
+def get_completions(code: str, line: int, character: int) -> list[dict[str, Any]]:
     """
     * **Arguments:**
     - `code` (`str`): The full text content of the active document.
@@ -157,7 +158,7 @@ def get_completions(code: str, line: int, character: int) -> list[dict]:
     """
     import re
 
-    lines = code.split('\n')
+    lines = code.split("\n")
     if line < 0 or line >= len(lines):
         return []
 
@@ -168,7 +169,7 @@ def get_completions(code: str, line: int, character: int) -> list[dict]:
     prefix_line = current_line[:character]
 
     # Extract the prefix matching word characters, or wildcard starts (? or $)
-    match = re.search(r'(\?[:*<{,a-zA-Z0-9$]*|\$[&|!#a-zA-Z0-9]*|[a-zA-Z_]\w*)$', prefix_line)
+    match = re.search(r"(\?[:*<{,a-zA-Z0-9$]*|\$[&|!#a-zA-Z0-9]*|[a-zA-Z_]\w*)$", prefix_line)
     prefix = match.group(1) if match else ""
 
     # Pyttern-specific wildcard patterns
@@ -177,49 +178,49 @@ def get_completions(code: str, line: int, character: int) -> list[dict]:
             "label": "?",
             "kind": "keyword",
             "detail": "simple wildcard",
-            "documentation": "Matches exactly 1 element (variable, expression, statement, etc.)."
+            "documentation": "Matches exactly 1 element (variable, expression, statement, etc.).",
         },
         {
             "label": "?name",
             "kind": "keyword",
             "detail": "named wildcard",
-            "documentation": "Matches 1 element and binds it to `name`."
+            "documentation": "Matches 1 element and binds it to `name`.",
         },
         {
             "label": "?*",
             "kind": "keyword",
             "detail": "sequence wildcard",
-            "documentation": "Matches zero or more elements."
+            "documentation": "Matches zero or more elements.",
         },
         {
             "label": "?:",
             "kind": "keyword",
             "detail": "body wildcard",
-            "documentation": "Matches a node that has a block/body (e.g., `if`, `for`)."
+            "documentation": "Matches a node that has a block/body (e.g., `if`, `for`).",
         },
         {
             "label": "?:*",
             "kind": "keyword",
             "detail": "deep body wildcard",
-            "documentation": "Matches a body at any level of indentation."
+            "documentation": "Matches a body at any level of indentation.",
         },
         {
             "label": "?<...>",
             "kind": "keyword",
             "detail": "contains wildcard",
-            "documentation": "Matches if the inner pattern is found anywhere within the node."
+            "documentation": "Matches if the inner pattern is found anywhere within the node.",
         },
         {
             "label": "?$(...)",
             "kind": "keyword",
             "detail": "sub-pattern call",
-            "documentation": "Calls a sub-pattern defined elsewhere."
+            "documentation": "Calls a sub-pattern defined elsewhere.",
         },
         {
             "label": "?{n, m}",
             "kind": "keyword",
             "detail": "range wildcard",
-            "documentation": "Matches between `n` and `m` elements in a sequence."
+            "documentation": "Matches between `n` and `m` elements in a sequence.",
         },
     ]
 
@@ -229,34 +230,65 @@ def get_completions(code: str, line: int, character: int) -> list[dict]:
             "label": "$&SubPatternName(?arg)\n\n$# TransformationName\n?arg",
             "kind": "keyword",
             "detail": "default AND sub-pattern implementation",
-            "documentation": "A default skeleton for an AND sub-pattern where all transformations must match."
+            "documentation": "A default skeleton for an AND sub-pattern where all transformations must match.",
         },
         {
             "label": "$|SubPatternName(?arg)\n\n$# TransformationName\n?arg",
             "kind": "keyword",
             "detail": "default OR sub-pattern implementation",
-            "documentation": "A default skeleton for an OR sub-pattern where at least one transformation must match."
+            "documentation": "A default skeleton for an OR sub-pattern where at least one transformation must match.",
         },
         {
             "label": "$!SubPatternName(?arg)\n\n$# TransformationName\n?arg",
             "kind": "keyword",
             "detail": "default NOT sub-pattern implementation",
-            "documentation": "A default skeleton for a NOT sub-pattern where no transformations should match."
+            "documentation": "A default skeleton for a NOT sub-pattern where no transformations should match.",
         },
         {
             "label": "$#",
             "kind": "keyword",
             "detail": "transformation label",
-            "documentation": "A label for a specific transformation branch/version of the pattern logic."
+            "documentation": "A label for a specific transformation branch/version of the pattern logic.",
         },
     ]
 
     # Python keywords
     python_keywords_list = [
-        "False", "None", "True", "and", "as", "assert", "async", "await", "break", 
-        "class", "continue", "def", "del", "elif", "else", "except", "finally", 
-        "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", 
-        "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"
+        "False",
+        "None",
+        "True",
+        "and",
+        "as",
+        "assert",
+        "async",
+        "await",
+        "break",
+        "class",
+        "continue",
+        "def",
+        "del",
+        "elif",
+        "else",
+        "except",
+        "finally",
+        "for",
+        "from",
+        "global",
+        "if",
+        "import",
+        "in",
+        "is",
+        "lambda",
+        "nonlocal",
+        "not",
+        "or",
+        "pass",
+        "raise",
+        "return",
+        "try",
+        "while",
+        "with",
+        "yield",
     ]
 
     python_keywords = [
@@ -264,63 +296,67 @@ def get_completions(code: str, line: int, character: int) -> list[dict]:
             "label": kw,
             "kind": "keyword" if kw not in ("True", "False", "None") else "constant",
             "detail": "python keyword" if kw not in ("True", "False", "None") else "python constant",
-            "documentation": f"Standard Python {'constant' if kw in ('True', 'False', 'None') else 'keyword'}."
+            "documentation": f"Standard Python {'constant' if kw in ('True', 'False', 'None') else 'keyword'}.",
         }
         for kw in python_keywords_list
     ]
 
     # Extract local definitions
-    local_functions = set()
-    local_variables = set()
+    local_functions: set[str] = set()
+    local_variables: set[str] = set()
 
     for line_str in lines:
         # Check function definitions
-        func_match = re.search(r'\bdef\s+([a-zA-Z_]\w*)', line_str)
+        func_match = re.search(r"\bdef\s+([a-zA-Z_]\w*)", line_str)
         if func_match:
             local_functions.add(func_match.group(1))
             continue
-        
+
         # Check class definitions
-        class_match = re.search(r'\bclass\s+([a-zA-Z_]\w*)', line_str)
+        class_match = re.search(r"\bclass\s+([a-zA-Z_]\w*)", line_str)
         if class_match:
             local_variables.add(class_match.group(1))
             continue
 
         # Check variable assignments
-        var_matches = re.findall(r'\b([a-zA-Z_]\w*)\s*=(?!=)', line_str)
+        var_matches = re.findall(r"\b([a-zA-Z_]\w*)\s*=(?!=)", line_str)
         for var in var_matches:
             if var not in python_keywords_list:
                 local_variables.add(var)
 
-    local_suggestions = []
+    local_suggestions: list[dict[str, Any]] = []
     for func in sorted(local_functions):
-        local_suggestions.append({
-            "label": func,
-            "kind": "function",
-            "detail": "local function",
-            "documentation": f"Function `{func}` defined in the current document."
-        })
+        local_suggestions.append(
+            {
+                "label": func,
+                "kind": "function",
+                "detail": "local function",
+                "documentation": f"Function `{func}` defined in the current document.",
+            }
+        )
     for var in sorted(local_variables):
-        local_suggestions.append({
-            "label": var,
-            "kind": "variable",
-            "detail": "local variable/class",
-            "documentation": f"Variable/class `{var}` defined in the current document."
-        })
+        local_suggestions.append(
+            {
+                "label": var,
+                "kind": "variable",
+                "detail": "local variable/class",
+                "documentation": f"Variable/class `{var}` defined in the current document.",
+            }
+        )
 
     # Combine all candidates
     all_candidates = pyttern_wildcards + pyttern_subpatterns + python_keywords + local_suggestions
 
     # Filter candidates based on prefix
     prefix_lower = prefix.lower()
-    filtered = []
+    filtered: list[dict[str, Any]] = []
     for item in all_candidates:
         label = item["label"]
-        if label.startswith('?') or label.startswith('$'):
+        if label.startswith("?") or label.startswith("$"):
             if label.startswith(prefix):
                 filtered.append(item)
         else:
-            if prefix.startswith('?') or prefix.startswith('$'):
+            if prefix.startswith("?") or prefix.startswith("$"):
                 continue
             if label.lower().startswith(prefix_lower):
                 filtered.append(item)
