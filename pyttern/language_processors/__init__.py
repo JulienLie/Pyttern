@@ -1,6 +1,6 @@
+from .languages import Languages
 from .python_processor import PythonProcessor
 from .java_processor import JavaProcessor
-from .languages import Languages
 
 def get_processor(lang):
     if lang in ('python', Languages.PYTHON):

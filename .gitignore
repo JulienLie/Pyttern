@@ -11,3 +11,8 @@ bin/
 .agents/
 .vscode/
 build/
+.mypy_cache/
+.scratch/
+AGENTS.md
+GLOSSARY.md
+docs/

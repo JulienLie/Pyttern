@@ -2,154 +2,48 @@ import argparse
 import glob
 import os
 import sys
-
 from typing import Optional
+
 from loguru import logger
 
+from pyttern.pattern import PatternCompiler
 from pyttern.subpattern.catalog import SubPatternCatalog
 
 from .language_processors import determine_language, get_processor, Languages
-from .simulator.Matcher import Matcher
 
 
 class PytternMatcher:
     """
     A class to handle matching of patterns against code.
-    It encapsulates the logic for parsing patterns, compiling them into Finite State Machines,
-    and running the matching process against code files.
+    It encapsulates the logic for orchestrating pattern matching, compiling patterns
+    using PatternCompiler, and running the matching process against code files.
     """
 
-    def __init__(self, match_details=False, stop_at_first=False, catalog: Optional[SubPatternCatalog] = None):
+    def __init__(
+        self,
+        match_details: bool = False,
+        stop_at_first: Optional[bool] = None,
+        catalog: Optional[SubPatternCatalog] = None,
+    ):
         self.match_details = match_details
-        self.stop_at_first = stop_at_first
+        if not match_details:
+            self.stop_at_first = True
+        else:
+            self.stop_at_first = bool(stop_at_first) if stop_at_first is not None else False
+
         self.catalog = catalog if catalog is not None else SubPatternCatalog()
         self._language_processors = {lang: get_processor(lang) for lang in Languages}
-        self._extension_to_processor = {
-            ext: processor
-            for processor in self._language_processors.values()
-            for ext in processor.get_language_extensions()
-        }
+        self._extension_to_processor = {}
+        for processor in self._language_processors.values():
+            for ext in processor.get_language_extensions():
+                clean_ext = ext.lstrip(".")
+                self._extension_to_processor[clean_ext] = processor
+                self._extension_to_processor[f".{clean_ext}"] = processor
 
     def _get_processor_for_file(self, file_name):
         """Get the language processor for a given file name based on its extension."""
-        file_ext = os.path.splitext(file_name)[1]
+        file_ext = os.path.splitext(str(file_name))[1].lstrip(".")
         return self._extension_to_processor.get(file_ext)
-
-    def parse_json_pattern(self, pattern_json, lang=None, _processor=None):
-        """
-        Parse a JSON pattern and return a dictionary with the patterns.
-        :param pattern_json: JSON object with the patterns.
-        :param lang: language of the patterns
-        :param _processor: (internal) language processor to use
-        :return: Dictionary with the patterns.
-        """
-        processor = _processor
-        if processor is None:
-            if lang is None:
-                raise ValueError("Either lang or _processor must be provided")
-            processor = self._language_processors.get(Languages[lang.upper()])
-            if not processor:
-                raise ValueError(f"Unsupported language: {lang}")
-
-        logger.debug(f"Parsing json pattern: {pattern_json}")
-        if "children" in pattern_json:
-            op = pattern_json["name"]
-            res = [self.parse_json_pattern(child, _processor=processor) for child in pattern_json["children"]]
-            return {'name': op, 'children': res}
-        
-        name = pattern_json.get('filename', 'unnamed')
-        pattern_code = pattern_json["code"]
-        tree = processor.generate_tree_from_code(pattern_code)
-        fsm = processor.create_pda(tree, catalog=self.catalog)
-        return {'name': name, 'result': fsm}
-
-    def match_tree(self, pattern_tree, code_tree):
-        """
-        Match a compiled pattern tree against a compiled code tree.
-        This is the dispatcher for pattern matching, calling the appropriate
-        method based on `match_details`.
-        """
-        logger.debug(f"Matching pattern '{pattern_tree.get('name', 'root')}' with code tree.")
-        if self.match_details:
-            return self._match_pyttern_details(pattern_tree, code_tree)
-        return self._match_pyttern_bool(pattern_tree, code_tree)
-
-    def _match_pyttern_bool(self, pattern_tree, code_tree):
-        """
-        Perform pattern matching and return a boolean result. Supports short-circuiting.
-        """
-        name = pattern_tree.get('name')
-        if 'children' not in pattern_tree:
-            pattern_fsm = pattern_tree['result']
-            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first, catalog=self.catalog)
-            match_found = res.count() > 0
-            logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
-            return match_found
-
-        subpatterns = pattern_tree.get('children', [])
-        results_gen = (self._match_pyttern_bool(sp, code_tree) for sp in subpatterns)
-
-        if name == 'and':
-            result = all(results_gen)
-            logger.debug(f"Result for 'and' operator: {result}")
-            return result
-        if name == 'or':
-            result = any(results_gen)
-            logger.debug(f"Result for 'or' operator: {result}")
-            return result
-        if name == 'not':
-            result = not any(results_gen)
-            logger.debug(f"Result for 'not' operator: {result}")
-            return result
-        return False
-
-    def _match_pyttern_details(self, pattern_tree, code_tree):
-        """
-        Perform pattern matching and return detailed results.
-        """
-        name = pattern_tree.get('name')
-        if 'children' not in pattern_tree:
-            pattern_fsm = pattern_tree['result']
-            res = Matcher.match(pattern_fsm, code_tree, stop_at_first=self.stop_at_first, catalog=self.catalog)
-            match_found = res.count() > 0
-            logger.debug(f"Leaf pattern '{name}' match result: {match_found}")
-            return {'name': name, 'result': match_found, 'matches': res}
-
-        subpatterns = pattern_tree.get('children', [])
-        child_results = [self._match_pyttern_details(sp, code_tree) for sp in subpatterns]
-        child_bools = [cr['result'] for cr in child_results]
-
-        result_bool = False
-        if name == 'and':
-            result_bool = all(child_bools)
-        if name == 'or':
-            result_bool = any(child_bools)
-        if name == 'not':
-            result_bool = not any(child_bools)
-
-        logger.debug(f"Result for logical operator '{name}': {result_bool}")
-        return {'name': name, 'result': result_bool, 'children': child_results}
-
-    def _dir_to_pattern_tree(self, path, processor, op='and'):
-        """
-        Recursively traverse a directory and convert its structure into a pattern_tree.
-        """
-        logger.debug(f"Parsing directory '{path}' with operator '{op}'")
-        children = []
-        for item in sorted(os.listdir(path)):
-            item_path = os.path.join(path, item)
-            if item in ['and', 'or', 'not']:
-                children.append(self._dir_to_pattern_tree(item_path, processor, op=item))
-            elif os.path.isdir(item_path):
-                logger.debug(f"Descending into sub-directory '{item_path}'")
-                children.append(self._dir_to_pattern_tree(item_path, processor, op='and'))
-            elif os.path.isfile(item_path):
-                if self._get_processor_for_file(item):
-                    logger.debug(f"Compiling pattern file: {item_path}")
-                    tree = processor.generate_tree_from_file(item_path)
-                    fsm = processor.create_pda(tree, catalog=self.catalog)
-                    children.append({'name': item, 'result': fsm})
-        return {'name': op, 'children': children}
 
     def match(self, pattern_path, code_path, lang):
         """
@@ -157,60 +51,61 @@ class PytternMatcher:
         The pattern can be a single file, a raw code string, or a directory representing a composite pattern.
         """
         logger.info(f"Starting match for pattern '{pattern_path}' on code '{code_path}' with language '{lang}'")
-        processor = self._language_processors.get(Languages[lang.upper()])
-        if not processor:
-            raise ValueError(f"Unsupported language: {lang}")
+        compiler = PatternCompiler(language=lang, catalog=self.catalog)
+        compiled_pattern = compiler.compile(pattern_path)
 
-        # Compile pattern
-        if os.path.isdir(pattern_path):
-            logger.debug(f"Pattern is a directory, compiling composite pattern from '{pattern_path}'")
-            pattern_tree = self._dir_to_pattern_tree(pattern_path, processor)
-        elif os.path.isfile(pattern_path):  # single file
-            logger.debug(f"Pattern is a single file, compiling from '{pattern_path}'")
-            tree = processor.generate_tree_from_file(pattern_path)
-            fsm = processor.create_pda(tree, catalog=self.catalog)
-            pattern_tree = {'name': os.path.basename(pattern_path), 'result': fsm}
-        else:
-            logger.debug("Pattern is raw code string, compiling from string")
-            tree = processor.generate_tree_from_code(pattern_path)
-            fsm = processor.create_pda(tree, catalog=self.catalog)
-            pattern_tree = {'name': 'raw_pattern', 'result': fsm}
-
-        # Compile code
-        if os.path.isfile(code_path):
-            code_tree = processor.generate_tree_from_file(code_path)
-        else:
-            code_tree = processor.generate_tree_from_code(code_path)
-
-        # Match
-        match_result = self.match_tree(pattern_tree, code_tree)
+        match_result = compiled_pattern.matches(code_path, stop_at_first=self.stop_at_first)
         if self.match_details:
-            return match_result['result'], match_result
-        return match_result
+            return match_result.matched, match_result
+        return match_result.matched
 
     def match_wildcards(self, pattern_path, code_path):
         """
         Match files using glob patterns for both patterns and code files.
+        Pre-compiles discovered patterns once before iterating across target code files.
+        Parses each target code file once per code file, and matches against pre-compiled patterns.
         """
         ret = {}
-        patterns_filespath = glob.glob(str(pattern_path))
-        code_filespath = glob.glob(str(code_path))
+        patterns_filespath = sorted(glob.glob(str(pattern_path)))
+        code_filespath = sorted(glob.glob(str(code_path)))
         logger.info(f"Found {len(patterns_filespath)} pattern(s) and {len(code_filespath)} code file(s).")
 
+        # Pre-compile discovered pattern files once (O(M))
+        compiled_patterns = {}
+        for p_path in patterns_filespath:
+            processor = self._get_processor_for_file(p_path)
+            if not processor:
+                for c_path in code_filespath:
+                    processor = self._get_processor_for_file(c_path)
+                    if processor:
+                        break
+            if not processor:
+                processor = self._language_processors.get(Languages.PYTHON)
+
+            compiler = PatternCompiler(language=processor, catalog=self.catalog)
+            compiled_patterns[p_path] = compiler.compile(p_path)
+
+        # Parse each target code file once per code file, and match against pre-compiled patterns (O(N))
         for code_filepath in code_filespath:
             processor = self._get_processor_for_file(code_filepath)
             if not processor:
                 logger.warning(f"No processor found for code file: {code_filepath}, skipping.")
                 continue
 
-            lang = processor.language.value.lower()
-            for pattern_filepath in patterns_filespath:
-                result = self.match(pattern_filepath, code_filepath, lang)
+            code_tree = processor.generate_tree_from_file(code_filepath)
+            for pattern_filepath, compiled_pattern in compiled_patterns.items():
+                match_result = compiled_pattern.matches(code_tree, stop_at_first=self.stop_at_first)
+                if self.match_details:
+                    result = (match_result.matched, match_result)
+                else:
+                    result = match_result.matched
                 if code_filepath not in ret:
                     ret[code_filepath] = {}
                 ret[code_filepath][pattern_filepath] = result
+
         return ret
-    
+
+
 def match_files(
     pattern_path,
     code_path,
@@ -220,15 +115,18 @@ def match_files(
     catalog: Optional[SubPatternCatalog] = None,
 ):
     if lang is None:
-        pattern_lang = determine_language(pattern_path)
         code_lang = determine_language(code_path)
+        if os.path.isdir(str(pattern_path)):
+            pattern_lang = code_lang
+        else:
+            pattern_lang = determine_language(pattern_path)
         if code_lang != pattern_lang:
             raise ValueError(f"Pattern language ({pattern_lang}) and Code language ({code_lang}) should be the same.")
         lang = pattern_lang
     matcher = PytternMatcher(match_details, stop_at_first, catalog=catalog)
     if match_details:
         res, det = matcher.match(pattern_path, code_path, lang)
-        return res, det["matches"]
+        return res, det.matches
     return matcher.match(pattern_path, code_path, lang)
 
 
