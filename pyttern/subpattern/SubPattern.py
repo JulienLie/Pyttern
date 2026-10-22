@@ -56,6 +56,18 @@ def rename_vars_in_tree(node: Any, var_map: dict[str, str]) -> None:
             rename_vars_in_tree(c, var_map)
 
 
+def isolate_internal_wildcards(tree: Any, formal_params: set[str], body_var: str | None, call_id: int | str) -> None:
+    if isinstance(tree, Python3Parser.Var_wildcardContext):
+        name_node = tree.NAME()
+        if name_node is not None:
+            var_name = name_node.getText()
+            if var_name not in formal_params and var_name != body_var and not var_name.startswith("__"):
+                name_node.getSymbol().text = f"__{var_name}_{call_id}"
+    if hasattr(tree, "children") and tree.children:
+        for c in tree.children:
+            isolate_internal_wildcards(c, formal_params, body_var, call_id)
+
+
 def extract_body_stmts(body_block: Any) -> list[Any]:
     if body_block is None:
         return []

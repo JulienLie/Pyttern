@@ -444,7 +444,8 @@ def call_subpattern(
         logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
         if subpattern.body_var is not None:
-            new_binding = env.merge(new_env)
+            filtered_env = {k: v for k, v in new_env.items() if not k.startswith("__")}
+            new_binding = env.merge(filtered_env)
         else:
             m_i_to_j = mapping(args, subpattern.args_order)
             comp = composition(m_i_to_j, new_env)
