@@ -443,6 +443,7 @@ def call_subpattern(
                 v in new_env.items()}
         logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
+        new_binding: Environment | None
         if op == "NOT":
             new_binding = env
         elif subpattern.body_var is not None:
