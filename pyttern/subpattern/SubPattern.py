@@ -78,7 +78,7 @@ def is_body_var_stmt(stmt: Any, body_var: str) -> bool:
     return text == body_var
 
 
-def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: dict[str, str]) -> bool:
+def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: dict[str, str] | None = None) -> bool:
     substituted = False
     if isinstance(tree, Python3Parser.BlockContext):
         new_children = []
@@ -87,7 +87,8 @@ def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: di
                 substituted = True
                 for b_stmt in body_stmts:
                     b_cloned = clone_tree(b_stmt, parent=tree)
-                    rename_vars_in_tree(b_cloned, var_map)
+                    if var_map:
+                        rename_vars_in_tree(b_cloned, var_map)
                     new_children.append(b_cloned)
             else:
                 new_children.append(child)

@@ -166,22 +166,24 @@ class PythonProcessor(BaseProcessor):
             raise ValueError(f"Subpattern '{subpattern.name}' does not accept a body, but a body was provided.")
 
         body_stmts: list[Any] = []
-        var_map: dict[str, str] = {}
+        param_to_arg_map: dict[str, str] = {}
         if subpattern.body_var is not None and body is not None:
             body_stmts = extract_body_stmts(body)
             if args is not None:
                 for caller_arg, param in zip(args, subpattern.args_order):
-                    var_map[caller_arg] = param
+                    if caller_arg != param:
+                        param_to_arg_map[param] = caller_arg
 
         compiled: dict[str, PDA] = {}
         for name, trans in subpattern.transformations.items():
             cloned_trans = clone_tree(trans)
             if subpattern.body_var is not None and body_stmts:
+                if param_to_arg_map:
+                    rename_vars_in_tree(cloned_trans, param_to_arg_map)
                 if is_body_var_stmt(cloned_trans, subpattern.body_var) and len(body_stmts) == 1:
                     cloned_trans = clone_tree(body_stmts[0])
-                    rename_vars_in_tree(cloned_trans, var_map)
                 else:
-                    substitute_body(cloned_trans, body_stmts, subpattern.body_var, var_map)
+                    substitute_body(cloned_trans, body_stmts, subpattern.body_var)
 
             pruned_trans = self.prune_subpattern_tree(cloned_trans, ast_ctx)
             if pruned_trans is None:
