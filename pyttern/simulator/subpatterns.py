@@ -443,7 +443,9 @@ def call_subpattern(
                 v in new_env.items()}
         logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
-        if subpattern.body_var is not None:
+        if op == "NOT":
+            new_binding = env
+        elif subpattern.body_var is not None:
             filtered_env = {k: v for k, v in new_env.items() if not k.startswith("__")}
             new_binding = env.merge(filtered_env)
         else:
