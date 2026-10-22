@@ -22,10 +22,13 @@ class SubPatternCallContext:
 
 
 def clone_tree(node: Any, parent: Any = None) -> Any:
+    import copy
     from antlr4.tree.Tree import TerminalNodeImpl
 
     if isinstance(node, TerminalNodeImpl):
-        new_node = TerminalNodeImpl(node.getSymbol())
+        sym = node.getSymbol()
+        cloned_sym = copy.copy(sym) if sym is not None else None
+        new_node = TerminalNodeImpl(cloned_sym)
         new_node.parentCtx = parent
         return new_node
     cls = node.__class__
@@ -34,7 +37,10 @@ def clone_tree(node: Any, parent: Any = None) -> Any:
     new_node.invokingState = getattr(node, "invokingState", -1)
     for k, v in node.__dict__.items():
         if k not in ("parentCtx", "children", "invokingState"):
-            setattr(new_node, k, v)
+            if k in ("start", "stop") and v is not None:
+                setattr(new_node, k, copy.copy(v))
+            else:
+                setattr(new_node, k, v)
     if hasattr(node, "children") and node.children is not None:
         new_node.children = [clone_tree(c, parent=new_node) for c in node.children]
     else:
