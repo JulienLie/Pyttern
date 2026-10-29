@@ -406,10 +406,17 @@ def call_subpattern(
                     logger.trace(f"Subpattern {subpattern_name} cannot be compiled: {e}")
                     return []
 
-    m_j_to_i = mapping(subpattern.args_order, args)
-    comp = composition(m_j_to_i, env)
-    m_j_epsilon = {u: None for u, _ in subpattern.args.items()}
-    m_sub = Environment.from_dict(join_dicts(m_j_epsilon, comp))
+    if subpattern.body_var is not None:
+        sub_dict = dict(env)
+        for arg in args:
+            if arg not in sub_dict:
+                sub_dict[arg] = None
+        m_sub = Environment.from_dict(sub_dict)
+    else:
+        m_j_to_i = mapping(subpattern.args_order, args)
+        comp = composition(m_j_to_i, env)
+        m_j_epsilon = {u: None for u, _ in subpattern.args.items()}
+        m_sub = Environment.from_dict(join_dicts(m_j_epsilon, comp))
     if _is_trace_enabled():
         logger.trace(f"Calling subpattern {subpattern_name} on node {current_node} with bindings {m_sub}")
 
@@ -434,12 +441,19 @@ def call_subpattern(
             }
             logger.debug(f"subpattern {subpattern_name} matched with bindings {pretty_bindings} at S({k})")
 
-        m_i_to_j = mapping(args, subpattern.args_order)
-        comp = composition(m_i_to_j, new_env)
-        for k_var, v_val in new_env.items():
-            if k_var not in subpattern.args:
-                comp[k_var] = v_val
-        new_binding = env.merge(comp)
+        new_binding: Environment | None
+        if op == "NOT":
+            new_binding = env
+        elif subpattern.body_var is not None:
+            filtered_env = {k: v for k, v in new_env.items() if not k.startswith("__")}
+            new_binding = env.merge(filtered_env)
+        else:
+            m_i_to_j = mapping(args, subpattern.args_order)
+            comp = composition(m_i_to_j, new_env)
+            for k_var, v_val in new_env.items():
+                if k_var not in subpattern.args:
+                    comp[k_var] = v_val
+            new_binding = env.merge(comp)
         if new_binding is not None:
             new_envs.append((new_binding, k))
 

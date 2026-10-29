@@ -73,12 +73,9 @@ $# ForLoop
 for ?i in ?items:
     ?body
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code_outer, Languages.PYTHON)
-    catalog.load_string(sub_code_inner, Languages.PYTHON)
-
-    from pyttern.language_processors.python_processor import PythonProcessor
-    from pyttern.simulator.Matcher import Matcher
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code_outer, Languages.PYTHON)
+    cat.load_string(sub_code_inner, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -98,15 +95,19 @@ def run():
         for x in queue:
             wrong_call(x)
 """
-    proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+    from pyttern.pattern.compiler import PatternCompiler
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
+    pat = compiler.compile(pattern_code)
 
-    res_ok = Matcher.match(pda, proc.generate_tree_from_code(code_match), catalog=catalog)
+    res_ok = pat.matches(code_match)
+    assert res_ok
+    assert res_ok.matched
     assert res_ok.count() > 0
-    bindings = res_ok.matches[0].bindings
+    bindings = res_ok.binding
     assert bindings["lock"].getText() == "my_mutex"
     assert bindings["item"].getText() == "x"
     assert bindings["pool"].getText() == "queue"
 
-    res_nok = Matcher.match(pda, proc.generate_tree_from_code(code_mismatch), catalog=catalog)
-    assert res_nok.count() == 0
+    res_nok = pat.matches(code_mismatch)
+    assert not res_nok
+    assert not res_nok.matched

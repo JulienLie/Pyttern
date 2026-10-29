@@ -1,4 +1,4 @@
-$&AbstractFactory(?AbstractFactory, ?CreateProductA, ?CreateProductB, ?ProductA, ?ConcreteProductA1, ?ConcreteProductA2, ?ProductB, ?ConcreteProductB1, ?CreateProductB2)
+$&AbstractFactory(?AbstractFactory, ?CreateProductA, ?CreateProductB, ?ProductA, ?ConcreteProductA1, ?ConcreteProductA2, ?ProductB, ?ConcreteProductB1, ?ConcreteProductB2)
 
 $# AbstractFactory
 class ?AbstractFactory:
@@ -41,9 +41,9 @@ class ?ConcreteProductA2(?ProductA):
     ?
 
 $# ConcreteProductB1
-class ?ConcreteProductB1(?ProductA):
+class ?ConcreteProductB1(?ProductB):
     ?
 
 $# ConcreteProductB2
-class ?ConcreteProductB2(?ProductA):
+class ?ConcreteProductB2(?ProductB):
     ?

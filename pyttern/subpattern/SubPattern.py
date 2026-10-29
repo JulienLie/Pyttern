@@ -33,10 +33,13 @@ class SubPatternCallContext:
 
 def clone_tree(node: Any, parent: Any = None) -> Any:
     """Deep clone an ANTLR parse tree node hierarchy."""
+    import copy
     from antlr4.tree.Tree import TerminalNodeImpl
 
     if isinstance(node, TerminalNodeImpl):
-        new_node = TerminalNodeImpl(node.getSymbol())
+        sym = node.getSymbol()
+        cloned_sym = copy.copy(sym) if sym is not None else None
+        new_node = TerminalNodeImpl(cloned_sym)
         new_node.parentCtx = parent
         return new_node
     cls = node.__class__
@@ -45,7 +48,10 @@ def clone_tree(node: Any, parent: Any = None) -> Any:
     new_node.invokingState = getattr(node, "invokingState", -1)
     for k, v in node.__dict__.items():
         if k not in ("parentCtx", "children", "invokingState"):
-            setattr(new_node, k, v)
+            if k in ("start", "stop") and v is not None:
+                setattr(new_node, k, copy.copy(v))
+            else:
+                setattr(new_node, k, v)
     if hasattr(node, "children") and node.children is not None:
         new_node.children = [clone_tree(c, parent=new_node) for c in node.children]
     else:
@@ -66,6 +72,18 @@ def rename_vars_in_tree(node: Any, var_map: dict[str, str]) -> None:
     if hasattr(node, "children") and node.children:
         for c in node.children:
             rename_vars_in_tree(c, var_map)
+
+
+def isolate_internal_wildcards(tree: Any, formal_params: set[str], body_var: str | None, call_id: int | str) -> None:
+    if isinstance(tree, Python3Parser.Var_wildcardContext):
+        name_node = tree.NAME()
+        if name_node is not None:
+            var_name = name_node.getText()
+            if var_name not in formal_params and var_name != body_var and not var_name.startswith("__"):
+                name_node.getSymbol().text = f"__{var_name}_{call_id}"
+    if hasattr(tree, "children") and tree.children:
+        for c in tree.children:
+            isolate_internal_wildcards(c, formal_params, body_var, call_id)
 
 
 def extract_body_stmts(body_block: Any) -> list[Any]:
@@ -92,7 +110,7 @@ def is_body_var_stmt(stmt: Any, body_var: str) -> bool:
     return text == body_var
 
 
-def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: dict[str, str]) -> bool:
+def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: dict[str, str] | None = None) -> bool:
     """Substitute body placeholder statements in a tree with the caller body statements."""
     substituted = False
     if isinstance(tree, Python3Parser.BlockContext):
@@ -102,7 +120,8 @@ def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: di
                 substituted = True
                 for b_stmt in body_stmts:
                     b_cloned = clone_tree(b_stmt, parent=tree)
-                    rename_vars_in_tree(b_cloned, var_map)
+                    if var_map:
+                        rename_vars_in_tree(b_cloned, var_map)
                     new_children.append(b_cloned)
             else:
                 new_children.append(child)

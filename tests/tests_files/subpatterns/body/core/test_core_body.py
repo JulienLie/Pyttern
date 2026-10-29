@@ -3,8 +3,7 @@ import pytest
 
 from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
-from pyttern.language_processors.python_processor import PythonProcessor
-from pyttern.simulator.Matcher import Matcher
+from pyttern.pattern.compiler import PatternCompiler
 
 
 @pytest.fixture
@@ -61,8 +60,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code)
 
     pattern_code = """
 def ?():
@@ -74,11 +73,13 @@ def run():
     for x in my_list:
         my_res.append(x)
 """
-    proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
+    pat = compiler.compile(pattern_code)
+    res = pat.matches(code_target)
+    assert res
+    assert res.matched
     assert res.count() > 0
-    bindings = res.matches[0].bindings
+    bindings = res.binding
     assert bindings["elem"].getText() == "x"
     assert bindings["container"].getText() == "my_list"
 
@@ -91,8 +92,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code)
 
     pattern_code = """
 def ?():
@@ -104,11 +105,13 @@ def run():
     for x in items:
         my_collector.append(items)
 """
-    proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
+    pat = compiler.compile(pattern_code)
+    res = pat.matches(code_target)
+    assert res
+    assert res.matched
     assert res.count() > 0
-    bindings = res.matches[0].bindings
+    bindings = res.binding
     assert bindings["target"].getText() == "my_collector"
     assert bindings["v"].getText() == "items"
     assert bindings["i"].getText() == "x"
@@ -122,8 +125,8 @@ $# WrapIf
 if ?val:
     ?my_custom_body
 """
-    catalog = SubPatternCatalog()
-    ret = catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    ret = cat.load_string(sub_code)
     assert len(ret) == 1
     assert ret[0].body_var == "my_custom_body"
 
@@ -142,14 +145,18 @@ def run():
     if is_ready:
         do_other()
 """
-    proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
+    pat = compiler.compile(pattern_code)
 
-    res_ok = Matcher.match(pda, proc.generate_tree_from_code(code_ok), catalog=catalog)
+    res_ok = pat.matches(code_ok)
+    assert res_ok
+    assert res_ok.matched
     assert res_ok.count() > 0
-    assert res_ok.matches[0].bindings["flag"].getText() == "is_ready"
+    assert res_ok.binding["flag"].getText() == "is_ready"
 
-    res_nok = Matcher.match(pda, proc.generate_tree_from_code(code_nok), catalog=catalog)
+    res_nok = pat.matches(code_nok)
+    assert not res_nok
+    assert not res_nok.matched
     assert res_nok.count() == 0
 
 
@@ -161,16 +168,16 @@ $# For
 for ?i in ?x:
     ?body
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code)
 
     pattern_code = """
 def ?():
     ?$NeedsBody(?v)
 """
-    proc = PythonProcessor()
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
     with pytest.raises(ValueError, match="requires a body wildcard"):
-        proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+        compiler.compile(pattern_code)
 
 
 def test_error_when_body_provided_but_not_accepted():
@@ -180,17 +187,17 @@ $|NoBodyAccepted(?x)
 $# Simple
 ?x += 1
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code)
 
     pattern_code = """
 def ?():
     ?$NoBodyAccepted(?v):
         extra()
 """
-    proc = PythonProcessor()
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
     with pytest.raises(ValueError, match="does not accept a body"):
-        proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+        compiler.compile(pattern_code)
 
 
 def test_multiple_calls_with_different_bodies():
@@ -201,8 +208,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    catalog = SubPatternCatalog()
-    catalog.load_string(sub_code, Languages.PYTHON)
+    cat = SubPatternCatalog()
+    cat.load_string(sub_code)
 
     pattern_code = """
 def ?():
@@ -218,11 +225,13 @@ def run():
     for y in items_out:
         res.remove(y)
 """
-    proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
+    compiler = PatternCompiler(Languages.PYTHON, catalog=cat)
+    pat = compiler.compile(pattern_code)
+    res = pat.matches(code_target)
+    assert res
+    assert res.matched
     assert res.count() > 0
-    bindings = res.matches[0].bindings
+    bindings = res.binding
     assert bindings["i"].getText() == "x"
     assert bindings["v"].getText() == "items_in"
     assert bindings["j"].getText() == "y"

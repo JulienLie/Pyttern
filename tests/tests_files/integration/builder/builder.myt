@@ -5,7 +5,7 @@ class ?Director:
     def __init__(self, ?*, ?b, ?*):
         self.?builder = ?b
 
-    def ?change_builder(?b):
+    def ?change_builder(self, ?*, ?b, ?*):
         self.?builder = ?b
 
     def ?make(?*):
