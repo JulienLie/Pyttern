@@ -10,6 +10,8 @@ from .SubPattern import BaseSubPattern, SubPatternCallContext
 
 if TYPE_CHECKING:
     from ..language_processors.languages import Languages
+    from ..language_processors.base_processor_interface import BaseProcessor
+
 
 
 class SubPatternCatalog:
@@ -130,7 +132,7 @@ class SubPatternCatalog:
         return self._compiled_cache.get((name, ctx_type))
 
     def get_or_compile(
-        self, name: str, context: Any, processor: Any
+        self, name: str, context: Any, processor: BaseProcessor
     ) -> dict[str, Any]:
         """
         Retrieves compiled transformations for a subpattern under a call context,
