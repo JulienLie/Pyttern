@@ -1,3 +1,4 @@
+"""CLI tool for generating graphical PDF visualizations of PDAs and Parse Trees."""
 from __future__ import annotations
 
 import argparse
@@ -14,6 +15,7 @@ from pyttern.subpattern.subpattern_parser import parse_subpattern_from_file
 
 
 def main() -> None:
+    """Parse CLI options and render PDA or Parse Tree diagrams as PDF."""
     parser = argparse.ArgumentParser(description="Pyttern Graph Tool: Visualize PDA structure or Parse Tree from code/patterns.")
     parser.add_argument("input", nargs="?", help="Input file (python or pyttern).")
     parser.add_argument("output", nargs="?", help="Output PDF filename.")
@@ -102,7 +104,7 @@ def main() -> None:
                     logger.warning(f"Failed to auto-load subpattern {file}: {e}")
 
         viz_type = options.get("type", "tpa").lower()
-        
+
         if viz_type == "pt":
             visualize_parse_tree(
                 tree, 
@@ -126,7 +128,7 @@ def main() -> None:
                 font_size=options["font_size"]
             )
             logger.info(f"Generated {output_pdf}.pdf (PDA with subpatterns)")
-            
+
     except Exception as e:
         logger.exception(f"Error generating graph: {e}")
         sys.exit(1)

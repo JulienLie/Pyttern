@@ -1,57 +1,55 @@
 from pathlib import Path
 import pytest
 
-from pyttern import match_files
+from pyttern import match_files, SubPatternCatalog
 from pyttern.language_processors.languages import Languages
 from pyttern.language_processors.python_processor import PythonProcessor
 from pyttern.simulator.Matcher import Matcher
-from pyttern.subpattern.subpattern_parser import (
-    parse_subpattern_from_file,
-    parse_subpattern_from_string,
-)
 
 
-@pytest.fixture(autouse=True)
-def setup_subpattern():
+@pytest.fixture
+def catalog():
+    cat = SubPatternCatalog()
     subpattern_file = Path(__file__).parent / "loop.myt"
-    parse_subpattern_from_file(str(subpattern_file), Languages.PYTHON)
+    cat.load_file(subpattern_file)
+    return cat
 
 
-def test_inline_subpattern_call_for_match():
+def test_inline_subpattern_call_for_match(catalog):
     pattern_path = Path(__file__).parent / "loop_call_inline.pyt"
     code_path = Path(__file__).parent / "for_code_ok.py"
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() > 0
 
 
-def test_inline_subpattern_call_mismatch():
+def test_inline_subpattern_call_mismatch(catalog):
     pattern_path = Path(__file__).parent / "loop_call_inline.pyt"
     code_path = Path(__file__).parent / "for_code_nok.py"
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert not res
 
 
-def test_multiline_subpattern_call_for_match():
+def test_multiline_subpattern_call_for_match(catalog):
     pattern_path = Path(__file__).parent / "loop_call_multiline.pyt"
     code_path = Path(__file__).parent / "for_code_ok.py"
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() > 0
 
 
-def test_multiline_subpattern_call_while_match():
+def test_multiline_subpattern_call_while_match(catalog):
     pattern_path = Path(__file__).parent / "loop_call_multiline.pyt"
     code_path = Path(__file__).parent / "while_code_ok.py"
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert res, det
     assert det.count() > 0
 
 
-def test_multiline_subpattern_call_mismatch():
+def test_multiline_subpattern_call_mismatch(catalog):
     pattern_path = Path(__file__).parent / "loop_call_multiline.pyt"
     code_path = Path(__file__).parent / "for_code_nok.py"
-    res, det = match_files(pattern_path, code_path, match_details=True)
+    res, det = match_files(pattern_path, code_path, match_details=True, catalog=catalog)
     assert not res
 
 
@@ -63,7 +61,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_string(sub_code, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -76,8 +75,8 @@ def run():
         my_res.append(x)
 """
     proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code))
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target))
+    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
     assert res.count() > 0
     bindings = res.matches[0].bindings
     assert bindings["elem"].getText() == "x"
@@ -92,7 +91,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_string(sub_code, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -105,8 +105,8 @@ def run():
         my_collector.append(items)
 """
     proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code))
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target))
+    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
     assert res.count() > 0
     bindings = res.matches[0].bindings
     assert bindings["target"].getText() == "my_collector"
@@ -122,7 +122,8 @@ $# WrapIf
 if ?val:
     ?my_custom_body
 """
-    ret = parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    ret = catalog.load_string(sub_code, Languages.PYTHON)
     assert len(ret) == 1
     assert ret[0].body_var == "my_custom_body"
 
@@ -142,13 +143,13 @@ def run():
         do_other()
 """
     proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code))
+    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
 
-    res_ok = Matcher.match(pda, proc.generate_tree_from_code(code_ok))
+    res_ok = Matcher.match(pda, proc.generate_tree_from_code(code_ok), catalog=catalog)
     assert res_ok.count() > 0
     assert res_ok.matches[0].bindings["flag"].getText() == "is_ready"
 
-    res_nok = Matcher.match(pda, proc.generate_tree_from_code(code_nok))
+    res_nok = Matcher.match(pda, proc.generate_tree_from_code(code_nok), catalog=catalog)
     assert res_nok.count() == 0
 
 
@@ -160,7 +161,8 @@ $# For
 for ?i in ?x:
     ?body
 """
-    parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_string(sub_code, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -168,7 +170,7 @@ def ?():
 """
     proc = PythonProcessor()
     with pytest.raises(ValueError, match="requires a body wildcard"):
-        proc.create_pda(proc.generate_tree_from_code(pattern_code))
+        proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
 
 
 def test_error_when_body_provided_but_not_accepted():
@@ -178,7 +180,8 @@ $|NoBodyAccepted(?x)
 $# Simple
 ?x += 1
 """
-    parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_string(sub_code, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -187,7 +190,7 @@ def ?():
 """
     proc = PythonProcessor()
     with pytest.raises(ValueError, match="does not accept a body"):
-        proc.create_pda(proc.generate_tree_from_code(pattern_code))
+        proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
 
 
 def test_multiple_calls_with_different_bodies():
@@ -198,7 +201,8 @@ $# For
 for ?i in ?v:
     ?body
 """
-    parse_subpattern_from_string(sub_code, Languages.PYTHON)
+    catalog = SubPatternCatalog()
+    catalog.load_string(sub_code, Languages.PYTHON)
 
     pattern_code = """
 def ?():
@@ -215,8 +219,8 @@ def run():
         res.remove(y)
 """
     proc = PythonProcessor()
-    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code))
-    res = Matcher.match(pda, proc.generate_tree_from_code(code_target))
+    pda = proc.create_pda(proc.generate_tree_from_code(pattern_code), catalog=catalog)
+    res = Matcher.match(pda, proc.generate_tree_from_code(code_target), catalog=catalog)
     assert res.count() > 0
     bindings = res.matches[0].bindings
     assert bindings["i"].getText() == "x"

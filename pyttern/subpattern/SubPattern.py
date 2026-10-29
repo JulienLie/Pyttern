@@ -1,3 +1,4 @@
+"""Subpattern definitions, compilation contexts, and registry."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -15,6 +16,15 @@ from ..simulator.pda import PDA
 
 @dataclass(frozen=True)
 class SubPatternCallContext:
+    """Context information provided when invoking a subpattern during compilation.
+
+    Attributes:
+        ast_ctx: Expected target AST rule context type or instance.
+        body: Optional body node or statements associated with the call context.
+        args: List of argument names passed to the call.
+        call_id: Unique invocation identifier for transformation isolation.
+    """
+
     ast_ctx: Any
     body: Any = None
     args: list[str] | None = None
@@ -22,6 +32,7 @@ class SubPatternCallContext:
 
 
 def clone_tree(node: Any, parent: Any = None) -> Any:
+    """Deep clone an ANTLR parse tree node hierarchy."""
     from antlr4.tree.Tree import TerminalNodeImpl
 
     if isinstance(node, TerminalNodeImpl):
@@ -43,6 +54,7 @@ def clone_tree(node: Any, parent: Any = None) -> Any:
 
 
 def rename_vars_in_tree(node: Any, var_map: dict[str, str]) -> None:
+    """Rename variable wildcard nodes in-place according to var_map."""
     if not var_map:
         return
     if isinstance(node, Python3Parser.Var_wildcardContext):
@@ -57,6 +69,7 @@ def rename_vars_in_tree(node: Any, var_map: dict[str, str]) -> None:
 
 
 def extract_body_stmts(body_block: Any) -> list[Any]:
+    """Extract statement list from a block context node."""
     if body_block is None:
         return []
     stmts: list[Any] = []
@@ -72,6 +85,7 @@ def extract_body_stmts(body_block: Any) -> list[Any]:
 
 
 def is_body_var_stmt(stmt: Any, body_var: str) -> bool:
+    """Check if a statement represents a body wildcard placeholder (?body_var)."""
     if not isinstance(stmt, Python3Parser.StmtContext):
         return False
     text = stmt.getText().strip().replace("?", "").replace(";", "").replace("\n", "")
@@ -79,6 +93,7 @@ def is_body_var_stmt(stmt: Any, body_var: str) -> bool:
 
 
 def substitute_body(tree: Any, body_stmts: list[Any], body_var: str, var_map: dict[str, str]) -> bool:
+    """Substitute body placeholder statements in a tree with the caller body statements."""
     substituted = False
     if isinstance(tree, Python3Parser.BlockContext):
         new_children = []
@@ -161,9 +176,15 @@ class BaseSubPattern(ABC):
         """
         self.transformations[name] = transformation
 
+    def compile(self, context: SubPatternCallContext) -> dict[str, PDA]:
+        """Compile all transformation branches into pushdown automata (PDAs)."""
+        from ..language_processors.python_processor import PythonProcessor
+        return PythonProcessor().compile_subpattern(self, context)
+
     @property
     @abstractmethod
     def type(self) -> Literal["AND", "OR", "NOT"]:
+        """Return the subpattern logical composition operator ('AND', 'OR', or 'NOT')."""
         pass
 
     def generate_pda(
@@ -195,6 +216,14 @@ class BaseSubPattern(ABC):
         return next_state
 
     def check_args_nbr(self, args_names: list[str]) -> None:
+        """Validate that the required number of non-optional arguments are supplied.
+
+        Args:
+            args_names: List of provided argument names.
+
+        Raises:
+            ValueError: If fewer arguments are supplied than required.
+        """
         n_args_req = sum(1 for key in self.args if self.args[key] is None)
         if len(args_names) < n_args_req:
             logger.error(

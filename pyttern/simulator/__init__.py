@@ -1,3 +1,4 @@
+"""Pyttern simulator package."""
 from __future__ import annotations
 
 from .configuration import Configuration, Environment

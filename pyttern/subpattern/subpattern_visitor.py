@@ -1,3 +1,4 @@
+"""ANTLR parse tree visitor for parsing subpattern specifications."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,11 +10,13 @@ from ..antlr.python import Python3ParserVisitor, Python3Parser
 
 
 def flatten(lst: list[Any]) -> list[Any]:
-    """
-    Recursively flattens a nested list into a single flat list.
+    """Recursively flatten a nested list into a single flat list.
 
-    :param lst: The list containing nested lists or elements.
-    :return: A flat list of elements.
+    Args:
+        lst: The list containing nested lists or elements.
+
+    Returns:
+        list[Any]: A flat list containing all terminal elements.
     """
     flat_list: list[Any] = []
     for el in lst:
@@ -23,11 +26,13 @@ def flatten(lst: list[Any]) -> list[Any]:
 
 
 def get_original_text(ctx: Any) -> str:
-    """
-    Extracts the raw source text corresponding to an ANTLR parse tree context.
+    """Extract the raw source text corresponding to an ANTLR parse tree context.
 
-    :param ctx: ANTLR ParseTree context.
-    :return: Source text snippet.
+    Args:
+        ctx: ANTLR ParseTree context node.
+
+    Returns:
+        str: Source text snippet corresponding to the token span.
     """
     if ctx is None:
         return ""
@@ -36,25 +41,43 @@ def get_original_text(ctx: Any) -> str:
 
 
 class SubPattern_Visitor(Python3ParserVisitor):
-    """
-    ANTLR visitor that traverses subpattern ASTs and constructs concrete SubPattern instances.
+    """ANTLR visitor that traverses subpattern ASTs and constructs SubPattern instances.
+
+    Attributes:
+        override: Whether existing subpatterns should be overwritten when encountered.
+        current_subpattern: Reference to the subpattern currently being constructed.
     """
 
     def __init__(self, override: bool = True) -> None:
+        """Initialize the visitor with configuration flags.
+
+        Args:
+            override: Whether to overwrite existing subpatterns in the registry.
+        """
         super().__init__()
         self.override = override
         self.current_subpattern: BaseSubPattern | None = None
 
     def visitSubpattern_input(self, ctx: Python3Parser.Subpattern_inputContext) -> list[BaseSubPattern]:
-        """
-        Visits top-level subpattern input and collects all parsed SubPattern objects.
+        """Visit top-level subpattern input and collect all parsed SubPattern objects.
+
+        Args:
+            ctx: Top-level subpattern input parse context.
+
+        Returns:
+            list[BaseSubPattern]: List of parsed SubPattern instances.
         """
         results = self.visitChildren(ctx)
         return [res for res in results if isinstance(res, BaseSubPattern)]
 
     def visitSubpattern_stmts(self, ctx: Python3Parser.Subpattern_stmtsContext) -> BaseSubPattern:
-        """
-        Visits subpattern statement definitions and constructs the SubPattern instance.
+        """Visit subpattern statement definitions and construct the SubPattern instance.
+
+        Args:
+            ctx: Subpattern statement block parse context.
+
+        Returns:
+            BaseSubPattern: Constructed concrete subpattern instance.
         """
         header = self.visitSubpattern(ctx.subpattern())
         if len(header) == 4:
@@ -73,9 +96,15 @@ class SubPattern_Visitor(Python3ParserVisitor):
         logger.trace(self.current_subpattern)
         return self.current_subpattern
 
-    def visitSubpattern(
-        self, ctx: Python3Parser.SubpatternContext
-    ) -> Any:
+    def visitSubpattern(self, ctx: Python3Parser.SubpatternContext) -> Any:
+        """Visit subpattern wrapper node and dispatch to simple or compound subpattern.
+
+        Args:
+            ctx: Subpattern context node.
+
+        Returns:
+            Any: Header tuple from simple or compound subpattern.
+        """
         if ctx.compound_subpattern():
             return self.visitCompound_subpattern(ctx.compound_subpattern())
         elif ctx.simple_subpattern():
@@ -85,19 +114,36 @@ class SubPattern_Visitor(Python3ParserVisitor):
     def visitCompound_subpattern(
         self, ctx: Python3Parser.Compound_subpatternContext
     ) -> tuple[str, type[BaseSubPattern], dict[str, Any], str]:
+        """Visit compound subpattern header with body wildcard.
+
+        Args:
+            ctx: Compound subpattern context node.
+
+        Returns:
+            tuple: (name, subpattern_class, args_dict, body_var).
+        """
         name, type_cls, args = self.visitSimple_subpattern(ctx.simple_subpattern())
         body_var_node = ctx.atom_wildcard()
         body_var = body_var_node.getText().replace("?", "")
         return name, type_cls, args, body_var
 
     def visitBlockEnd(self, ctx: Any) -> None:
+        """Ignore BlockEnd tokens in subpattern visitor."""
         return None
 
     def visitSimple_subpattern(
         self, ctx: Python3Parser.Simple_subpatternContext
     ) -> tuple[str, type[BaseSubPattern], dict[str, Any]]:
-        """
-        Visits the subpattern header (e.g. $|Name(?arg)) and returns (name, subpattern_class, args).
+        """Visit the subpattern header (e.g. $|Name(?arg)) and parse name, type, and args.
+
+        Args:
+            ctx: Subpattern header parse context.
+
+        Returns:
+            tuple[str, type, dict]: 3-tuple of (subpattern_name, subpattern_class, args_dict).
+
+        Raises:
+            ValueError: If an unrecognized subpattern operator symbol is encountered.
         """
         name: str = ctx.NAME().accept(self)
         type_str = ctx.getChild(1).getText().upper()
@@ -123,8 +169,13 @@ class SubPattern_Visitor(Python3ParserVisitor):
         return name, type_cls, args
 
     def visitSubpattern_arg(self, ctx: Python3Parser.Subpattern_argContext) -> dict[str, Any]:
-        """
-        Visits a formal argument definition in a subpattern header.
+        """Visit a formal argument definition in a subpattern header.
+
+        Args:
+            ctx: Formal argument parse context.
+
+        Returns:
+            dict[str, Any]: Mapping of parameter name to its default binding expression node.
         """
         raw_name = ctx.getChild(0).accept(self)
         if isinstance(raw_name, list):
@@ -138,8 +189,13 @@ class SubPattern_Visitor(Python3ParserVisitor):
         return {name: bind}
 
     def visitTransformation(self, ctx: Python3Parser.TransformationContext) -> tuple[str, ParseTree]:
-        """
-        Visits a transformation branch ($# TransformationName).
+        """Visit a transformation branch ($# TransformationName).
+
+        Args:
+            ctx: Transformation branch parse context.
+
+        Returns:
+            tuple[str, ParseTree]: Tuple of (branch_name, statement_parse_tree).
         """
         name: str = ctx.NAME().accept(self)
         parse_tree: ParseTree = ctx.stmt()
@@ -148,13 +204,33 @@ class SubPattern_Visitor(Python3ParserVisitor):
         return name, parse_tree
 
     def visitTerminal(self, node: TerminalNodeImpl) -> str:
-        """
-        Returns text representation of a terminal AST node.
+        """Return raw text representation of a terminal AST node.
+
+        Args:
+            node: Terminal token leaf node.
+
+        Returns:
+            str: Token text string.
         """
         return node.getText()
 
     def defaultResult(self) -> list[Any]:
+        """Return the default accumulator value for unvisited branches.
+
+        Returns:
+            list[Any]: Empty list.
+        """
         return []
 
     def aggregateResult(self, aggregate: list[Any], nextResult: Any) -> list[Any]:
-        return aggregate + [nextResult]
+        """Aggregate intermediate branch evaluation results into a list.
+
+        Args:
+            aggregate: Accumulator list.
+            nextResult: Child branch evaluation result.
+
+        Returns:
+            list[Any]: Appended results list.
+        """
+        aggregate.append(nextResult)
+        return aggregate

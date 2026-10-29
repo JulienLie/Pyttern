@@ -1,3 +1,4 @@
+"""Main entry point, matcher coordinator, and CLI interface for Pyttern."""
 from __future__ import annotations
 
 import argparse
@@ -17,10 +18,14 @@ from .language_processors import BaseProcessor, Languages, determine_language, g
 
 
 class PytternMatcher:
-    """
-    A class to handle matching of patterns against code.
+    """Coordinates compiling and matching patterns against source code ASTs.
+
     It encapsulates the logic for orchestrating pattern matching, compiling patterns
     using PatternCompiler, and running the matching process against code files.
+
+    Attributes:
+        match_details: Whether to return full match metadata or simple booleans.
+        stop_at_first: Whether to short-circuit matching after the first valid match.
     """
 
     def __init__(
@@ -29,6 +34,13 @@ class PytternMatcher:
         stop_at_first: bool | None = None,
         catalog: SubPatternCatalog | None = None,
     ) -> None:
+        """Initialize the matcher coordinator.
+
+        Args:
+            match_details: If True, returns detailed match records and bindings.
+            stop_at_first: If True, stops simulation immediately on first match.
+            catalog: Optional subpattern catalog to use.
+        """
         self.match_details = match_details
         if not match_details:
             self.stop_at_first = True
@@ -45,7 +57,14 @@ class PytternMatcher:
                 self._extension_to_processor[f".{clean_ext}"] = processor
 
     def _get_processor_for_file(self, file_name: str | Path | os.PathLike[str]) -> BaseProcessor | None:
-        """Get the language processor for a given file name based on its extension."""
+        """Retrieve language processor corresponding to a file extension.
+
+        Args:
+            file_name: Name or path of the target file.
+
+        Returns:
+            BaseProcessor | None: Matching language processor or None.
+        """
         file_ext = os.path.splitext(str(file_name))[1].lstrip(".")
         return self._extension_to_processor.get(file_ext)
 
@@ -55,9 +74,17 @@ class PytternMatcher:
         code_path: str | Path,
         lang: str | Languages | BaseProcessor,
     ) -> bool | tuple[bool, MatchResult]:
-        """
-        Main matching method. Compiles pattern and code from paths and matches them.
+        """Main matching method. Compiles pattern and code from paths and matches them.
+
         The pattern can be a single file, a raw code string, or a directory representing a composite pattern.
+
+        Args:
+            pattern_path: Path to the pattern file or directory.
+            code_path: Path to the target code file.
+            lang: Programming language string, enum, or processor instance.
+
+        Returns:
+            bool | tuple[bool, MatchResult]: Match result or tuple of (matched, MatchResult).
         """
         logger.info(f"Starting match for pattern '{pattern_path}' on code '{code_path}' with language '{lang}'")
         compiler = PatternCompiler(language=lang, catalog=self.catalog)
@@ -73,10 +100,17 @@ class PytternMatcher:
         pattern_path: str | Path,
         code_path: str | Path,
     ) -> dict[str, dict[str, bool | tuple[bool, MatchResult]]]:
-        """
-        Match files using glob patterns for both patterns and code files.
+        """Match files using glob patterns for both patterns and code files.
+
         Pre-compiles discovered patterns once before iterating across target code files.
         Parses each target code file once per code file, and matches against pre-compiled patterns.
+
+        Args:
+            pattern_path: Glob string matching pattern files.
+            code_path: Glob string matching target code files.
+
+        Returns:
+            dict: Nested dictionary mapping code paths to pattern match results.
         """
         ret: dict[str, dict[str, bool | tuple[bool, MatchResult]]] = {}
         patterns_filespath = sorted(glob.glob(str(pattern_path)))
@@ -108,16 +142,17 @@ class PytternMatcher:
             code_tree = processor.generate_tree_from_file(code_filepath)
             for pattern_filepath, compiled_pattern in compiled_patterns.items():
                 match_result = compiled_pattern.matches(code_tree, stop_at_first=self.stop_at_first)
-                result: bool | tuple[bool, MatchResult]
-                if self.match_details:
-                    result = (match_result.matched, match_result)
-                else:
-                    result = match_result.matched
+
                 if code_filepath not in ret:
                     ret[code_filepath] = {}
-                ret[code_filepath][pattern_filepath] = result
+
+                if self.match_details:
+                    ret[code_filepath][pattern_filepath] = (match_result.matched, match_result)
+                else:
+                    ret[code_filepath][pattern_filepath] = match_result.matched
 
         return ret
+
 
 
 def match_files(
@@ -128,6 +163,22 @@ def match_files(
     stop_at_first: bool = True,
     catalog: SubPatternCatalog | None = None,
 ) -> bool | tuple[bool, MatchSet]:
+    """Helper function to execute pattern matching against files on disk.
+
+    Args:
+        pattern_path: Path to pattern file or directory.
+        code_path: Path to target source code file.
+        lang: Optional language override.
+        match_details: If True, returns match details.
+        stop_at_first: If True, stops on first match.
+        catalog: Optional subpattern catalog.
+
+    Returns:
+        bool | tuple[bool, MatchSet]: Match boolean result, or tuple of (bool, matches) if match_details is True.
+
+    Raises:
+        ValueError: If pattern and code file languages do not match.
+    """
     if lang is None:
         code_lang = determine_language(code_path)
         if os.path.isdir(str(pattern_path)):
@@ -152,18 +203,27 @@ def match_files(
 
 
 def run_application(host: str = "0.0.0.0", port: int = 5000) -> None:
+    """Launch the Pyttern interactive Flask web visualizer.
+
+    Args:
+        host: Network interface address to bind server to.
+        port: Port number for the HTTP server.
+    """
     from .visualizer.web import application
+
     logger.enable("pyttern")
     application.app.run(debug=True, host=host, port=port)
 
 
 def configure_logger(verbosity: int) -> None:
-    # Remove the default loguru handler
+    """Configure Loguru logging levels and formatting based on verbosity count.
+
+    Args:
+        verbosity: Verbosity integer level (0 for INFO, 1 for DEBUG, 2+ for TRACE).
+    """
     logger.remove()
-    
-    # Map verbosity count to Loguru levels and formats
+
     if verbosity == 0:
-        # Default mode (no -v): Only INFO and above, clean format
         log_level = "INFO"
         log_format = (
             "<green>{time:HH:mm:ss}</green> | "
@@ -171,7 +231,6 @@ def configure_logger(verbosity: int) -> None:
             "<level>{message}</level>"
         )
     elif verbosity == 1:
-        # -v passed: DEBUG level, more context like function and line number
         log_level = "DEBUG"
         log_format = (
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
@@ -180,7 +239,6 @@ def configure_logger(verbosity: int) -> None:
             "<level>{message}</level>"
         )
     else:
-        # -vv or more passed: TRACE level, maximum context including milliseconds
         log_level = "TRACE"
         log_format = (
             "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -188,32 +246,32 @@ def configure_logger(verbosity: int) -> None:
             "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
             "<level>{message}</level>"
         )
-        
-    # Add the configured handler
+
     logger.add(sys.stdout, format=log_format, level=log_level)
 
 
-
 def main() -> None:
+    """Parse command line arguments and execute the requested pattern matching action."""
     parser = argparse.ArgumentParser(description="Pyttern: A tool for pattern matching in code.")
     parser.add_argument("--web", action="store_true", help="Launch the web application.")
-    parser.add_argument("--lang", choices=['python', 'java'], help="Specify the language for single file matching.")
+    parser.add_argument("--lang", choices=["python", "java"], help="Specify the language for single file matching.")
     parser.add_argument("--details", action="store_true", help="Return detailed match information.")
     parser.add_argument("--stop-first", action="store_true", help="Stop at the first match found.")
     parser.add_argument(
-        '-s', '--sub', 
-        action='append',
+        "-s",
+        "--sub",
+        action="append",
         default=[],
-        dest='sub', 
-        help='Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).'
+        dest="sub",
+        help="Sub pattern files. Use this flag multiple times for multiple sub patterns (e.g., -s file1 -s file2).",
     )
     parser.add_argument(
-        '-v', '--verbose', 
-        action='count', 
-        default=0, 
-        help="Increase output verbosity (e.g., -v for DEBUG, -vv for TRACE)"
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Increase output verbosity (e.g., -v for DEBUG, -vv for TRACE)",
     )
-
 
     parser.add_argument("pattern", nargs="?", help="Pattern file path or glob pattern.")
     parser.add_argument("code", nargs="?", help="Code file path or glob pattern.")
@@ -229,21 +287,21 @@ def main() -> None:
     if not args.pattern or not args.code:
         parser.error("You must specify a pattern and a code file/path when not running the web application.")
         return
-    
+
     catalog = SubPatternCatalog()
-    if args.sub:
+    sub_patterns = getattr(args, "sub_patterns", None) or getattr(args, "sub", [])
+    if sub_patterns:
         sub_lang = Languages[args.lang.upper()] if args.lang else Languages.PYTHON
-        for sub_pyttern in args.sub:
+        for sub_pyttern in sub_patterns:
             ret = catalog.load_file(sub_pyttern, language=sub_lang)
             if len(ret) > 0:
-                logger.debug(f"Loaded sub patterns {[pat.name for pat in ret]} from file {sub_pyttern}")
+                logger.info(f"Loaded {len(ret)} subpattern(s) {[pat.name for pat in ret]} from file '{sub_pyttern}'")
             else:
-                logger.warning(f"No sub pytterns found in {sub_pyttern}")
+                logger.warning(f"No subpatterns found in '{sub_pyttern}'")
 
     matcher = PytternMatcher(match_details=args.details, stop_at_first=args.stop_first, catalog=catalog)
 
-    # Use wildcards if they are likely present, otherwise treat as single files
-    if '*' in args.pattern or '*' in args.code:
+    if "*" in args.pattern or "*" in args.code:
         results = matcher.match_wildcards(args.pattern, args.code)
         logger.info(results)
     else:
@@ -272,6 +330,7 @@ def main() -> None:
                 logger.success("Match found!")
             else:
                 logger.warning("No match found.")
+
 
 if __name__ == "__main__":
     logger.enable("pyttern")

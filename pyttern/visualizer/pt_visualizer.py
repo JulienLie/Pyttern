@@ -1,32 +1,48 @@
+"""Graphviz-based visualizer for ANTLR Parse Trees."""
 from __future__ import annotations
 
 from typing import Any
+
+from antlr4.tree.Tree import ErrorNode, TerminalNode
 import graphviz
-from antlr4.tree.Tree import TerminalNode, ErrorNode
 
 try:
-    from pyttern.antlr.python import Python3Parser
+    from ..antlr.python import Python3Parser
 except ImportError:
-    Python3Parser = None  # type: ignore[assignment,misc]
+    try:
+        from pyttern.antlr.python import Python3Parser
+    except ImportError:
+        Python3Parser = None  # type: ignore[assignment, misc]
 
 try:
-    from pyttern.subpattern.SubPattern import loaded_subpatterns
+    from ..subpattern.SubPattern import loaded_subpatterns
 except ImportError:
-    loaded_subpatterns = {}
+    try:
+        from pyttern.subpattern.SubPattern import loaded_subpatterns
+    except ImportError:
+        loaded_subpatterns = {}
 
 
-def parse_intervals(intervals_input: str | list[Any] | None) -> list[tuple[int, int]] | None:
+def parse_intervals(intervals_input: Any) -> list[tuple[int, int]] | None:
+    """Parse comma-separated interval strings into list of (start, end) tuples.
+
+    Args:
+        intervals_input: String expression like '0-5,10,12-15' or list of intervals.
+
+    Returns:
+        list[tuple[int, int]] | None: List of integer interval tuples or None if 'all'.
+    """
     if not intervals_input:
         return None
-    
+
     if isinstance(intervals_input, str):
         if intervals_input.lower() == "all":
             return None
         parts = intervals_input.split(',')
     else:
         parts = intervals_input
-        
-    intervals: list[tuple[int, int]] = []
+
+    intervals = []
     for part in parts:
         part = str(part).strip()
         if '-' in part:
@@ -45,6 +61,15 @@ def parse_intervals(intervals_input: str | list[Any] | None) -> list[tuple[int, 
 
 
 def is_in_intervals(val: int, intervals: list[tuple[int, int]] | None) -> bool:
+    """Check whether an integer value falls within any inclusive interval.
+
+    Args:
+        val: Integer to test.
+        intervals: List of inclusive (start, end) bounds or None for all.
+
+    Returns:
+        bool: True if val is covered by the intervals.
+    """
     if intervals is None:
         return True
     for start, end in intervals:
@@ -53,7 +78,7 @@ def is_in_intervals(val: int, intervals: list[tuple[int, int]] | None) -> bool:
     return False
 
 
-COLOR_MAP: dict[str, tuple[int, int, int]] = {
+COLOR_MAP = {
     "red": (255, 0, 0),
     "blue": (0, 0, 255),
     "green": (0, 128, 0),
@@ -78,17 +103,25 @@ COLOR_MAP: dict[str, tuple[int, int, int]] = {
 
 
 def get_node_style(color_name: str | None) -> dict[str, str]:
+    """Calculate Graphviz fill and contrasting font color styles for a given color.
+
+    Args:
+        color_name: CSS color name or hex string (e.g. '#FF0000').
+
+    Returns:
+        dict[str, str]: Graphviz node style attribute dictionary.
+    """
     if not color_name:
         return {}
-    
+
     color_name = color_name.lower()
     rgb = None
     if color_name.startswith("#"):
         try:
             h = color_name.lstrip('#')
             if len(h) == 3:
-                h = ''.join([c*2 for c in h])
-            rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                h = ''.join([c * 2 for c in h])
+            rgb = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
         except Exception:
             rgb = (200, 200, 200)
     else:
@@ -97,12 +130,21 @@ def get_node_style(color_name: str | None) -> dict[str, str]:
     luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2])
     font_color = "white" if luminance < 140 else "black"
     fill_hex = '#%02x%02x%02x' % rgb
-    
+
     return {'style': 'filled', 'fillcolor': fill_hex, 'fontcolor': font_color}
 
 
 def flatten_tree_dict(d: Any, current_prefix: str = "") -> dict[str, Any]:
-    flat: dict[str, Any] = {}
+    """Flatten nested dictionary of parse trees into a single-level mapping.
+
+    Args:
+        d: Parse tree or nested dictionary of trees.
+        current_prefix: Hierarchical naming prefix.
+
+    Returns:
+        dict[str, Any]: Flattened name-to-tree dictionary.
+    """
+    flat = {}
     if not isinstance(d, dict):
         flat[current_prefix or "__main__"] = d
     else:
@@ -110,7 +152,7 @@ def flatten_tree_dict(d: Any, current_prefix: str = "") -> dict[str, Any]:
             name = current_prefix if k == "__main__" else k
             if not name:
                 name = "__main__"
-            
+
             if not isinstance(val, dict):
                 flat[name] = val
             else:
@@ -119,10 +161,18 @@ def flatten_tree_dict(d: Any, current_prefix: str = "") -> dict[str, Any]:
 
 
 def find_subpattern_calls(node: Any) -> list[str]:
+    """Recursively discover all subpattern call identifiers in an ANTLR parse tree.
+
+    Args:
+        node: Parse tree node to inspect.
+
+    Returns:
+        list[str]: List of referenced subpattern names.
+    """
     calls: list[str] = []
     if node is None:
         return calls
-    
+
     is_sub_call = False
     if getattr(node, '__class__', None) and node.__class__.__name__ == 'Subpattern_callContext':
         is_sub_call = True
@@ -138,54 +188,75 @@ def find_subpattern_calls(node: Any) -> list[str]:
     if hasattr(node, "children") and isinstance(node.children, (list, tuple)):
         for child in node.children:
             calls.extend(find_subpattern_calls(child))
-            
+
     return calls
 
 
-def collect_subpattern_trees(root_tree: Any, existing_keys: set[str] | None = None, catalog: Any = None) -> dict[str, Any]:
+def collect_subpattern_trees(root_tree: Any, existing_keys: set | None = None, catalog: Any = None) -> dict[str, Any]:
+    """Collect parse trees for all subpatterns recursively referenced by root_tree.
+
+    Args:
+        root_tree: Parse tree root node.
+        existing_keys: Set of already collected subpattern branch names.
+
+    Returns:
+        dict[str, Any]: Dictionary mapping subpattern branch names to uncompiled trees.
+    """
     if existing_keys is None:
         existing_keys = set()
-    
-    collected: dict[str, Any] = {}
-    visited_subpatterns: set[str] = set()
-    queue: list[str] = []
-    
+
+    collected = {}
+    visited_subpatterns = set()
+    queue = []
+
     queue.extend(find_subpattern_calls(root_tree))
+
     while queue:
         sub_name = queue.pop(0)
         if sub_name in visited_subpatterns:
             continue
         visited_subpatterns.add(sub_name)
-        
+
         sub = catalog.get(sub_name) if catalog is not None else loaded_subpatterns.get(sub_name)
         if sub is None or not hasattr(sub, 'transformations'):
             continue
-            
+
         for t_name, t_tree in sub.transformations.items():
             key = f"{sub_name}::{t_name}"
             if key not in existing_keys and t_name not in existing_keys:
                 collected[key] = t_tree
                 existing_keys.add(key)
-                
+
             # Check if this transformation tree calls further subpatterns
             nested_calls = find_subpattern_calls(t_tree)
             for nc in nested_calls:
                 if nc not in visited_subpatterns:
                     queue.append(nc)
-                    
+
     return collected
 
 
 def visualize_parse_tree(
     tree: Any,
     output_path: str,
-    title: str = "Parse Tree", 
+    title: str = "Parse Tree",
     font_size: int = 14,
-    node_intervals: list[Any] | str | None = None, 
-    highlights: dict[str, Any] | None = None,
+    node_intervals: list | str | None = None,
+    highlights: dict | None = None,
     wrap_at: int | None = None,
     catalog: Any = None,
 ) -> None:
+    """Render an ANTLR parse tree or dictionary of parse trees to PDF using Graphviz.
+
+    Args:
+        tree: Parse tree root node or dictionary of trees.
+        output_path: Target path for the output PDF (without extension).
+        title: Title of the generated diagram.
+        font_size: Font size for node labels.
+        node_intervals: Filter intervals for visible DFS node IDs.
+        highlights: Dictionary mapping intervals to highlight color configurations.
+        wrap_at: Unused parameter preserved for API compatibility with PDA visualizer.
+    """
     if not isinstance(tree, dict):
         trees = {"__main__": tree}
     else:
@@ -208,7 +279,7 @@ def visualize_parse_tree(
     elif intervals is None and node_intervals is None:
         intervals = None  # Show all states by default
 
-    parsed_highlights: list[dict[str, Any]] = []
+    parsed_highlights = []
     if highlights:
         for range_str, cfg in highlights.items():
             color = cfg.get("color", "red") if isinstance(cfg, dict) else cfg
@@ -219,31 +290,31 @@ def visualize_parse_tree(
 
     dot = graphviz.Digraph(comment=title)
     dot.attr(fontsize=str(font_size))
-    
+
     # Scale spacing based on font size
     spacing = str(0.4 + (font_size / 40.0))
     dot.attr(nodesep=spacing)
     dot.attr(ranksep=spacing)
     dot.attr(pad='0.5')
 
-    sorted_tree_names: list[str] = []
+    sorted_tree_names = []
     if "__main__" in trees:
         sorted_tree_names.append("__main__")
     for name in trees:
         if name != "__main__":
             sorted_tree_names.append(name)
 
-    last_tree_root: str | None = None
+    last_tree_root = None
     for tree_name in sorted_tree_names:
         current_tree = trees[tree_name]
         tree_name_clean = tree_name.replace(":", "_")
-        
+
         if tree_name == "__main__":
             main_intervals = list(intervals) if intervals is not None else None
             for h in parsed_highlights:
                 if h["intervals"] and main_intervals is not None:
                     main_intervals.extend(h["intervals"])
-            
+
             root_id = _render_single_tree_to_graph(dot, current_tree, tree_name_clean, main_intervals, parsed_highlights, font_size)
         else:
             main_intervals = None
@@ -271,10 +342,23 @@ def _render_single_tree_to_graph(
     parsed_highlights: list[dict[str, Any]],
     font_size: int,
 ) -> str | None:
+    """Render a single parse tree onto a Graphviz graph using two-pass DFS traversal.
+
+    Args:
+        graph: Target Graphviz Digraph or Subgraph.
+        tree: Parse tree root node.
+        tree_name: Scope name prefix.
+        intervals: Filter intervals for visible node IDs.
+        parsed_highlights: Color highlight specifications.
+        font_size: Label font size.
+
+    Returns:
+        str | None: Root node identifier in the rendered graph.
+    """
     # First Pass: Assign DFS IDs and identify nodes
-    node_info: dict[Any, dict[str, int]] = {}
+    node_info = {}
     dfs_order: list[Any] = []
-    
+
     def first_pass(node: Any) -> None:
         dfs_id = len(dfs_order)
         dfs_order.append(node)
@@ -282,11 +366,11 @@ def _render_single_tree_to_graph(
         if hasattr(node, "children") and isinstance(node.children, (list, tuple)):
             for child in node.children:
                 first_pass(child)
-    
+
     first_pass(tree)
     if not dfs_order:
         return None
-    
+
     # Root (0) and last node (len-1) are always visible in filtered mode
     current_intervals = list(intervals) if intervals is not None else None
     if current_intervals is not None:
@@ -300,7 +384,7 @@ def _render_single_tree_to_graph(
         results: list[Any] = []
         if not hasattr(node, "children") or not isinstance(node.children, (list, tuple)):
             return results
-        
+
         for child in node.children:
             child_id = node_info[child]["dfs_id"]
             if is_in_intervals(child_id, current_intervals):
@@ -314,9 +398,9 @@ def _render_single_tree_to_graph(
         node_id = node_info[node]["dfs_id"]
         if not is_in_intervals(node_id, current_intervals):
             return None
-        
+
         unique_id = str(hash(node)) if tree_name == "__main__" else f"{tree_name}_{hash(node)}"
-        
+
         # Determine Color
         h_color = None
         if parsed_highlights:
@@ -324,16 +408,16 @@ def _render_single_tree_to_graph(
                 if is_in_intervals(node_id, h["intervals"]):
                     h_color = h["color"]
                     break
-        
+
         attr = {
-            'fontsize': str(font_size), 
-            'style': 'filled', 
+            'fontsize': str(font_size),
+            'style': 'filled',
             'fillcolor': 'lightblue',
             'fontcolor': 'black',
             'penwidth': '0',
-            'shape': 'box'
+            'shape': 'box',
         }
-        
+
         content = ""
         if isinstance(node, TerminalNode):
             content = getattr(getattr(node, 'symbol', None), 'text', str(node))
@@ -345,19 +429,19 @@ def _render_single_tree_to_graph(
         else:
             name = node.__class__.__name__.replace("Context", "")
             content = f"<{name}>"
-        
+
         if h_color:
             attr.update(get_node_style(h_color))
-            
+
         label = f"{node_id}\n{content}"
         graph.node(unique_id, label, **attr)
-        
+
         # Add edges to visible descendants
         children = getattr(node, "children", [])
         if not isinstance(children, (list, tuple)):
             children = []
         skipped_any = False
-        
+
         for child in children:
             cid = node_info[child]["dfs_id"]
             if is_in_intervals(cid, current_intervals):
@@ -374,13 +458,13 @@ def _render_single_tree_to_graph(
                         vd_unique_id = second_pass(vd)
                         if vd_unique_id:
                             graph.edge(unique_id, vd_unique_id, style="dashed", color="grey")
-        
+
         if skipped_any:
             # Add an empty-ish node to show that children were skipped
             skip_id = f"skip_{unique_id}"
             graph.node(skip_id, "...", shape="plain", fontsize=str(font_size))
             graph.edge(unique_id, skip_id, style="dotted", arrowhead="none")
-        
+
         return unique_id
 
     return second_pass(tree)

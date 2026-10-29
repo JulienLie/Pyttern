@@ -1,13 +1,21 @@
-"""
-This module contains the Python3ErrorListener class.
-"""
+"""ANTLR error listeners and syntax error formatting utilities."""
 
 import re
+from typing import Any
+
 from antlr4.error.ErrorListener import ErrorListener
 from loguru import logger
 
 
 def clean_token(t: str) -> str:
+    """Format and clean an ANTLR raw token symbol into human-readable text.
+
+    Args:
+        t: Raw ANTLR token name or text.
+
+    Returns:
+        str: Human-readable token description (e.g. 'newline', 'wildcard ("?")').
+    """
     t = t.strip()
     if not t:
         return t
@@ -16,7 +24,7 @@ def clean_token(t: str) -> str:
         val = t[1:-1]
     else:
         val = t
-        
+
     if val == r'\n' or val == '\n' or val == 'NEWLINE':
         return 'newline'
     if val == '<EOF>' or val == 'EOF':
@@ -33,11 +41,19 @@ def clean_token(t: str) -> str:
         return 'subpattern ("$")'
     if val == 'BALISE':
         return 'tag ("$#")'
-    
+
     return f"'{val}'"
 
 
 def format_alternatives(expected_set_str: str) -> str:
+    """Format a comma-delimited set of expected tokens into natural prose.
+
+    Args:
+        expected_set_str: Expected tokens string formatted like '{TOKEN1, TOKEN2}'.
+
+    Returns:
+        str: Readable alternatives string (e.g. 'foo or bar', 'foo, bar, or baz').
+    """
     s = expected_set_str.strip('{} ')
     parts = [p.strip() for p in s.split(',')]
     cleaned = []
@@ -57,8 +73,16 @@ def format_alternatives(expected_set_str: str) -> str:
 
 
 def improve_message(msg: str) -> str:
+    """Translate cryptic ANTLR syntax error messages into helpful diagnostic text.
+
+    Args:
+        msg: Raw ANTLR error message.
+
+    Returns:
+        str: Improved user-facing syntax error message.
+    """
     msg = msg.strip()
-    
+
     # 1. mismatched input '<offending>' expecting <expected>
     m1 = re.match(r"mismatched input\s+(.+?)\s+expecting\s+(.+)", msg)
     if m1:
@@ -104,15 +128,37 @@ def improve_message(msg: str) -> str:
 
 
 class Python3ErrorListener(ErrorListener):
-    def __init__(self, input):
+    """ANTLR error listener that raises PytternSyntaxException immediately upon syntax error."""
+
+    def __init__(self, input: Any) -> None:
+        """Initialize the listener.
+
+        Args:
+            input: Underlying stream or buffer.
+        """
         self.input = input
 
-    """
-    Python3ErrorListener class is responsible for handling syntax errors in the input pyttern file.
-    """
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        """
-        Syntax error handler.
+    def syntaxError(
+        self,
+        recognizer: Any,
+        offendingSymbol: Any,
+        line: int,
+        column: int,
+        msg: str,
+        e: Any,
+    ) -> None:
+        """Format the error message and raise a PytternSyntaxException.
+
+        Args:
+            recognizer: Parser or lexer instance.
+            offendingSymbol: Offending token node.
+            line: 1-indexed line number.
+            column: 0-indexed column offset.
+            msg: Raw ANTLR error message.
+            e: Associated RecognitionException.
+
+        Raises:
+            PytternSyntaxException: Always raised to stop parsing.
         """
         improved = improve_message(msg)
         logger.error(f"Syntax error: {improved}")
@@ -120,23 +166,69 @@ class Python3ErrorListener(ErrorListener):
 
 
 class PytternSyntaxException(Exception):
-    """PytternSyntaxError class."""
-    def __init__(self, line, column, symbol, msg):
+    """Exception raised when pattern syntax cannot be parsed.
+
+    Attributes:
+        line: 0-indexed line number.
+        column: 0-indexed column offset.
+        symbol: The offending token symbol text.
+        msg: Human-readable error description.
+    """
+
+    def __init__(self, line: int, column: int, symbol: str, msg: str) -> None:
+        """Initialize the syntax exception.
+
+        Args:
+            line: 0-indexed line number.
+            column: 0-indexed column offset.
+            symbol: Text of the offending symbol.
+            msg: Formatted error message.
+        """
         self.line = line
         self.column = column
         self.symbol = symbol
         self.msg = msg
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return formatted 1-indexed error string.
+
+        Returns:
+            str: Error description including line and column.
+        """
         return f"Syntax error at {self.line + 1}:{self.column} ({self.symbol}) : {self.msg}"
 
 
 class PytternErrorListener(ErrorListener):
-    def __init__(self, input):
-        self.errors = []
+    """Error listener that accumulates diagnostic error dictionaries without aborting."""
+
+    def __init__(self, input: Any) -> None:
+        """Initialize the diagnostic error listener.
+
+        Args:
+            input: Target input stream.
+        """
+        self.errors: list[dict[str, Any]] = []
         self.input = input
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(
+        self,
+        recognizer: Any,
+        offendingSymbol: Any,
+        line: int,
+        column: int,
+        msg: str,
+        e: Any,
+    ) -> None:
+        """Record a diagnostic syntax error dictionary.
+
+        Args:
+            recognizer: Parser or lexer instance.
+            offendingSymbol: Offending token.
+            line: 1-indexed line number.
+            column: 0-indexed column offset.
+            msg: Raw error message.
+            e: Recognition exception.
+        """
         improved = improve_message(msg)
         error = {
             "message": improved,
@@ -147,11 +239,14 @@ class PytternErrorListener(ErrorListener):
         logger.error(f"New syntax error: {error}")
         self.errors.append(error)
 
-    def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
+    def reportAmbiguity(self, recognizer: Any, dfa: Any, startIndex: int, stopIndex: int, exact: bool, ambigAlts: Any, configs: Any) -> None:
+        """Report ambiguity event. No-op."""
         pass
 
-    def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs):
+    def reportAttemptingFullContext(self, recognizer: Any, dfa: Any, startIndex: int, stopIndex: int, conflictingAlts: Any, configs: Any) -> None:
+        """Report full context attempt. No-op."""
         pass
 
-    def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-        pass
+    def reportContextSensitivity(self, recognizer: Any, dfa: Any, startIndex: int, stopIndex: int, prediction: int, configs: Any) -> None:
+        """Report context sensitivity event. No-op."""
+        pass

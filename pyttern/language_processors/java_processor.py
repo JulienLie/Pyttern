@@ -1,3 +1,4 @@
+"""Java language processor for Pyttern."""
 from __future__ import annotations
 
 import io
@@ -21,22 +22,32 @@ if TYPE_CHECKING:
 
 
 class JavaProcessor(BaseProcessor):
+    """
+    Language processor implementation for Java and Jattern (Java patterns).
+    """
+
     def generate_tree_from_stream(self, stream: InputStream) -> ParserRuleContext | Tree:
-        logger.debug("Generating tree")
+        """
+        Parses Java source from an ANTLR stream and returns a pruned parse tree.
+
+        Args:
+            stream (InputStream): The ANTLR stream containing Java source code.
+
+        Returns:
+            ParserRuleContext | Tree: The pruned Java compilation unit parse tree.
+        """
+        logger.debug("Generating Java parse tree")
         lexer = JavaLexer(stream)
         token_stream = CommonTokenStream(lexer)
         java_parser = JavaParser(token_stream)
 
-        error = io.StringIO()
-
+        fake_error_output = io.StringIO()
+        error_listener = Python3ErrorListener(fake_error_output)
         java_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener(error)
         java_parser.addErrorListener(error_listener)
 
         tree = java_parser.compilationUnit()
-
         pruned_tree: ParserRuleContext | Tree = TreePruner().visit(tree)
-
         return pruned_tree
 
     def create_pda(
@@ -44,6 +55,16 @@ class JavaProcessor(BaseProcessor):
         pattern_tree: ParserRuleContext | Tree,
         catalog: SubPatternCatalog | None = None,
     ) -> dict[str, PDA]:
+        """
+        Compiles a Java pattern parse tree into a Pushdown Automaton.
+
+        Args:
+            pattern_tree (ParserRuleContext | Tree): The Java pattern parse tree.
+            catalog (SubPatternCatalog | None): Optional subpattern catalog.
+
+        Returns:
+            dict[str, PDA]: A dictionary containing compiled PDA instances.
+        """
         return Java_to_PDA().visit(pattern_tree)
 
     def compile_subpattern(
@@ -52,9 +73,26 @@ class JavaProcessor(BaseProcessor):
         context: SubPatternCallContext | ParserRuleContext | Tree | None,
         catalog: SubPatternCatalog | None = None,
     ) -> dict[str, PDA]:
+        """
+        Compiles a subpattern definition into a Pushdown Automaton given a call context.
+
+        Args:
+            subpattern: The subpattern definition to compile.
+            context: The call context.
+            catalog: Optional subpattern catalog.
+
+        Raises:
+            NotImplementedError: Subpatterns are not yet supported for Java.
+        """
         raise NotImplementedError("Subpatterns are not yet supported for Java.")
 
     def get_language_extensions(self) -> list[str]:
+        """
+        Returns supported file extensions for Java and Jattern files.
+
+        Returns:
+            list[str]: Supported extensions ['java', 'jav', 'jat'].
+        """
         return ["java", "jav", "jat"]
 
 

@@ -3,14 +3,57 @@ import sys
 from typing import TextIO
 
 from antlr4 import *
+from antlr4.atn.LexerATNSimulator import LexerATNSimulator
 from antlr4.Token import CommonToken
 
 from .Python3Parser import Python3Parser
 
 
+class Python3LexerATNSimulator(LexerATNSimulator):
+    """Specialized ATN simulator caching DFA start states for tokens beyond stream start."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cached_s0_after_start: dict[int, Any] = {}
+
+    def match(self, input: InputStream, mode: int):
+        self.mode = mode
+        mark = input.mark()
+        try:
+            self.startIndex = input.index
+            self.prevAccept.reset()
+            if input.index == 0:
+                return self.matchATN(input)
+            cached = self._cached_s0_after_start.get(mode)
+            if cached is not None:
+                return self.execATN(input, cached)
+
+            startState = self.atn.modeToStartState[self.mode]
+            s0_closure = self.computeStartState(input, startState)
+            s0_closure.hasSemanticContext = False
+            next_dfa = self.addDFAState(s0_closure)
+            self._cached_s0_after_start[mode] = next_dfa
+            return self.execATN(input, next_dfa)
+        finally:
+            input.release(mark)
+
+
 class Python3LexerBase(Lexer):
     NEW_LINE_PATTERN = re.compile('[^\r\n\f]+')
     SPACES_PATTERN = re.compile('[\r\n\f]+')
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        orig_init = cls.__init__
+
+        def wrapped_init(self, input=None, output=sys.stdout):
+            orig_init(self, input, output)
+            if not isinstance(self._interp, Python3LexerATNSimulator):
+                self._interp = Python3LexerATNSimulator(
+                    self, self.atn, self.decisionsToDFA, PredictionContextCache()
+                )
+
+        cls.__init__ = wrapped_init
 
     def __init__(self, input: InputStream, output: TextIO = sys.stdout):
         super().__init__(input, output)

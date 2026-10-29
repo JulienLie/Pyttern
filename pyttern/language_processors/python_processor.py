@@ -1,7 +1,7 @@
+"""Python language processor for Pyttern."""
 from __future__ import annotations
 
 import io
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -12,7 +12,7 @@ from loguru import logger
 from .base_processor_interface import BaseProcessor
 from ..antlr.python import Python3Parser
 from ..antlr.python.Python3Lexer import Python3Lexer
-from ..pyttern_error_listener import Python3ErrorListener, PytternErrorListener
+from ..pyttern_error_listener import Python3ErrorListener
 from ..pytternfsm.PDA import PDA
 from ..pytternfsm.python.python_to_pda import Python_to_PDA
 from ..pytternfsm.python.tree_pruner import TreePruner
@@ -24,32 +24,58 @@ if TYPE_CHECKING:
 
 
 class PythonProcessor(BaseProcessor):
+    """
+    Language processor implementation for Python source and Pyttern pattern files.
+    """
 
     def generate_tree_from_code(self, code: str) -> ParserRuleContext | Tree:
-        code = code.strip()
-        code += "\n"
+        """
+        Parses Python code or pattern string into a pruned parse tree.
+
+        Args:
+            code (str): Source code or pattern content.
+
+        Returns:
+            ParserRuleContext | Tree: The pruned ANTLR file input parse tree.
+        """
+        code = code.strip() + "\n"
         stream = InputStream(code)
         return self.generate_tree_from_stream(stream)
 
     def generate_tree_from_stream(self, stream: InputStream) -> ParserRuleContext | Tree:
-        logger.debug("Generating tree")
+        """
+        Parses an ANTLR stream of Python code and returns a pruned parse tree.
+
+        Args:
+            stream (InputStream): The ANTLR input stream.
+
+        Returns:
+            ParserRuleContext | Tree: The pruned ANTLR parse tree.
+        """
+        logger.debug("Generating Python parse tree")
         lexer = Python3Lexer(stream)
         token_stream = CommonTokenStream(lexer)
         py_parser = Python3Parser(token_stream)
 
-        error_stream = io.StringIO()
-
+        input_err = io.StringIO()
         py_parser.removeErrorListeners()
-        error_listener = Python3ErrorListener(error_stream)
+        error_listener = Python3ErrorListener(input_err)
         py_parser.addErrorListener(error_listener)
 
         tree = py_parser.file_input()
-
         pruned_tree: ParserRuleContext | Tree = TreePruner().visit(tree)
-
         return pruned_tree
 
     def generate_tree_from_file(self, file: str | Path) -> ParserRuleContext | Tree:
+        """
+        Reads a Python or Pyttern file and returns its pruned parse tree.
+
+        Args:
+            file (str | Path): Path to the source file.
+
+        Returns:
+            ParserRuleContext | Tree: The pruned parse tree.
+        """
         with open(file, "r", encoding="utf-8") as f:
             return self.generate_tree_from_code(f.read())
 
@@ -58,6 +84,16 @@ class PythonProcessor(BaseProcessor):
         pattern_tree: ParserRuleContext | Tree,
         catalog: SubPatternCatalog | None = None,
     ) -> dict[str, PDA]:
+        """
+        Compiles a Python pattern parse tree into a Pushdown Automaton.
+
+        Args:
+            pattern_tree (ParserRuleContext | Tree): The pattern parse tree.
+            catalog (SubPatternCatalog | None): Optional subpattern catalog.
+
+        Returns:
+            dict[str, PDA]: A dictionary containing compiled PDA instances.
+        """
         return Python_to_PDA(catalog=catalog).visit(pattern_tree)
 
     @staticmethod
@@ -140,10 +176,13 @@ class PythonProcessor(BaseProcessor):
         """
         Compiles a subpattern definition into a Pushdown Automaton given a call context.
 
-        :param subpattern: The subpattern definition to compile.
-        :param context: The call context (SubPatternCallContext or AST node).
-        :param catalog: Optional subpattern catalog to resolve nested subpatterns.
-        :return: A dictionary mapping transformation names to compiled PDA instances.
+        Args:
+            subpattern: The subpattern definition to compile.
+            context: The call context (SubPatternCallContext or AST node).
+            catalog: Optional subpattern catalog to resolve nested subpatterns.
+
+        Returns:
+            dict[str, PDA]: A dictionary mapping transformation names to compiled PDA instances.
         """
         from ..subpattern.SubPattern import (
             SubPatternCallContext,
@@ -188,8 +227,8 @@ class PythonProcessor(BaseProcessor):
                 ctx_name = ast_ctx.__class__.__name__ if ast_ctx is not None else "None"
                 raise ValueError(f"Cannot prune tree {cloned_trans.getText()} to {ctx_name}")
             pda_result = Python_to_PDA(catalog=catalog).visit(pruned_trans)
-            if isinstance(pda_result, dict) and "__main__" in pda_result:
-                pda = pda_result["__main__"]
+            if isinstance(pda_result, dict):
+                pda = pda_result.get("__main__", next(iter(pda_result.values())))
             else:
                 pda = pda_result
             compiled[name] = pda
@@ -197,271 +236,56 @@ class PythonProcessor(BaseProcessor):
         return compiled
 
     def create_listener(self) -> ConsolePytternListener:
+        """
+        Creates a console listener for Python pattern matching.
+
+        Returns:
+            ConsolePytternListener: The listener instance.
+        """
         from ..Pyttern_listener import ConsolePytternListener
+
         return ConsolePytternListener()
 
     def get_language_extensions(self) -> list[str]:
+        """
+        Returns supported file extensions for Python and Pyttern files.
+
+        Returns:
+            list[str]: Supported extensions ['py', 'pyt', 'pyh'].
+        """
         return ["py", "pyt", "pyh"]
 
     @staticmethod
     def parse_diagnostics(code: str) -> list[dict[str, Any]]:
         """
-        * **Arguments:**
-        - `code` (`str`): The full text content of the active document.
-        * **Return Value:**
-        - A list of diagnostic dictionaries, representing parsing errors, syntax warnings, or validation issues.
-        - Return an empty list `[]` if no errors are found.
+        Parses code and returns a list of diagnostic dictionaries for syntax errors.
 
-        #### Diagnostic Dictionary Format:
-        Each dictionary in the returned list should have the following fields:
+        Args:
+            code (str): Source code or pattern text to inspect.
 
-        | Field Name | Type | Description |
-        | :--- | :--- | :--- |
-        | `message` | `str` | The error description or description of the issue. |
-        | `line` | `int` | **0-indexed** starting line number of the diagnostic. |
-        | `character` | `int` | **0-indexed** starting character offset of the diagnostic on that line. |
-        | `severity` | `str` | The severity of the diagnostic. Must be one of: `'error'`, `'warning'`, `'info'`, `'hint'`. |
-        | `end_line` | `int` | *(Optional)* **0-indexed** ending line number. Defaults to `line` if omitted. |
-        | `end_character`| `int` | *(Optional)* **0-indexed** ending character offset. Defaults to `character + 1` if omitted. |
+        Returns:
+            list[dict]: List of diagnostic error objects with line, column, and message.
         """
-        code = code.strip() + "\n"
-        stream = InputStream(code)
+        from ..editor_support import run_diagnostics
 
-        logger.debug(f"Parsing {code} for debugging purpose")
-        lexer = Python3Lexer(stream)
-        token_stream = CommonTokenStream(lexer)
-        py_parser = Python3Parser(token_stream)
-
-        error = io.StringIO()
-
-        py_parser.removeErrorListeners()
-        error_listener = PytternErrorListener(error)
-        py_parser.addErrorListener(error_listener)
-
-        py_parser.file_input()
-
-        logger.debug(f"Parsing done, error found: {error_listener.errors}")
-
-        return error_listener.errors
+        return run_diagnostics(code, entry_rule="file_input")
 
     @staticmethod
     def get_completions(code: str, line: int, character: int) -> list[dict[str, Any]]:
         """
-        * **Arguments:**
-        - `code` (`str`): The full text content of the active document.
-        - `line` (`int`): The **0-indexed** line number where the cursor is currently positioned.
-        - `character` (`int`): The **0-indexed** character offset on that line where the cursor is positioned.
-        * **Return Value:**
-        - A list of completion suggestion dictionaries.
-        - Return `[]` if no suggestions are available.
+        Returns auto-completion suggestion dictionaries at the given document position.
 
-        #### Completion Dictionary Format:
-        Each dictionary in the returned list should have the following fields:
+        Args:
+            code (str): The document text.
+            line (int): 0-indexed line number.
+            character (int): 0-indexed character offset on that line.
 
-        | Field Name | Type | Description |
-        | :--- | :--- | :--- |
-        | `label` | `str` | The text proposal to display in the autocomplete dropdown and insert when selected. |
-        | `kind` | `str` | The type of item. Must be one of: `'keyword'`, `'variable'`, `'function'`, `'text'`, `'constant'`. |
-        | `detail` | `str` | *(Optional)* A short description shown next to the label (e.g. `wildcard operator`). |
-        | `documentation`| `str` | *(Optional)* Detailed documentation shown in the expandable info card (can be markdown). |
+        Returns:
+            list[dict]: Completion items matching the prefix.
         """
-        lines = code.split("\n")
-        if line < 0 or line >= len(lines):
-            return []
+        from ..editor_support import get_editor_completions
 
-        current_line = lines[line]
-        if character < 0 or character > len(current_line):
-            return []
-
-        prefix_line = current_line[:character]
-
-        # Extract the prefix matching word characters, or wildcard starts (? or $)
-        match = re.search(r'(\?[:*<{,a-zA-Z0-9$]*|\$[&|#a-zA-Z0-9]*|[a-zA-Z_]\w*)$', prefix_line)
-        prefix = match.group(1) if match else ""
-
-        # Pyttern-specific wildcard patterns
-        pyttern_wildcards: list[dict[str, Any]] = [
-            {
-                "label": "?",
-                "kind": "keyword",
-                "detail": "simple wildcard",
-                "documentation": "Matches exactly 1 element (variable, expression, statement, etc.).",
-            },
-            {
-                "label": "?name",
-                "kind": "keyword",
-                "detail": "named wildcard",
-                "documentation": "Matches 1 element and binds it to `name`.",
-            },
-            {
-                "label": "?*",
-                "kind": "keyword",
-                "detail": "sequence wildcard",
-                "documentation": "Matches zero or more elements.",
-            },
-            {
-                "label": "?:",
-                "kind": "keyword",
-                "detail": "body wildcard",
-                "documentation": "Matches a node that has a block/body (e.g., `if`, `for`).",
-            },
-            {
-                "label": "?:*",
-                "kind": "keyword",
-                "detail": "deep body wildcard",
-                "documentation": "Matches a body at any level of indentation.",
-            },
-            {
-                "label": "?<...>",
-                "kind": "keyword",
-                "detail": "contains wildcard",
-                "documentation": "Matches if the inner pattern is found anywhere within the node.",
-            },
-            {
-                "label": "?$(...)",
-                "kind": "keyword",
-                "detail": "sub-pattern call",
-                "documentation": "Calls a sub-pattern defined elsewhere.",
-            },
-            {
-                "label": "?{n, m}",
-                "kind": "keyword",
-                "detail": "range wildcard",
-                "documentation": "Matches between `n` and `m` elements in a sequence.",
-            },
-        ]
-
-        # Pyttern sub-pattern structures
-        pyttern_subpatterns: list[dict[str, Any]] = [
-            {
-                "label": "$&Name(args)",
-                "kind": "keyword",
-                "detail": "AND sub-pattern",
-                "documentation": "AND operator. All internal transformations must match.",
-            },
-            {
-                "label": "$|Name(args)",
-                "kind": "keyword",
-                "detail": "OR sub-pattern",
-                "documentation": "OR operator. At least one internal transformation must match.",
-            },
-            {
-                "label": "$#",
-                "kind": "keyword",
-                "detail": "transformation label",
-                "documentation": "A label for a specific transformation branch/version of the pattern logic.",
-            },
-        ]
-
-        # Pyttern API keywords
-        pyttern_api: list[dict[str, Any]] = [
-            {
-                "label": "match_files",
-                "kind": "function",
-                "detail": "pyttern.match_files",
-                "documentation": "Matches patterns against files.\n\n`match_files(pattern_file, code_file, lang='python')`",
-            },
-            {
-                "label": "PytternMatcher",
-                "kind": "class",
-                "detail": "pyttern.PytternMatcher",
-                "documentation": "Main matcher class for matching trees.\n\n`matcher = PytternMatcher(match_details=True)`",
-            },
-            {
-                "label": "get_processor",
-                "kind": "function",
-                "detail": "pyttern.language_processors.get_processor",
-                "documentation": "Retrieves the processor instance for a specific language (e.g. 'python', 'java').",
-            },
-            {
-                "label": "parse_diagnostics",
-                "kind": "function",
-                "detail": "PythonProcessor.parse_diagnostics",
-                "documentation": "Parses code and returns a list of diagnostic dictionaries for syntax errors.",
-            },
-            {
-                "label": "generate_tree_from_code",
-                "kind": "function",
-                "detail": "PythonProcessor.generate_tree_from_code",
-                "documentation": "Generates a pruned parse tree from Python/Pyttern code.",
-            },
-        ]
-
-        # Python keywords
-        python_keywords_list = [
-            "False", "None", "True", "and", "as", "assert", "async", "await", "break", 
-            "class", "continue", "def", "del", "elif", "else", "except", "finally", 
-            "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", 
-            "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"
-        ]
-
-        python_keywords: list[dict[str, Any]] = [
-            {
-                "label": kw,
-                "kind": "keyword" if kw not in ("True", "False", "None") else "constant",
-                "detail": "python keyword" if kw not in ("True", "False", "None") else "python constant",
-                "documentation": f"Standard Python {'constant' if kw in ('True', 'False', 'None') else 'keyword'}.",
-            }
-            for kw in python_keywords_list
-        ]
-
-        # Extract local definitions
-        local_functions: set[str] = set()
-        local_variables: set[str] = set()
-
-        for line_str in lines:
-            # Check function definitions
-            func_match = re.search(r'\bdef\s+([a-zA-Z_]\w*)', line_str)
-            if func_match:
-                local_functions.add(func_match.group(1))
-                continue
-            
-            # Check class definitions
-            class_match = re.search(r'\bclass\s+([a-zA-Z_]\w*)', line_str)
-            if class_match:
-                local_variables.add(class_match.group(1))
-                continue
-
-            # Check variable assignments
-            var_matches = re.findall(r'\b([a-zA-Z_]\w*)\s*=(?!=)', line_str)
-            for var in var_matches:
-                if var not in python_keywords_list:
-                    local_variables.add(var)
-
-        local_suggestions: list[dict[str, Any]] = []
-        for func in sorted(local_functions):
-            local_suggestions.append({
-                "label": func,
-                "kind": "function",
-                "detail": "local function",
-                "documentation": f"Function `{func}` defined in the current document.",
-            })
-        for var in sorted(local_variables):
-            local_suggestions.append({
-                "label": var,
-                "kind": "variable",
-                "detail": "local variable/class",
-                "documentation": f"Variable/class `{var}` defined in the current document.",
-            })
-
-        # Combine all candidates
-        all_candidates = pyttern_wildcards + pyttern_subpatterns + pyttern_api + python_keywords + local_suggestions
-
-        # Filter candidates based on prefix
-        prefix_lower = prefix.lower()
-        filtered: list[dict[str, Any]] = []
-        for item in all_candidates:
-            label = str(item["label"])
-            if label.startswith("?") or label.startswith("$"):
-                if label.startswith(prefix):
-                    filtered.append(item)
-            else:
-                if prefix.startswith("?") or prefix.startswith("$"):
-                    continue
-                if label.lower().startswith(prefix_lower):
-                    filtered.append(item)
-
-        return filtered
+        return get_editor_completions(code, line, character, mode="pattern")
 
 
 __all__ = ["PythonProcessor"]

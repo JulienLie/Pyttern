@@ -14,5 +14,9 @@ build/
 .mypy_cache/
 .scratch/
 AGENTS.md
+GEMINI.md
+CLAUDE.md
+.claude/
+.gemini/
 GLOSSARY.md
 docs/
