@@ -23,7 +23,7 @@ frozendict = "^2.4.7"
 
 [tool.poetry.group.test.dependencies]
 pytest="^9.0.3"
-pylint="^3.2.2"
+pylint="^4.0.9"
 pytest-subtests="^0.14.2"
 flake8 = "^7.3.0"
 pytest-timeout = "^2.4.0"
